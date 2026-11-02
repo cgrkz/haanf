@@ -84,6 +84,10 @@ private fun LivePanel(container: AppContainer, live: LiveSnapshot) {
         if (live.sensorContact == SensorContact.NOT_DETECTED) {
             ErrorText("The sensor reports no skin contact.")
         }
+        if (live.connection is SourceState.Pairing) {
+            ErrorText("Pairing needs you. Android shows it as a notification, so pull down the shade.")
+            Hint("Tap the Pairing request notification and choose Pair. Accept on the watch if it asks.")
+        }
         (live.connection as? SourceState.Unsupported)?.let { unsupported ->
             ErrorText("This device does not share heart rate over the standard profile.")
             Hint("Services it offers: ${unsupported.offered.joinToString().ifEmpty { "none" }}")

@@ -32,7 +32,8 @@ It is a package boundary rather than a Gradle module. One module is simpler for 
 - **Plain Android Bluetooth, no library.** The job is small: connect, discover, subscribe. A third-party stack would be more to learn than to write.
 - **Paired devices are listed even when not advertising.** Google's support pages and forum reports suggest a watch paired to a phone may not appear in a normal scan, so the app offers a direct connection to it.
 - **All callbacks run on one handler thread.** The source needs no locks as a result.
-- **Pairing is handled.** If subscribing fails with an authentication error, the app asks to bond and resumes when bonding completes. Pixel Watch asks for approval on new connections.
+- **Pairing is handled, and shown.** Pixel Watch asks for approval on new connections. Android does not open a dialog for this: it posts a quiet "Pairing request" notification that expires after 30 seconds, so Haanf watches the bond state and tells the user where to look. Android resumes the interrupted subscribe by itself once bonded, so the app must not repeat it.
+- **The bond listener is an exported receiver.** The Bluetooth service does not run as the system uid, so a non-exported receiver never hears from it. The action is protected, so no other app can send it.
 - **A device without 0x180D stops, and does not retry.** The session reports the services it did offer. Retrying cannot help, and this brief forbids reverse-engineering.
 - **Reconnection never gives up.** Backoff runs 1, 2, 4, 8, 15, then 30 seconds and holds there. A watch can return at any point in a workout.
 - **Every third attempt rescans for 8 seconds,** filtered on 0x180D, in case the address rotated. It matches by address, or by name as a fallback. Two identical watches sharing nearby could be confused by the name match; a session event records any address change so it would be visible.
@@ -79,5 +80,6 @@ Read permissions for five data types and no write permissions. Each type is read
 
 ## Testing limits
 
+- `tools/ble-sim` runs simulated Bluetooth devices on the emulator. It found two real bugs that unit tests could not, both in pairing. It tests Haanf's code, not any watch.
 - Instrumented tests run through `am instrument` on the emulator, never with `connectedDebugAndroidTest`, because that uninstalls the app from any attached phone.
 - `adb` is used for Haanf only: install, launch, Haanf's log tags and Haanf's permissions. Facts about the test phone come from its wireless debugging announcement and from Haanf's own session record.

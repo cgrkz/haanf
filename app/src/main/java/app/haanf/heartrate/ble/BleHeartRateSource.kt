@@ -87,6 +87,9 @@ class BleHeartRateSource(
     private var stopped = false
     private var finished = false
     private var receiverRegistered = false
+
+    /** Android finishes an interrupted write itself after pairing, so it must not be repeated. */
+    private var subscribePending = false
     private var scanCallback: ScanCallback? = null
 
     private val retry = Runnable {
@@ -108,10 +111,11 @@ class BleHeartRateSource(
             if (bonded.address != address) return
             val bondState = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR)
             note("bond state $bondState")
-            if (_state.value !is SourceState.Pairing) return
+            val g = gatt ?: return
             when (bondState) {
-                BluetoothDevice.BOND_BONDED -> gatt?.let { resubscribe(it) }
-                BluetoothDevice.BOND_NONE -> {
+                BluetoothDevice.BOND_BONDING -> enterPairing()
+                BluetoothDevice.BOND_BONDED -> if (!subscribePending) resubscribe(g)
+                BluetoothDevice.BOND_NONE -> if (_state.value is SourceState.Pairing) {
                     tearDown()
                     scheduleRetry("pairing did not complete")
                 }
@@ -150,9 +154,14 @@ class BleHeartRateSource(
 
         override fun onDescriptorWrite(g: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
             if (g !== gatt || descriptor.uuid != GattNames.CLIENT_CONFIG_DESCRIPTOR) return
+            subscribePending = false
             when (status) {
                 BluetoothGatt.GATT_SUCCESS -> onSubscribed()
-                in AUTH_FAILURE_STATUSES -> beginPairing(g, status)
+                in AUTH_FAILURE_STATUSES -> {
+                    note("pairing needed, status $status")
+                    enterPairing()
+                    if (g.device.bondState == BluetoothDevice.BOND_NONE) g.device.createBond()
+                }
                 else -> {
                     tearDown()
                     scheduleRetry("notification setup failed, status $status")
@@ -178,13 +187,15 @@ class BleHeartRateSource(
 
     override fun start() {
         handler.post {
+            // Exported because the Bluetooth service is not the system uid, so a non-exported
+            // receiver never hears from it. The action is protected: apps cannot send it.
             ContextCompat.registerReceiver(
                 context,
                 bondReceiver,
                 IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED),
                 null,
                 handler,
-                ContextCompat.RECEIVER_NOT_EXPORTED,
+                ContextCompat.RECEIVER_EXPORTED,
             )
             receiverRegistered = true
             connect()
@@ -249,7 +260,8 @@ class BleHeartRateSource(
             return
         }
         g.setCharacteristicNotification(measurement, true)
-        if (!writeEnableNotifications(g, config)) {
+        subscribePending = writeEnableNotifications(g, config)
+        if (!subscribePending) {
             tearDown()
             scheduleRetry("could not request notifications")
         }
@@ -278,12 +290,10 @@ class BleHeartRateSource(
         _state.value = SourceState.Streaming
     }
 
-    private fun beginPairing(g: BluetoothGatt, status: Int) {
-        note("pairing needed, status $status")
+    private fun enterPairing() {
         _state.value = SourceState.Pairing
         handler.removeCallbacks(setupTimeout)
         handler.postDelayed(setupTimeout, PAIRING_TIMEOUT_MS)
-        if (g.device.bondState == BluetoothDevice.BOND_NONE) g.device.createBond()
     }
 
     private fun deliver(value: ByteArray) {
@@ -322,6 +332,7 @@ class BleHeartRateSource(
 
     private fun tearDown() {
         handler.removeCallbacks(setupTimeout)
+        subscribePending = false
         gatt?.let {
             it.disconnect()
             it.close()

@@ -42,6 +42,7 @@ One Gradle module, `:app`, with packages under `app.haanf`:
 - `talktest`: WAV recording, routing and its own microphone foreground service. It gets heart rate through plain functions.
 - `health`: read-only Health Connect report.
 - `data`: Room. `export`: CSV and the share sheet.
+- `tools/ble-sim`: simulated Bluetooth peripherals for the emulator. See its README.
 - `AppContainer`: manual wiring. One instance per process. Screens read state from it directly.
 
 To add a wearable, implement `HeartRateSource` and return it from a `HeartRateSourceFactory`, keyed by `HeartRateDevice.sourceKind`. Do not change `session` or `talktest`.
