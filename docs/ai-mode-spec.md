@@ -9,10 +9,12 @@ Built on 2 November 2026.
 | Area | Result | Evidence |
 | --- | --- | --- |
 | Unit tests | Pass | 208 of 208 |
-| Emulator tests | Pass | 31 of 31, including all database migrations and the full loop from plan to coach to review, with a scripted AI |
+| Emulator tests | Pass | 33 of 33, including all database migrations and the full loop from plan to coach to review, with a scripted AI |
 | Planner, coach, chat and reviews against a real model | Pass (development) | Hinoki with made-up data, over the same Chat Completions path OpenRouter uses. It called the heart rate overview, then spoke, and chose its own next check-in. Its plan passed the rule check, and chat and review text was clean |
 | Claude and OpenRouter from Android | Pass, as far as a fake key can show | Real calls from the emulator reached both, and both rejected a fake key, which Haanf reported correctly |
 | Upgrade on the real Pixel 6 | Pass (real) | Installed with no crash. Database moved from version 3 to 4, and all sessions, samples, the talk test, the workout and the profile survived |
+| Hinoki on Android | Pass (emulator) | A real chat message with made-up data got a good reply through the app |
+| Hinoki key on the real Pixel 6 | Pass (real) | Loaded over adb, encrypted, file deleted. Key is not in plain text on the phone, in the APK or in git. No real AI call has run on the phone yet |
 | A real OpenRouter or Claude key | Not tested | None was available. Whether a real call succeeds is unproven |
 | Claude's tool loop against the real API | Not tested | Tested against a local server only |
 | Coach during a real workout with the real watch | Not tested | |
