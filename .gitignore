@@ -1,0 +1,33 @@
+# Build output
+build/
+.gradle/
+.kotlin/
+*.apk
+*.aab
+*.ap_
+*.dex
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local machine configuration
+local.properties
+.idea/
+*.iml
+
+# Signing material, never commit
+*.jks
+*.keystore
+*.p12
+keystore.properties
+
+# Recordings and exports, personal data
+recordings/
+*.wav
+*.m4a
+*.mp3
+*.aac
+exports/
+
+# OS
+.DS_Store
