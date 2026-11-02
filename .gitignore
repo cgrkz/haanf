@@ -15,6 +15,10 @@ local.properties
 .idea/
 *.iml
 
+# Secrets, never commit
+.env
+.env.*
+
 # Signing material, never commit
 *.jks
 *.keystore
