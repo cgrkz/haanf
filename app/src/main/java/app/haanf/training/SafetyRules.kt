@@ -8,6 +8,18 @@ object SafetyRules {
             "limit exercise. Stop and seek help if you feel chest pain, faintness or unusual " +
             "shortness of breath."
 
+    /** In our own words, following the factors in ACSM's 2015 screening recommendations. */
+    val HEALTH_CHECK = listOf(
+        "A doctor has told me I have a heart, kidney or metabolic condition, such as diabetes.",
+        "I get chest pain, dizziness, fainting or unusual breathlessness when I am active.",
+    )
+
+    const val HEALTH_CHECK_ADVICE =
+        "Please check with your doctor before doing this test or starting a program."
+
+    const val BENCHMARK_STOP_RULE =
+        "Stop at once if you feel chest pain, faintness or unusual shortness of breath."
+
     private const val COUNTED_SHARE = 0.8
 
     /** A shorter attempt stays in history but does not count as a program workout. */
