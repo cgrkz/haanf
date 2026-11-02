@@ -12,6 +12,7 @@ Built on 2 November 2026.
 | Emulator tests | Pass | 31 of 31, including all database migrations and the full loop from plan to coach to review, with a scripted AI |
 | Planner and coach against a real model | Pass (development) | Hinoki key with made-up data, over the same Chat Completions path OpenRouter uses. It called the heart rate overview, then spoke, and chose its own next check-in. Its plan passed the rule check |
 | Claude and OpenRouter from Android | Pass, as far as a fake key can show | Real calls from the emulator reached both, and both rejected a fake key, which Haanf reported correctly |
+| Upgrade on the real Pixel 6 | Pass (real) | Installed with no crash. Database moved from version 3 to 4, and all sessions, samples, the talk test, the workout and the profile survived |
 | A real OpenRouter or Claude key | Not tested | None was available. Whether a real call succeeds is unproven |
 | Claude's tool loop against the real API | Not tested | Tested against a local server only |
 | Coach during a real workout with the real watch | Not tested | |
