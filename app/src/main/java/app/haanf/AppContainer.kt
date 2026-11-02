@@ -11,8 +11,15 @@ import app.haanf.heartrate.HeartRateSourceFactory
 import app.haanf.heartrate.ble.BleDiscovery
 import app.haanf.heartrate.ble.BleHeartRateSourceFactory
 import app.haanf.session.LiveSessionController
+import app.haanf.program.ProgramTracker
 import app.haanf.talktest.TalkTestLibrary
 import app.haanf.talktest.TalkTestRecorder
+import app.haanf.workout.Announcer
+import app.haanf.workout.LiveLink
+import app.haanf.workout.RoomWorkoutStore
+import app.haanf.workout.ServiceLiveLink
+import app.haanf.workout.SpeechAnnouncer
+import app.haanf.workout.WorkoutController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -23,6 +30,8 @@ class AppContainer(
     context: Context,
     sourceFactory: HeartRateSourceFactory = BleHeartRateSourceFactory(context),
     database: HaanfDatabase = HaanfDatabase.create(context.applicationContext),
+    link: LiveLink = ServiceLiveLink(context.applicationContext),
+    announcer: Announcer = SpeechAnnouncer(context.applicationContext),
 ) {
     private val appContext = context.applicationContext
     private val sessionScope = CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1))
@@ -30,6 +39,7 @@ class AppContainer(
     val clock: Clock = SystemTimeClock
     val hrDao = database.hrDao()
     val talkTestDao = database.talkTestDao()
+    val trainingDao = database.trainingDao()
 
     val live = LiveSessionController(
         scope = sessionScope,
@@ -50,10 +60,21 @@ class AppContainer(
         currentSessionId = { live.live.value.sessionId },
     )
     val health = HealthConnectReader(appContext)
+    val programs = ProgramTracker(trainingDao, clock)
+    val workouts = WorkoutController(
+        scope = sessionScope,
+        store = RoomWorkoutStore(trainingDao, hrDao, programs),
+        link = link,
+        clock = clock,
+        announcer = announcer,
+        currentSessionId = { live.live.value.sessionId },
+        currentBpm = { live.freshBpm() },
+    )
 
     init {
         sessionScope.launch {
             hrDao.closeOpenSessions(reason = "app_process_ended")
+            workouts.recoverInterrupted()
             talkTests.removeUnfinished()
         }
     }

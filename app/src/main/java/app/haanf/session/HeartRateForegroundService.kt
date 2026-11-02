@@ -37,17 +37,22 @@ class HeartRateForegroundService : Service() {
     private var wakeLock: PowerManager.WakeLock? = null
     private var notifier: Job? = null
 
-    private val live get() = (application as HaanfApplication).container.live
+    private val container get() = (application as HaanfApplication).container
+    private val live get() = container.live
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> begin(intent)
-            ACTION_STOP -> {
-                live.stop()
-                finish()
-            }
+            ACTION_STOP ->
+                if (container.workouts.isRunning) {
+                    // Finishing the workout comes back here once it has been saved.
+                    container.workouts.finish(reason = "stopped_from_notification")
+                } else {
+                    live.stop()
+                    finish()
+                }
             else -> finish()
         }
         return START_NOT_STICKY
@@ -87,7 +92,7 @@ class HeartRateForegroundService : Service() {
             var shown = ""
             val manager = getSystemService(NotificationManager::class.java)
             while (isActive) {
-                val text = LiveText.notification(live.live.value)
+                val text = container.workouts.statusLine() ?: LiveText.notification(live.live.value)
                 if (text != shown) {
                     manager.notify(NOTIFICATION_ID, notification(text))
                     shown = text

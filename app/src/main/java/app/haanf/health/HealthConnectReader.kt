@@ -16,6 +16,8 @@ import androidx.health.connect.client.time.TimeRangeFilter
 import java.io.IOException
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import kotlin.reflect.KClass
 
 /** Read only, and deliberately so: this class has no call that writes to Health Connect. */
@@ -71,32 +73,70 @@ class HealthConnectReader(private val context: Context) {
             TypeResult.Error(e.message ?: "Read failed")
         }
 
-    private suspend fun <T : Record> readFacts(reader: Reader<T>, range: TimeRangeFilter): List<RecordFact> {
-        val facts = mutableListOf<RecordFact>()
+    private suspend fun <T : Record> readFacts(reader: Reader<T>, range: TimeRangeFilter): List<RecordFact> =
+        readAll(reader.type, range).map { record ->
+            val metadata = reader.metadata(record)
+            val device = metadata.device
+            RecordFact(
+                sourcePackage = metadata.dataOrigin.packageName,
+                time = reader.time(record),
+                sampleCount = reader.samples(record),
+                deviceLabel = listOfNotNull(device?.manufacturer, device?.model)
+                    .joinToString(" ")
+                    .ifEmpty { null },
+            )
+        }
+
+    private suspend fun <T : Record> readAll(type: KClass<T>, range: TimeRangeFilter): List<T> {
+        val records = mutableListOf<T>()
         var pageToken: String? = null
         do {
             val page = client.readRecords(
-                ReadRecordsRequest(reader.type, range, pageSize = PAGE_SIZE, pageToken = pageToken),
+                ReadRecordsRequest(type, range, pageSize = PAGE_SIZE, pageToken = pageToken),
             )
-            page.records.mapTo(facts) { record ->
-                val metadata = reader.metadata(record)
-                val device = metadata.device
-                RecordFact(
-                    sourcePackage = metadata.dataOrigin.packageName,
-                    time = reader.time(record),
-                    sampleCount = reader.samples(record),
-                    deviceLabel = listOfNotNull(device?.manufacturer, device?.model)
-                        .joinToString(" ")
-                        .ifEmpty { null },
-                )
-            }
+            records += page.records
             pageToken = page.pageToken
         } while (pageToken != null)
-        return facts
+        return records
     }
+
+    /** Trends for the Vitals screen. A type that is refused or fails reads as no data. */
+    suspend fun vitals(now: Instant): Vitals {
+        val zone = ZoneId.systemDefault()
+        val today = now.atZone(zone).toLocalDate()
+        val range = TimeRangeFilter.between(now.minus(Duration.ofDays(VITALS_WINDOW_DAYS)), now)
+        fun Instant.day(): LocalDate = atZone(zone).toLocalDate()
+
+        val resting = readOrEmpty(RestingHeartRateRecord::class, range)
+            .map { DayValue(it.time.day(), it.beatsPerMinute.toDouble()) }
+        val hrv = readOrEmpty(HeartRateVariabilityRmssdRecord::class, range)
+            .map { DayValue(it.time.day(), it.heartRateVariabilityMillis) }
+        val sleep = readOrEmpty(SleepSessionRecord::class, range)
+            .map { DayValue(it.endTime.day(), Duration.between(it.startTime, it.endTime).toMinutes() / 60.0) }
+
+        return Vitals(
+            restingHeartRate = VitalTrends.trend(VitalTrends.daily(resting) { it.average() }, today),
+            hrv = VitalTrends.trend(VitalTrends.daily(hrv) { it.average() }, today),
+            sleepHours = VitalTrends.trend(VitalTrends.daily(sleep) { it.sum() }, today),
+        )
+    }
+
+    private suspend fun <T : Record> readOrEmpty(type: KClass<T>, range: TimeRangeFilter): List<T> =
+        try {
+            readAll(type, range)
+        } catch (e: SecurityException) {
+            emptyList()
+        } catch (e: RemoteException) {
+            emptyList()
+        } catch (e: IOException) {
+            emptyList()
+        } catch (e: IllegalStateException) {
+            emptyList()
+        }
 
     companion object {
         const val WINDOW_DAYS = 14
+        private const val VITALS_WINDOW_DAYS = 28L
         private const val PAGE_SIZE = 1000
     }
 }

@@ -23,11 +23,6 @@ data class WorkoutPlan(
         }
         return null
     }
-
-    fun outline(): String = steps.groupConsecutive().joinToString(", ")
-
-    private fun List<WorkoutStep>.groupConsecutive(): List<String> =
-        map { "${it.label} ${it.seconds / 60} min" }
 }
 
 data class StepPosition(
