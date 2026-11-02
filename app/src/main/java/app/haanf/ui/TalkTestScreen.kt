@@ -143,7 +143,7 @@ fun TalkTestScreen(container: AppContainer) {
                 if (tests.isEmpty()) {
                     Hint("No recordings yet.")
                 } else {
-                    OutlinedButton(onClick = { container.talkTests.export(tests) }) {
+                    OutlinedButton(onClick = { container.talkTests.export(context, tests) }) {
                         Text("Export all with labels")
                     }
                 }
@@ -164,7 +164,7 @@ fun TalkTestScreen(container: AppContainer) {
                     OutlinedButton(onClick = { player.play(container.talkTests.audioFile(test.fileName).path) }) {
                         Text("Play")
                     }
-                    OutlinedButton(onClick = { container.talkTests.export(listOf(test)) }) {
+                    OutlinedButton(onClick = { container.talkTests.export(context, listOf(test)) }) {
                         Text("Export")
                     }
                     OutlinedButton(onClick = { pendingDelete = test }) {

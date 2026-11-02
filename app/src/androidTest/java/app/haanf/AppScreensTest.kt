@@ -1,15 +1,19 @@
 package app.haanf
 
+import android.accessibilityservice.AccessibilityService
 import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import app.haanf.data.HaanfDatabase
+import app.haanf.data.TalkTestEntity
 import app.haanf.heartrate.HeartRateDevice
 import app.haanf.heartrate.HeartRateReading
 import app.haanf.heartrate.HeartRateSource
@@ -21,6 +25,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -75,6 +80,28 @@ class AppScreensTest {
         compose.onNodeWithText("Talk test").performClick()
         compose.onNodeWithText("Passage").performClick()
         compose.onNodeWithText(TalkTestScript.PASSAGE).assertIsDisplayed()
+    }
+
+    @Test
+    fun exportingARecordingOpensTheShareSheetWithoutCrashing() {
+        runBlocking {
+            container.talkTestDao.insert(
+                TalkTestEntity(
+                    recordedAtMs = 0, testType = "COUNTING", effort = "EASY", activity = "CYCLING",
+                    requestedInput = "PHONE_MIC", actualInput = "the built-in mic", audioSource = "UNPROCESSED",
+                    sampleRateHz = 44_100, durationMs = 1_000, hrStartBpm = 100, hrEndBpm = 110,
+                    hrSessionId = null, fileName = "regression.wav",
+                ),
+            )
+        }
+        compose.onNodeWithText("Talk test").performClick()
+        compose.waitUntil(timeoutMillis = 5_000) {
+            compose.onAllNodesWithText("Export all with labels").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithText("Export all with labels").performClick()
+        compose.waitForIdle()
+        InstrumentationRegistry.getInstrumentation().uiAutomation
+            .performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
     }
 
     @Test

@@ -27,12 +27,15 @@ class TalkTestLibrary(
         ShareFiles.clear(context)
     }
 
-    /** Shares the audio with a CSV of labels, because a WAV alone has no heart rate data. */
-    fun export(tests: List<TalkTestEntity>) {
-        ShareFiles.clear(context)
-        val labels = ShareFiles.write(context, "talk-tests.csv", Csv.talkTests(tests))
+    /**
+     * Shares the audio with a CSV of labels, because a WAV alone has no heart rate data.
+     * [activity] must be an Activity: the share sheet cannot start from the app context.
+     */
+    fun export(activity: Context, tests: List<TalkTestEntity>) {
+        ShareFiles.clear(activity)
+        val labels = ShareFiles.write(activity, "talk-tests.csv", Csv.talkTests(tests))
         val audio = tests.map { audioFile(it.fileName) }.filter { it.exists() }
-        ShareFiles.send(context, audio + labels, "*/*", "Export talk tests")
+        ShareFiles.send(activity, audio + labels, "*/*", "Export talk tests")
     }
 
     companion object {
