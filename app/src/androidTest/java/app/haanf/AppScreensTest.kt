@@ -14,22 +14,28 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import app.haanf.data.BenchmarkEntity
 import app.haanf.data.HaanfDatabase
 import app.haanf.data.ProfileEntity
+import app.haanf.data.WorkoutEntity
 import app.haanf.data.TalkTestEntity
 import app.haanf.heartrate.HeartRateDevice
 import app.haanf.heartrate.HeartRateReading
 import app.haanf.heartrate.HeartRateSource
 import app.haanf.heartrate.SourceState
 import app.haanf.talktest.TalkTestScript
+import app.haanf.training.LocationFix
+import app.haanf.training.SafetyRules
 import app.haanf.ui.HaanfRoot
 import app.haanf.ui.HaanfTheme
+import app.haanf.workout.DistanceSource
 import app.haanf.workout.LiveLink
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -47,8 +53,40 @@ class AppScreensTest {
     private val source = FakeSource()
     private val spoken = CopyOnWriteArrayList<String>()
     private val link = object : LiveLink {
-        override fun begin(device: HeartRateDevice) = container.live.start(device, watchWorkoutRunning = false)
+        override fun begin(device: HeartRateDevice, usesLocation: Boolean) =
+            container.live.start(device, watchWorkoutRunning = false)
         override fun end() = container.live.stop()
+    }
+
+    private val noGps = object : DistanceSource {
+        override fun start(onFix: (LocationFix) -> Unit) = Unit
+        override fun stop() = Unit
+    }
+
+    private fun seedProfile() = runBlocking {
+        container.trainingDao.saveProfile(
+            ProfileEntity(
+                birthYear = 1996,
+                sex = "MALE",
+                weightKg = 75.0,
+                healthCheckClearedAtMs = 1,
+                deviceId = "fake",
+                deviceName = "Fake Watch",
+                deviceSourceKind = "fake",
+            ),
+        )
+    }
+
+    private fun seedBenchmark() = runBlocking {
+        val id = container.trainingDao.insertWorkout(
+            WorkoutEntity(startedAtMs = 0, endedAtMs = 900_000, title = "Walk", activity = "TREADMILL", origin = "BENCHMARK"),
+        )
+        container.trainingDao.insertBenchmark(
+            BenchmarkEntity(
+                workoutId = id, protocol = "rockport-1-mile", takenAtMs = 900_000, timeSeconds = 900,
+                heartRateBpm = 150, ageYears = 30, sex = "MALE", weightKg = 75.0, vo2Max = 41.2,
+            ),
+        )
     }
 
     private fun openLab() {
@@ -59,7 +97,7 @@ class AppScreensTest {
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val database = Room.inMemoryDatabaseBuilder(context, HaanfDatabase::class.java).build()
-        container = AppContainer(context, { source }, database, link, { spoken += it })
+        container = AppContainer(context, { source }, database, link, { spoken += it }, noGps)
         compose.setContent {
             HaanfTheme {
                 HaanfRoot(container)
@@ -131,25 +169,72 @@ class AppScreensTest {
     }
 
     @Test
-    fun firstRunAsksForAYearOfBirthAndThenOffersTheProgram() {
+    fun setupLeadsThroughTheHealthCheckToTheBenchmark() {
         waitForText("About you")
         compose.onNodeWithText("Year of birth").performTextInput("1996")
+        compose.onNodeWithText("Weight in kg").performTextInput("75")
+        compose.onNodeWithText("Male").performClick()
         compose.onNodeWithText("Save").performClick()
-        waitForText("Foundation 8")
-        compose.onNodeWithText("Start this program").performClick()
-        compose.onNodeWithText("Before you start").assertIsDisplayed()
+
+        waitForText("A quick health check")
+        compose.onNodeWithText("Neither applies to me").performClick()
+
+        waitForText("Your first step: a fitness benchmark")
+        compose.onNodeWithText("Your program unlocks after this.").assertExists()
+        assertEquals(0, compose.onAllNodesWithText("Start this program").fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun aHealthConcernPointsToADoctorBeforeTheBenchmark() {
+        runBlocking {
+            container.trainingDao.saveProfile(ProfileEntity(birthYear = 1996, sex = "MALE", weightKg = 75.0))
+        }
+        waitForText("A quick health check")
+        compose.onNodeWithText("One or both apply to me").performClick()
+        compose.onNodeWithText(SafetyRules.HEALTH_CHECK_ADVICE).assertIsDisplayed()
+        compose.onNodeWithText("My doctor has cleared me").performClick()
+        waitForText("Your first step: a fitness benchmark")
+    }
+
+    @Test
+    fun aProfileFromBeforeBenchmarksIsAskedForTheMissingDetails() {
+        runBlocking { container.trainingDao.saveProfile(ProfileEntity(birthYear = 1996)) }
+        waitForText("About you")
+        compose.onNodeWithText("Weight in kg").assertExists()
+    }
+
+    @Test
+    fun aScoredBenchmarkUnlocksTheProgram() {
+        seedProfile()
+        seedBenchmark()
+        waitForText("Your fitness")
+        compose.onNodeWithText("41.2").assertExists()
+        compose.onNodeWithText("Below average").assertDoesNotExist()
+        compose.onNodeWithText("Average").assertExists()
+        compose.onNodeWithText("Start this program").performScrollTo().performClick()
         compose.onNodeWithText("I understand").performClick()
         waitForText("Week 1 of 8, session 1 of 3")
-        compose.onAllNodesWithText("Easy 20 minutes")[0].assertIsDisplayed()
+    }
+
+    @Test
+    fun anAbandonedBenchmarkGivesNoScoreAndKeepsTheProgramLocked() {
+        seedProfile()
+        waitForText("Start benchmark")
+        compose.onNodeWithText("Start benchmark").performClick()
+        waitForText("How it works")
+        compose.onNodeWithText("Treadmill").performClick()
+        compose.onNodeWithText("Go").performScrollTo().performClick()
+        waitForText("Walk as fast as you can. No running.")
+        compose.onNodeWithText("Finish").performScrollTo().performClick()
+        compose.onNodeWithText("No, stop without a score").performClick()
+        waitForText("No score this time")
+        compose.onNodeWithText("Done").performScrollTo().performClick()
+        waitForText("Your first step: a fitness benchmark")
     }
 
     @Test
     fun aFreeWorkoutRunsAndLandsInHistory() {
-        runBlocking {
-            container.trainingDao.saveProfile(
-                ProfileEntity(birthYear = 1996, deviceId = "fake", deviceName = "Fake Watch", deviceSourceKind = "fake"),
-            )
-        }
+        seedProfile()
         waitForText("Start free workout")
         compose.onNodeWithText("Start free workout").performScrollTo().performClick()
         waitForText("Go")

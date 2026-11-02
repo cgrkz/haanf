@@ -1,5 +1,8 @@
 package app.haanf.ui
 
+import android.location.LocationManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -32,7 +36,13 @@ import app.haanf.data.WorkoutEntity
 import app.haanf.heartrate.HeartRateDevice
 import app.haanf.session.LiveText
 import app.haanf.talktest.TrainingActivity
+import app.haanf.training.BenchmarkInputs
+import app.haanf.training.FitnessNorms
+import app.haanf.training.SafetyRules
+import app.haanf.training.WalkOutcome
 import app.haanf.training.Zone
+import app.haanf.workout.BenchmarkRequest
+import app.haanf.workout.WorkoutOrigin
 import app.haanf.workout.WorkoutRequest
 import app.haanf.workout.WorkoutState
 import app.haanf.workout.WorkoutText
@@ -56,6 +66,15 @@ fun StartWorkoutScreen(container: AppContainer, pending: PendingWorkout, onCance
     val current = profile ?: return
     val device = current.device()
     val bluetoothMissing = AppPermissions.missing(context, AppPermissions.bluetooth).isNotEmpty()
+    var locationRequests by remember { mutableIntStateOf(0) }
+    val locationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) {
+        locationRequests++
+    }
+    val locationMissing = remember(locationRequests) {
+        AppPermissions.missing(context, AppPermissions.location).isNotEmpty()
+    }
 
     if (picking || device == null || bluetoothMissing) {
         DevicePicker(
@@ -81,7 +100,11 @@ fun StartWorkoutScreen(container: AppContainer, pending: PendingWorkout, onCance
         return
     }
 
-    val zones = current.zones(container.programs.today())
+    val today = container.programs.today()
+    val zones = current.zones(today)
+    val walksOutdoors = pending.benchmark && activity != TrainingActivity.TREADMILL
+    val gpsOff = walksOutdoors && !context.getSystemService(LocationManager::class.java)
+        .isProviderEnabled(LocationManager.GPS_PROVIDER)
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -95,7 +118,18 @@ fun StartWorkoutScreen(container: AppContainer, pending: PendingWorkout, onCance
                 Hint("Total ${WorkoutText.minutes(plan.totalSeconds)}. Steps are spoken aloud as they begin.")
             }
         }
-        ChoiceRow("Activity", TrainingActivity.entries, activity, true, { it.label }) { activity = it }
+        if (pending.benchmark) {
+            BenchmarkInstructions(walksOutdoors)
+            ChoiceRow(
+                title = "Where",
+                options = listOf(TrainingActivity.OUTDOOR_RUN, TrainingActivity.TREADMILL),
+                selected = activity,
+                enabled = true,
+                label = { if (it == TrainingActivity.TREADMILL) "Treadmill" else "Outdoors" },
+            ) { activity = it }
+        } else {
+            ChoiceRow("Activity", TrainingActivity.entries, activity, true, { it.label }) { activity = it }
+        }
         InfoCard {
             Text(device.name ?: device.id, style = MaterialTheme.typography.titleSmall)
             Hint("Turn on heart rate sharing on the watch before you start.")
@@ -104,8 +138,18 @@ fun StartWorkoutScreen(container: AppContainer, pending: PendingWorkout, onCance
         if (live.sessionId != null) {
             ErrorText("A Lab session is running. Stop it in the Lab tab first.")
         }
+        if (gpsOff) ErrorText("Turn on location on this phone, or use a treadmill.")
+        if (walksOutdoors && locationMissing) {
+            Hint("Haanf uses GPS only to measure the mile. It keeps the distance, never your route.")
+            Button(
+                onClick = { locationLauncher.launch(AppPermissions.location.toTypedArray()) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Allow location")
+            }
+        }
         Button(
-            enabled = live.sessionId == null,
+            enabled = live.sessionId == null && !gpsOff && !(walksOutdoors && locationMissing),
             onClick = {
                 container.workouts.start(
                     WorkoutRequest(
@@ -115,6 +159,11 @@ fun StartWorkoutScreen(container: AppContainer, pending: PendingWorkout, onCance
                         zones = zones,
                         plan = pending.plan,
                         slot = pending.slot,
+                        benchmark = if (pending.benchmark) {
+                            current.benchmarkInputs(today)?.let { BenchmarkRequest(it, usesGps = walksOutdoors) }
+                        } else {
+                            null
+                        },
                     ),
                 )
                 onCancel()
@@ -124,6 +173,23 @@ fun StartWorkoutScreen(container: AppContainer, pending: PendingWorkout, onCance
             Text("Go")
         }
         TextButton(onClick = onCancel) { Text("Back") }
+    }
+}
+
+@Composable
+private fun BenchmarkInstructions(outdoors: Boolean) {
+    InfoCard {
+        Text("How it works", style = MaterialTheme.typography.titleMedium)
+        Text("1. Warm up with 5 minutes of easy walking, then rest for 2 minutes.")
+        Text("2. Walk one mile as fast as you can, without running. Keep one foot on the ground.")
+        Text(
+            if (outdoors) {
+                "3. Choose a flat route. GPS measures the mile, and Haanf stops by itself."
+            } else {
+                "3. Keep the treadmill flat. Tap Finish when it shows 1 mile, or 1.61 km."
+            },
+        )
+        Hint(SafetyRules.BENCHMARK_STOP_RULE)
     }
 }
 
@@ -180,20 +246,56 @@ fun LiveWorkoutScreen(container: AppContainer, running: WorkoutState.Running) {
         if (running.planComplete) {
             InfoCard { Text("Session complete. Finish when you are ready.") }
         }
+        running.request.benchmark?.let { benchmark ->
+            InfoCard {
+                Text("Walk as fast as you can. No running.", style = MaterialTheme.typography.titleMedium)
+                if (benchmark.usesGps) {
+                    Text("%.2f of 1.61 km".format(running.distanceMetres / 1000))
+                    Hint("Haanf stops by itself at one mile.")
+                } else {
+                    Hint("Tap Finish when the treadmill shows 1 mile, or 1.61 km.")
+                }
+                Hint(SafetyRules.BENCHMARK_STOP_RULE)
+            }
+        }
         InfoCard {
             Fact("Last reading", LiveText.age(live, now))
             Fact("Status", live.connection.label)
         }
         if (live.inDropout) ErrorText("No readings are arriving. Haanf keeps trying to reconnect.")
-        OutlinedButton(onClick = { talkTest = true }, modifier = Modifier.fillMaxWidth()) {
-            Text("Talk test")
+        if (running.request.benchmark == null) {
+            OutlinedButton(onClick = { talkTest = true }, modifier = Modifier.fillMaxWidth()) {
+                Text("Talk test")
+            }
         }
         Button(onClick = { confirming = true }, modifier = Modifier.fillMaxWidth()) {
             Text("Finish")
         }
     }
 
-    if (confirming) {
+    if (confirming && running.request.benchmark != null) {
+        AlertDialog(
+            onDismissRequest = { confirming = false },
+            title = { Text("Did you finish the mile?") },
+            text = { Text("The result only counts for a full mile. A shorter walk stays in your history.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    container.workouts.finish()
+                    confirming = false
+                }) {
+                    Text("Yes, score it")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    container.workouts.finish(reason = "abandoned", mileCompleted = false)
+                    confirming = false
+                }) {
+                    Text("No, stop without a score")
+                }
+            },
+        )
+    } else if (confirming) {
         AlertDialog(
             onDismissRequest = { confirming = false },
             title = { Text("Finish this workout?") },
@@ -232,13 +334,55 @@ fun WorkoutFacts(workout: WorkoutEntity) {
 }
 
 @Composable
-fun FinishedWorkoutScreen(workout: WorkoutEntity, onDone: () -> Unit) {
+private fun BenchmarkResultCard(outcome: WalkOutcome?, inputs: BenchmarkInputs?) {
+    InfoCard {
+        when {
+            outcome is WalkOutcome.Scored && inputs != null -> {
+                Text("Estimated VO2max", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "%.1f mL/kg/min".format(outcome.vo2Max),
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.testTag("vo2max"),
+                )
+                Text(FitnessNorms.level(outcome.vo2Max, inputs.ageYears, inputs.sex).label)
+                Hint(
+                    "Typical for your age and sex: %.1f. This is an estimate, not a lab result."
+                        .format(FitnessNorms.median(inputs.ageYears, inputs.sex)),
+                )
+                Fact("Mile time", WorkoutText.clock(outcome.timeSeconds))
+                Fact("Heart rate near the end", "${outcome.heartRateBpm} bpm")
+            }
+            outcome is WalkOutcome.NotScored -> {
+                Text("No score this time", style = MaterialTheme.typography.titleMedium)
+                Text(outcome.reason)
+                Hint("Try again when you are ready. Your history keeps this walk.")
+            }
+            else -> {
+                Text("No score this time", style = MaterialTheme.typography.titleMedium)
+                Hint("Only a full mile is scored. Try again when you are ready.")
+            }
+        }
+    }
+}
+
+@Composable
+fun FinishedWorkoutScreen(
+    workout: WorkoutEntity,
+    outcome: WalkOutcome?,
+    inputs: BenchmarkInputs?,
+    onDone: () -> Unit,
+) {
+    val isBenchmark = workout.origin == WorkoutOrigin.BENCHMARK.name
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("Workout saved", style = MaterialTheme.typography.headlineMedium)
+        Text(
+            if (isBenchmark) "Benchmark finished" else "Workout saved",
+            style = MaterialTheme.typography.headlineMedium,
+        )
         Text(workout.title, style = MaterialTheme.typography.titleMedium)
+        if (isBenchmark) BenchmarkResultCard(outcome, inputs)
         InfoCard { WorkoutFacts(workout) }
         if (workout.programId != null) {
             Text(

@@ -23,15 +23,24 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.haanf.AppContainer
 import app.haanf.data.WorkoutEntity
 import app.haanf.talktest.TrainingActivity
+import app.haanf.workout.WorkoutOrigin
 import kotlinx.coroutines.launch
 
-private fun activityLabel(name: String): String =
-    TrainingActivity.entries.firstOrNull { it.name == name }?.label ?: name
+private fun activityLabel(workout: WorkoutEntity): String {
+    val activity = TrainingActivity.entries.firstOrNull { it.name == workout.activity }
+    return when {
+        workout.origin != WorkoutOrigin.BENCHMARK.name -> activity?.label ?: workout.activity
+        activity == TrainingActivity.TREADMILL -> "Treadmill walk"
+        else -> "Outdoor walk"
+    }
+}
 
 @Composable
 fun HistoryScreen(container: AppContainer) {
     val scope = rememberCoroutineScope()
     val workouts by remember { container.trainingDao.observeWorkouts() }.collectAsStateWithLifecycle(emptyList())
+    val benchmarks by remember { container.trainingDao.observeBenchmarks() }
+        .collectAsStateWithLifecycle(emptyList())
     var pendingDelete by remember { mutableStateOf<WorkoutEntity?>(null) }
 
     LazyColumn(
@@ -47,7 +56,10 @@ fun HistoryScreen(container: AppContainer) {
         items(workouts, key = { it.id }) { workout ->
             InfoCard {
                 Text(workout.title, style = MaterialTheme.typography.titleSmall)
-                Hint("${formatTime(workout.startedAtMs)}, ${activityLabel(workout.activity)}")
+                Hint("${formatTime(workout.startedAtMs)}, ${activityLabel(workout)}")
+                benchmarks.firstOrNull { it.workoutId == workout.id }?.let {
+                    Fact("Estimated VO2max", "%.1f".format(it.vo2Max))
+                }
                 WorkoutFacts(workout)
                 if (workout.programWeek != null) {
                     Hint(

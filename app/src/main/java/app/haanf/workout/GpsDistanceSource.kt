@@ -32,8 +32,6 @@ class GpsDistanceSource(context: Context) : DistanceSource {
         listener = null
     }
 
-    fun isEnabled(): Boolean = manager.isProviderEnabled(LocationManager.GPS_PROVIDER)
-
     private fun Location.toFix() = LocationFix(
         latitude = latitude,
         longitude = longitude,

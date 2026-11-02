@@ -28,6 +28,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.haanf.AppContainer
+import app.haanf.data.BenchmarkEntity
 import app.haanf.data.EnrolmentEntity
 import app.haanf.data.ProfileEntity
 import app.haanf.program.ProgramDefinition
@@ -37,9 +38,12 @@ import app.haanf.program.ProgramRules
 import app.haanf.program.ProgramSession
 import app.haanf.program.Programs
 import app.haanf.program.progress
+import app.haanf.training.BenchmarkInputs
+import app.haanf.training.FitnessNorms
 import app.haanf.training.HeartRateZones
 import app.haanf.training.MaxHeartRate
 import app.haanf.training.SafetyRules
+import app.haanf.training.Sex
 import app.haanf.training.WorkoutPlan
 import app.haanf.training.Zone
 import app.haanf.workout.ProgramSlot
@@ -50,10 +54,19 @@ data class PendingWorkout(
     val title: String,
     val plan: WorkoutPlan?,
     val slot: ProgramSlot?,
+    val benchmark: Boolean = false,
 )
 
 private val LOADING = ProfileEntity(birthYear = 0)
 private const val FREE_WORKOUT_TITLE = "Free workout"
+private const val BENCHMARK_TITLE = "1-mile walk benchmark"
+
+/** What the benchmark needs, or null until setup has collected it. */
+fun ProfileEntity.benchmarkInputs(today: LocalDate): BenchmarkInputs? {
+    val knownSex = sex?.let(Sex::valueOf) ?: return null
+    val weight = weightKg ?: return null
+    return BenchmarkInputs(today.year - birthYear, knownSex, weight)
+}
 
 fun ProfileEntity.zones(today: LocalDate): HeartRateZones =
     HeartRateZones(MaxHeartRate.resolve(today.year - birthYear, measuredMaxBpm))
@@ -68,6 +81,8 @@ fun TodayScreen(container: AppContainer, onStart: (PendingWorkout) -> Unit) {
     val scope = rememberCoroutineScope()
     val profile by remember { container.trainingDao.observeProfile() }.collectAsStateWithLifecycle(LOADING)
     val enrolment by remember { container.programs.enrolment }.collectAsStateWithLifecycle(null)
+    val benchmarks by remember { container.trainingDao.observeBenchmarks() }
+        .collectAsStateWithLifecycle(emptyList())
     var editingProfile by rememberSaveable { mutableStateOf(false) }
 
     val current = profile
@@ -79,12 +94,17 @@ fun TodayScreen(container: AppContainer, onStart: (PendingWorkout) -> Unit) {
     ) {
         Text("Today", style = MaterialTheme.typography.headlineMedium)
 
-        if (current == null || editingProfile) {
-            ProfileCard(current) { birthYear, measuredMax ->
+        val today = container.programs.today()
+        if (current == null || current.benchmarkInputs(today) == null || editingProfile) {
+            ProfileCard(current) { birthYear, sex, weightKg, measuredMax ->
                 scope.launch {
                     container.trainingDao.saveProfile(
-                        (current ?: ProfileEntity(birthYear = birthYear))
-                            .copy(birthYear = birthYear, measuredMaxBpm = measuredMax),
+                        (current ?: ProfileEntity(birthYear = birthYear)).copy(
+                            birthYear = birthYear,
+                            sex = sex.name,
+                            weightKg = weightKg,
+                            measuredMaxBpm = measuredMax,
+                        ),
                     )
                 }
                 editingProfile = false
@@ -92,9 +112,25 @@ fun TodayScreen(container: AppContainer, onStart: (PendingWorkout) -> Unit) {
             return@Column
         }
 
-        val today = container.programs.today()
+        if (current.healthCheckClearedAtMs == null) {
+            HealthCheckCard {
+                scope.launch {
+                    container.trainingDao.saveProfile(
+                        current.copy(healthCheckClearedAtMs = container.clock.nowEpochMs()),
+                    )
+                }
+            }
+            return@Column
+        }
+
+        val startBenchmark = { onStart(PendingWorkout(BENCHMARK_TITLE, null, null, benchmark = true)) }
         val active = enrolment
         val program = active?.let { Programs.byId(it.programId) }
+        if (benchmarks.isEmpty()) {
+            FirstBenchmarkCard(startBenchmark)
+        } else {
+            FitnessCard(benchmarks, startBenchmark)
+        }
         if (active != null && program != null) {
             EnrolledCard(
                 program = program,
@@ -103,7 +139,7 @@ fun TodayScreen(container: AppContainer, onStart: (PendingWorkout) -> Unit) {
                 onStart = onStart,
                 onLeave = { scope.launch { container.programs.leave() } },
             )
-        } else {
+        } else if (benchmarks.isNotEmpty()) {
             EnrolCard(Programs.FOUNDATION_8) { program ->
                 scope.launch { container.programs.enrol(program) }
             }
@@ -129,17 +165,23 @@ fun TodayScreen(container: AppContainer, onStart: (PendingWorkout) -> Unit) {
 }
 
 @Composable
-private fun ProfileCard(existing: ProfileEntity?, onSave: (Int, Int?) -> Unit) {
+private fun ProfileCard(existing: ProfileEntity?, onSave: (Int, Sex, Double, Int?) -> Unit) {
     var birthYear by rememberSaveable { mutableStateOf(existing?.birthYear?.toString().orEmpty()) }
     var measuredMax by rememberSaveable { mutableStateOf(existing?.measuredMaxBpm?.toString().orEmpty()) }
+    var weight by rememberSaveable { mutableStateOf(existing?.weightKg?.toString().orEmpty()) }
+    var sex by rememberSaveable { mutableStateOf(existing?.sex?.let(Sex::valueOf)) }
     val year = birthYear.toIntOrNull()
     val max = measuredMax.toIntOrNull()
+    val kilograms = weight.toDoubleOrNull()
+    val chosenSex = sex
     val valid = year != null && year in 1920..LocalDate.now().year - 13 &&
+        kilograms != null && kilograms in 30.0..250.0 &&
+        chosenSex != null &&
         (measuredMax.isBlank() || (max != null && max in 100..230))
 
     InfoCard {
         Text("About you", style = MaterialTheme.typography.titleMedium)
-        Hint("Used for your heart rate zones. It stays on this phone.")
+        Hint("Used for your heart rate zones and fitness benchmark. It stays on this phone.")
         OutlinedTextField(
             value = birthYear,
             onValueChange = { birthYear = it.filter(Char::isDigit).take(4) },
@@ -149,6 +191,22 @@ private fun ProfileCard(existing: ProfileEntity?, onSave: (Int, Int?) -> Unit) {
             modifier = Modifier.fillMaxWidth(),
         )
         OutlinedTextField(
+            value = weight,
+            onValueChange = { input -> weight = input.filter { it.isDigit() || it == '.' }.take(5) },
+            label = { Text("Weight in kg") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        ChoiceRow(
+            title = "Sex used by the fitness formula",
+            options = Sex.entries.toList<Sex?>(),
+            selected = sex,
+            enabled = true,
+            label = { it?.label.orEmpty() },
+            onSelect = { sex = it },
+        )
+        OutlinedTextField(
             value = measuredMax,
             onValueChange = { measuredMax = it.filter(Char::isDigit).take(3) },
             label = { Text("Measured maximum heart rate (optional)") },
@@ -156,9 +214,70 @@ private fun ProfileCard(existing: ProfileEntity?, onSave: (Int, Int?) -> Unit) {
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
-        Button(onClick = { onSave(requireNotNull(year), max) }, enabled = valid) {
+        Button(
+            onClick = { onSave(requireNotNull(year), requireNotNull(chosenSex), requireNotNull(kilograms), max) },
+            enabled = valid,
+        ) {
             Text("Save")
         }
+    }
+}
+
+/** Only the outcome is saved, never which statement applied. */
+@Composable
+private fun HealthCheckCard(onCleared: () -> Unit) {
+    var flagged by rememberSaveable { mutableStateOf(false) }
+    InfoCard {
+        Text("A quick health check", style = MaterialTheme.typography.titleMedium)
+        Text("Before your fitness benchmark, does either of these apply to you?")
+        SafetyRules.HEALTH_CHECK.forEach { Text("• $it") }
+        if (flagged) {
+            ErrorText(SafetyRules.HEALTH_CHECK_ADVICE)
+            Button(onClick = onCleared, modifier = Modifier.fillMaxWidth()) {
+                Text("My doctor has cleared me")
+            }
+            TextButton(onClick = { flagged = false }) { Text("Back") }
+        } else {
+            Button(onClick = onCleared, modifier = Modifier.fillMaxWidth()) {
+                Text("Neither applies to me")
+            }
+            OutlinedButton(onClick = { flagged = true }, modifier = Modifier.fillMaxWidth()) {
+                Text("One or both apply to me")
+            }
+        }
+    }
+}
+
+@Composable
+private fun FirstBenchmarkCard(onStart: () -> Unit) {
+    InfoCard {
+        Text("Your first step: a fitness benchmark", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "Walk one mile as fast as you can. It takes about 15 minutes, and it tells Haanf " +
+                "how fit you are today, so you can see yourself improve.",
+        )
+        Button(onClick = onStart, modifier = Modifier.fillMaxWidth()) {
+            Text("Start benchmark")
+        }
+        Hint("Your program unlocks after this.")
+    }
+}
+
+@Composable
+private fun FitnessCard(benchmarks: List<BenchmarkEntity>, onRepeat: () -> Unit) {
+    val latest = benchmarks.first()
+    val first = benchmarks.last()
+    val sex = Sex.valueOf(latest.sex)
+    InfoCard {
+        Text("Your fitness", style = MaterialTheme.typography.titleMedium)
+        Text("%.1f".format(latest.vo2Max), style = MaterialTheme.typography.headlineMedium)
+        Hint("Estimated VO2max in mL/kg/min, from ${formatTime(latest.takenAtMs)}")
+        Text(FitnessNorms.level(latest.vo2Max, latest.ageYears, sex).label)
+        Hint("Compared with others of your age and sex. Typical: %.1f.".format(FitnessNorms.median(latest.ageYears, sex)))
+        if (benchmarks.size > 1) {
+            Text("%+.1f since your first benchmark".format(latest.vo2Max - first.vo2Max))
+        }
+        TextButton(onClick = onRepeat) { Text("Repeat benchmark") }
     }
 }
 

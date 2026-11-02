@@ -53,8 +53,16 @@ fun HaanfRoot(container: AppContainer) {
             val starting = pending
             when {
                 current is WorkoutState.Running -> LiveWorkoutScreen(container, current)
-                current is WorkoutState.Finished -> FinishedWorkoutScreen(current.workout) {
-                    container.workouts.dismissSummary()
+                current is WorkoutState.Finished -> {
+                    val profile by remember { container.trainingDao.observeProfile() }
+                        .collectAsStateWithLifecycle(null)
+                    FinishedWorkoutScreen(
+                        workout = current.workout,
+                        outcome = current.benchmark,
+                        inputs = profile?.benchmarkInputs(container.programs.today()),
+                    ) {
+                        container.workouts.dismissSummary()
+                    }
                 }
                 starting != null -> StartWorkoutScreen(container, starting) { pending = null }
                 tab == 0 -> TodayScreen(container) { pending = it }
