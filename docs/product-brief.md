@@ -20,6 +20,8 @@ AI mode stays available during a program, but it avoids hard sessions the day be
 
 Benchmarks are fixed, research-based tests. The AI chooses when and which, never the protocol.
 
+Every user does a benchmark right after setup, because it shows how fit they are before training starts. The program stays locked until it is done. See [benchmarks.md](benchmarks.md).
+
 ## Talk test
 
 The user speaks during a workout and the app assesses comfort from the audio. It is optional for normal workouts. Combined with heart rate, it estimates the personal threshold where talking gets hard.

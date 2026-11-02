@@ -51,6 +51,16 @@ class DistanceTrackerTest {
     }
 
     @Test
+    fun `small steps at walking pace still add up to the full distance`() {
+        val metresPerFix = 1.8
+        val degreesPerFix = metresPerFix / 111_195.0
+        repeat(900) {
+            tracker.add(LocationFix(12.9 + it * degreesPerFix, 77.6, 10f, it * 1000L))
+        }
+        assertEquals(1618.0, tracker.totalMetres, 12.0)
+    }
+
+    @Test
     fun `ignores a fix that goes backwards in time`() {
         tracker.add(fix(0, 10))
         tracker.add(fix(5, 5))

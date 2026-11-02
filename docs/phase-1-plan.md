@@ -29,12 +29,13 @@ Turn the proven pieces into the real training loop: start a workout, follow a fi
 - **Workout history,** shared by both modes.
 - **Program mode:** one fixed 8-week program, and the reset rules from the brief.
 - **Vitals:** resting heart rate, HRV and sleep trends from Health Connect, labelled when stale.
-- **Safety:** a pre-enrolment warning and an alert when heart rate stays above the estimated maximum.
+- **Safety:** a health check, a pre-enrolment warning, and an alert when heart rate stays above the estimated maximum.
+- **First benchmark:** added at the user's request. It follows setup and unlocks the program. See [benchmarks.md](benchmarks.md).
 
 ## Out of scope, and why
 
 - **AI mode and the AI coach.** Phase 0's limits on AI calls, backends and paid services were not lifted, and they need a decision from the user on provider and cost.
-- **Benchmarks.** They need chosen protocols, and the AI decides when to run them.
+- **Repeat benchmarks chosen by the AI,** and tests beyond the first one.
 - **Final design.** The screens stay plain.
 
 The data model leaves room for AI workouts: `Workout.origin` separates them, and only program workouts touch the program clock.
