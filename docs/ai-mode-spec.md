@@ -1,0 +1,114 @@
+# AI mode spec
+
+Agreed with the user on 2 November 2026. Items marked **default** were not asked about. They are choices made during the build, so change them freely.
+
+## What the AI does
+
+1. **Creates workouts.** You say how much time you have and how you feel. It reads your history and recovery, and proposes a workout.
+2. **Guides you during workouts.** A background coach speaks to you while you train.
+3. **Reviews workouts** after you finish.
+4. **Talks with you.** One ongoing chat that remembers what matters.
+5. **Calls for benchmarks.** It says when a repeat is due. The test itself stays fixed.
+
+## Providers and keys
+
+- Bring your own key. Choose OpenRouter or Claude.
+- A subscription can replace this later, so providers sit behind one interface.
+- Keys are encrypted on the phone with the Android Keystore. They are never in the APK, in git or in backups.
+- Without a key, everything else in Haanf works as before.
+- Model is a setting. **Default:** Claude Opus 5.5.
+- **Hinoki:** the `.env` key is for testing the AI loop with made-up data during development only. It is not offered in the app, and real health data never goes to it.
+
+## What the AI receives
+
+Your profile, injuries and health conditions, past workouts and their metrics, benchmarks, resting heart rate, HRV and sleep from Health Connect, your chat facts, and today's check-in. During a workout it also gets current heart rate, and it can request an overview of the heart rate stream.
+
+Never sent: location, device identifiers, or audio. **Default:** setup shows this list and asks for agreement before the first AI call.
+
+This ends Haanf's "no internet" promise. It becomes: data leaves the phone only through your export, or to the AI provider you chose with your own key.
+
+## The background coach
+
+The harness runs while a workout runs, in the foreground service, so it works with the screen off.
+
+1. The workout starts. The coach speaks and chooses when to check in next.
+2. It sleeps while heart rate records.
+3. When it wakes, it tells the AI how the workout is going and the current heart rate. The AI can call a tool to get an overview of the heart rate stream.
+4. The AI replies. The reply is spoken aloud with the phone's offline voice.
+5. It sleeps again.
+
+**Timing:** the AI picks each sleep, within 2 to 10 minutes. These events wake it early: a step change, a heart rate spike, a dropout, or you speaking.
+
+**Limits (default):** at most 15 calls per workout, and at least 60 seconds between calls, except when you speak.
+
+**What it speaks:** only the message the AI passes to a `speak` tool, so a model's private reasoning can never be read aloud.
+
+**If the AI fails:** the workout carries on. After 3 failures in a row the coach says it is offline and stops. Local cues and safety alerts never depend on the AI.
+
+**Which workouts (default):** AI, program and free workouts can use the coach. It stays silent during benchmarks, because the protocol is fixed. It can be switched off before any workout.
+
+## What the coach may change
+
+| Workout | Ease off, based on metrics | Increase, based on metrics | Increase, because you asked |
+| --- | --- | --- | --- |
+| Program | No | No | No |
+| AI | Yes | No | Yes |
+
+Every change must pass the rule check. Enforced in code, not only in the prompt: an increase is accepted only in a turn triggered by you speaking.
+
+## Talking to the coach
+
+- A big button on the workout screen and in the notification. Tap, then speak.
+- Speech is transcribed on the phone, and only text goes to the AI. This needs Android 12 or newer.
+- **Default:** if a phone has no on-device speech, it shows quick replies instead: Too easy, OK, Too hard.
+
+## Talk test
+
+After a hard stretch the coach can ask whether you could talk comfortably. You answer by tap or by voice. No audio leaves the phone. The answer is saved with your heart rate, which builds the data for your talking threshold.
+
+## Chat that remembers
+
+- One ongoing conversation, typed or dictated.
+- The AI can propose saving a lasting fact, such as "left knee sore since October". It is saved only after you confirm.
+- Facts can be marked resolved, and you can edit them.
+- Injuries and conditions can also be entered at setup. **Default:** one optional free-text field.
+
+## Coach tone
+
+Chosen while configuring the coach: warm and encouraging, calm and factual, or tough and pushy.
+
+## The rule check
+
+A separate check, with no AI in it, approves every AI workout and every change.
+
+From the brief:
+
+- Hard sessions are rejected the day before or after a hard program session. Program sessions have no fixed dates, so "the day before" is treated as: the next program session is a hard one.
+
+**Defaults, all open to change:**
+
+- Fits the time you said you have, and is at least 5 minutes long.
+- At most 2 hard sessions in any 7 days, counting every kind of workout.
+- Hard sessions start with at least 5 easy minutes and end with at least 3.
+- No hard work until 6 workouts are logged, and no very hard work until 12.
+- No hard work if you feel 1 or 2 out of 5.
+- A very hard step lasts at most 4 minutes, matching the 4 x 4 protocol.
+- A benchmark repeat is allowed from 28 days after the last one.
+
+**Injuries do not block anything.** The AI reads them and adapts. This was the user's choice.
+
+**When a workout is rejected:** the AI is told why and tries again, twice at most. After that, Haanf offers a plain easy workout that fits your time.
+
+## Reviews
+
+**Default:** a review runs automatically after each workout if a key is set, and appears on the summary and in History. If it fails, a Retry button appears. Benchmarks are reviewed too.
+
+## Where it lives
+
+**Default:** a new Coach tab for AI workouts and chat, separate from the program on Today, because the brief keeps the two apart. AI workouts need a first benchmark, since the AI has no baseline without one.
+
+## Not in this version
+
+- Analysing talk test audio.
+- Subscriptions.
+- A second opinion on safety beyond the rule check. The coach gives fitness guidance, not medical advice.
