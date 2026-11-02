@@ -4,9 +4,11 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.io.File
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -14,14 +16,15 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /** The only hosts the app ever calls. Each one is chosen by the user holding its key. */
-enum class AiProvider(val label: String, val keyHint: String, val defaultModel: String) {
-    OPENROUTER("OpenRouter", "sk-or-…", "anthropic/claude-opus-5.5"),
+enum class AiProvider(
+    val label: String,
+    val keyHint: String,
+    val defaultModel: String,
+    val baseUrl: String? = null,
+) {
+    OPENROUTER("OpenRouter", "sk-or-…", "anthropic/claude-opus-5.5", "https://openrouter.ai/api/v1"),
     CLAUDE("Claude", "sk-ant-…", "claude-opus-5-5"),
-    ;
-
-    companion object {
-        const val OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-    }
+    HINOKI("Hinoki (testing)", "Hinoki key", "hinoki-offensive", "https://inference.hinoki.security/v1"),
 }
 
 enum class CoachTone(val label: String, val description: String, val instruction: String) {
@@ -79,6 +82,28 @@ class AiSettingsStore(context: Context) : LlmProvider {
         _settings.value = settings
     }
 
+    /**
+     * Takes a key placed in private storage over adb, so a tester's key never has to be built
+     * into the APK. The file holds the provider, the model and the key, one per line, and is
+     * deleted whatever happens. Only someone with adb access to the phone can place it.
+     */
+    fun importDevKey(file: File) {
+        if (!file.exists()) return
+        try {
+            val lines = file.readLines().map { it.trim() }
+            val provider = AiProvider.valueOf(lines[0])
+            val tone = _settings.value?.tone ?: CoachTone.WARM
+            save(AiSettings(provider, lines[1], tone), lines[2])
+            Log.i(TAG, "Imported a key for ${provider.name}")
+        } catch (e: IllegalArgumentException) {
+            Log.w(TAG, "Ignored a key file with an unknown provider")
+        } catch (e: IndexOutOfBoundsException) {
+            Log.w(TAG, "Ignored an incomplete key file")
+        } finally {
+            file.delete()
+        }
+    }
+
     fun updateTone(tone: CoachTone) {
         val current = _settings.value ?: return
         prefs.edit().putString(KEY_TONE, tone.name).apply()
@@ -102,14 +127,19 @@ class AiSettingsStore(context: Context) : LlmProvider {
     }
 
     companion object {
+        const val DEV_KEY_FILE = "dev_ai_key"
+        private const val TAG = "HaanfAi"
         private const val KEY_PROVIDER = "provider"
         private const val KEY_MODEL = "model"
         private const val KEY_TONE = "tone"
 
-        fun build(settings: AiSettings, apiKey: String): LlmClient = when (settings.provider) {
-            AiProvider.OPENROUTER ->
-                OpenAiCompatibleClient(AiProvider.OPENROUTER_BASE_URL, apiKey, settings.model)
-            AiProvider.CLAUDE -> ClaudeClient(apiKey, settings.model)
+        fun build(settings: AiSettings, apiKey: String): LlmClient {
+            val baseUrl = settings.provider.baseUrl
+            return if (baseUrl != null) {
+                OpenAiCompatibleClient(baseUrl, apiKey, settings.model)
+            } else {
+                ClaudeClient(apiKey, settings.model)
+            }
         }
     }
 }

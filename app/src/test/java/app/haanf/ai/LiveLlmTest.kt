@@ -21,7 +21,7 @@ class LiveLlmTest {
         ?.substringAfter("=")?.trim()?.trim('"', '\'')
 
     private val client by lazy {
-        OpenAiCompatibleClient("https://inference.hinoki.security/v1", requireNotNull(key), "hinoki-offensive")
+        OpenAiCompatibleClient(requireNotNull(AiProvider.HINOKI.baseUrl), requireNotNull(key), AiProvider.HINOKI.defaultModel)
     }
 
     private val today: LocalDate = LocalDate.of(2026, 11, 2)
@@ -45,6 +45,23 @@ class LiveLlmTest {
         val outcome = planner.plan(CheckIn(30, 4, "", TrainingActivity.TREADMILL))
         println("LIVE planner outcome: $outcome")
         assertTrue(outcome is PlanOutcome.Approved || outcome is PlanOutcome.Fallback)
+    }
+
+    @Test
+    fun `a real chat reply and review are clean text`() = runBlocking {
+        live()
+        val chat = client.send(
+            LlmRequest(CoachPrompts.chat(CoachTone.WARM), listOf(LlmItem.User("I slept badly. Should I still run today?"))),
+        )
+        println("LIVE chat text: ${chat.text}")
+        val review = client.send(
+            LlmRequest(
+                CoachPrompts.reviewer(CoachTone.WARM),
+                listOf(LlmItem.User("The workout to review: Easy 30 minutes, 31:04. Average 128, highest 141 bpm.")),
+            ),
+        )
+        println("LIVE review text: ${review.text}")
+        assertTrue(chat.text != null && review.text != null)
     }
 
     @Test

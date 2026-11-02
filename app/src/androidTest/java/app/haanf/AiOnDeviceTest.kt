@@ -18,11 +18,13 @@ import com.anthropic.models.beta.messages.BetaMessage
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 
 /** Things only a real Android runtime can prove. */
 @RunWith(AndroidJUnit4::class)
@@ -38,6 +40,34 @@ class AiOnDeviceTest {
         assertFalse(stored.contains("not-a-real-key"))
         vault.clear()
         assertNull(vault.read())
+    }
+
+    @Test
+    fun aKeyPlacedOverAdbIsEncryptedAndItsFileRemoved() {
+        val store = AiSettingsStore(context)
+        val file = File(context.filesDir, AiSettingsStore.DEV_KEY_FILE)
+        file.writeText("HINOKI\nhinoki-offensive\nnot-a-real-key-but-long-enough\n")
+
+        store.importDevKey(file)
+
+        assertFalse(file.exists())
+        assertEquals(AiProvider.HINOKI, store.settings.value?.provider)
+        assertEquals("hinoki-offensive", store.settings.value?.model)
+        assertEquals("not-a-real-key-but-long-enough", KeyVault(context).read())
+        val stored = context.getSharedPreferences("ai_key", Context.MODE_PRIVATE).all.values.joinToString()
+        assertFalse(stored.contains("not-a-real-key"))
+        assertNotNull(store.client())
+        store.clear()
+    }
+
+    @Test
+    fun aDamagedKeyFileIsIgnoredAndStillRemoved() {
+        val store = AiSettingsStore(context)
+        val file = File(context.filesDir, AiSettingsStore.DEV_KEY_FILE)
+        file.writeText("NOT_A_PROVIDER\n")
+        store.importDevKey(file)
+        assertFalse(file.exists())
+        assertNull(store.settings.value)
     }
 
     @Test

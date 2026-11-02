@@ -63,7 +63,7 @@ To add a wearable, implement `HeartRateSource` and return it from a `HeartRateSo
 - Never declare a Health Connect write permission. Network hosts are limited to the AI providers. `ManifestPolicyTest` enforces both.
 - Data leaves the phone only through `ShareFiles` from a user tapping export, or to the AI provider the user chose with their own key. Backups stay off.
 - Never send audio, location or device details to an AI. `CoachSnapshot` has no place for them.
-- `.env` holds a development key. Never read it from app code, print it, or commit it. Hinoki is for testing with made-up data only.
+- `.env` holds a personal Hinoki key. Never print it, commit it, or build it into an APK, because APKs get shared with friends. It reaches a phone only through the adb steps in `docs/install-on-a-phone.md`.
 - Every AI workout and change must pass `AiWorkoutRules`. Increases may only follow the athlete asking.
 - Never report hardware behaviour as verified unless it was tested on a real device. The emulator checks builds and screens only.
 - Do not reverse-engineer a wearable that lacks the standard heart rate profile. Report it instead.

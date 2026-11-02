@@ -10,7 +10,7 @@ Built on 2 November 2026.
 | --- | --- | --- |
 | Unit tests | Pass | 208 of 208 |
 | Emulator tests | Pass | 31 of 31, including all database migrations and the full loop from plan to coach to review, with a scripted AI |
-| Planner and coach against a real model | Pass (development) | Hinoki key with made-up data, over the same Chat Completions path OpenRouter uses. It called the heart rate overview, then spoke, and chose its own next check-in. Its plan passed the rule check |
+| Planner, coach, chat and reviews against a real model | Pass (development) | Hinoki with made-up data, over the same Chat Completions path OpenRouter uses. It called the heart rate overview, then spoke, and chose its own next check-in. Its plan passed the rule check, and chat and review text was clean |
 | Claude and OpenRouter from Android | Pass, as far as a fake key can show | Real calls from the emulator reached both, and both rejected a fake key, which Haanf reported correctly |
 | Upgrade on the real Pixel 6 | Pass (real) | Installed with no crash. Database moved from version 3 to 4, and all sessions, samples, the talk test, the workout and the profile survived |
 | A real OpenRouter or Claude key | Not tested | None was available. Whether a real call succeeds is unproven |
@@ -34,7 +34,8 @@ Built on 2 November 2026.
 - Keys are encrypted on the phone with the Android Keystore. They are never in the APK, in git or in backups.
 - Without a key, everything else in Haanf works as before.
 - Model is a setting. **Default:** Claude Opus 5.5.
-- **Hinoki:** the `.env` key is for testing the AI loop with made-up data during development only. It is not offered in the app, and real health data never goes to it.
+- **Hinoki** is a third provider, for the user's own testing. It was first planned as development-only, and the user then asked for it in the app on 3 November 2026. When selected, real profile, health and workout data goes to it. It is a security-focused model, so its coaching quality is unproven.
+- A tester's key can be placed on a phone over adb, into private storage. The app encrypts it and deletes the file. This keeps a personal key out of an APK that gets shared with friends. See `docs/install-on-a-phone.md`.
 
 ## What the AI receives
 

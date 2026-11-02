@@ -76,7 +76,8 @@ Haanf talks to the internet only for the AI provider the user chose, with their 
 
 - **Providers sit behind `LlmClient`,** so a subscription can replace bring-your-own-key later.
 - **OpenRouter uses plain HTTP, and Claude uses the official SDK.** The SDK adds about 13 MB to the debug APK. Its default sends the key as a Bearer token, so `ClaudeClient` sets `x-api-key` explicitly, as Anthropic documents for API keys.
-- **Keys are encrypted with the Android Keystore,** and `.env` is never built into the app. A test fails if the development endpoint appears in app code.
+- **Keys are encrypted with the Android Keystore,** and `.env` is never built into the app. A test fails if its key appears anywhere under `app/src`.
+- **Hinoki is selectable in the app,** at the user's request, for their own testing. Debug builds accept a key file placed over adb, which they encrypt and delete, because only someone with adb access to that phone can place it.
 - **The rule check has no AI in it.** It decides, and the model only ever receives its reasons.
 - **Increases are refused in code,** in any turn the athlete's own words did not trigger.
 - **The coach is heard only through its `speak` tool.** Some models put private reasoning in their reply text, which must never be read aloud.

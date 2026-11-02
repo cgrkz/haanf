@@ -32,17 +32,20 @@ class ManifestPolicyTest {
     }
 
     @Test
-    fun `the only network hosts in the app are the ones the user chose a key for`() {
+    fun `the only network hosts in the app are the providers a user can choose`() {
         val sources = File("src/main/java").walkTopDown().filter { it.extension == "kt" }
         val hosts = sources.flatMap { Regex("https://[a-zA-Z0-9.-]+").findAll(it.readText()).map { match -> match.value } }
             .toSet()
-        assertEquals(setOf("https://openrouter.ai"), hosts)
+        assertEquals(setOf("https://openrouter.ai", "https://inference.hinoki.security"), hosts)
     }
 
     @Test
-    fun `no secret from the dev env file is built into the app`() {
-        val sources = File("src/main/java").walkTopDown().filter { it.extension == "kt" }
-        assertFalse(sources.any { it.readText().contains("hinoki", ignoreCase = true) })
+    fun `the development key is never built into the app`() {
         assertFalse(File("build.gradle.kts").readText().contains(".env"))
+        val envFile = File("../.env")
+        if (!envFile.exists()) return
+        val key = envFile.readLines().first { it.startsWith("LLM_KEY=") }.substringAfter("=").trim().trim('"', '\'')
+        val tracked = File("src").walkTopDown().filter { it.isFile }
+        assertFalse(tracked.any { it.readText(Charsets.ISO_8859_1).contains(key) })
     }
 }

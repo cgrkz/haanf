@@ -26,6 +26,18 @@ Later updates install over the top only if they are built on the same Mac, becau
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
+## Load a key for testing
+
+Friends type their own key into the Coach tab. To load the Hinoki key from `.env` onto a connected phone without building it into the APK, run this from the repo root. It writes a file into Haanf's private storage, and Haanf encrypts the key and deletes the file on its next launch.
+
+```bash
+python3 -c "import re;k=[re.match(r'LLM_KEY=(.*)',l).group(1).strip().strip('\"\'') for l in open('.env') if l.startswith('LLM_KEY=')][0];print('HINOKI\nhinoki-offensive\n'+k)" | adb shell "run-as app.haanf sh -c 'cat > files/dev_ai_key'"
+adb shell am force-stop app.haanf
+adb shell am start -n app.haanf/.MainActivity
+```
+
+The key is never in the command line or the APK. When Hinoki is selected, your real profile, health and workout data goes to it.
+
 ## Phones that kill background apps
 
 Some manufacturers stop foreground services to save battery. If a screen-off test stops collecting samples, set Haanf to unrestricted battery use in **Settings > Apps > Haanf > Battery**, then repeat the test. A session ended by Android shows `app_process_ended` under "Ended by".

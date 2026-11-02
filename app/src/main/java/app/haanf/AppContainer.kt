@@ -40,6 +40,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.io.File
 import java.time.Instant
 
 /** Wires the app together by hand. One instance lives as long as the process. */
@@ -130,6 +131,7 @@ class AppContainer(
         hrDao.samples(sessionId).map { TimedBpm(it.receivedAtMs, it.bpm) }
 
     init {
+        if (BuildConfig.DEBUG) aiSettings.importDevKey(File(appContext.filesDir, AiSettingsStore.DEV_KEY_FILE))
         coach.attach()
         reviews.attach()
         sessionScope.launch {
