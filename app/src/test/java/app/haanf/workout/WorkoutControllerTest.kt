@@ -12,6 +12,7 @@ import app.haanf.training.Zone
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import org.junit.After
@@ -195,13 +196,21 @@ class WorkoutControllerTest {
         )
         store.samples = listOf(TimedBpm(START_MS, 120), TimedBpm(START_MS + 90_000, 130))
 
-        scope.launchRecover()
+        runBlocking { controller.recoverInterrupted() }
 
         val recovered = store.closed.single()
         assertEquals(START_MS + 90_000, recovered.endedAtMs)
         assertEquals("app_process_ended", recovered.endReason)
         assertTrue(recovered.countedForProgram)
         assertEquals(listOf("foundation-8"), store.credited)
+    }
+
+    @Test
+    fun `a double tap on start opens one workout`() {
+        controller.start(freeRequest)
+        controller.start(freeRequest)
+        scheduler.runCurrent()
+        assertEquals(1, link.begun.size)
     }
 
     @Test
@@ -228,10 +237,6 @@ class WorkoutControllerTest {
         finish()
         controller.dismissSummary()
         assertEquals(WorkoutState.Idle, controller.state.value)
-    }
-
-    private fun CoroutineScope.launchRecover() {
-        kotlinx.coroutines.runBlocking { controller.recoverInterrupted() }
     }
 
     private class FakeLink : LiveLink {

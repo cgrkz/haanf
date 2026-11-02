@@ -42,6 +42,12 @@ room {
 }
 
 dependencies {
+    constraints {
+        implementation(libs.kotlinx.serialization.core) {
+            because("Tests are pinned to the app's version, and room-testing needs this one")
+        }
+    }
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)

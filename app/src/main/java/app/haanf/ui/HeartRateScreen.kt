@@ -50,11 +50,20 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun HeartRateScreen(container: AppContainer) {
+    val context = LocalContext.current
     val live by container.live.live.collectAsStateWithLifecycle()
     var picking by rememberSaveable { mutableStateOf(false) }
     when {
         live.sessionId != null -> LivePanel(container, live)
-        picking -> DevicePicker(container, onClose = { picking = false })
+        picking -> DevicePicker(
+            container = container,
+            showWatchWorkoutSwitch = true,
+            onClose = { picking = false },
+            onPick = { device, watchWorkout ->
+                HeartRateForegroundService.start(context, device, watchWorkout)
+                picking = false
+            },
+        )
         else -> SessionHistory(container, onScan = { picking = true })
     }
 }
@@ -107,7 +116,7 @@ private fun LivePanel(container: AppContainer, live: LiveSnapshot) {
 private fun SessionHistory(container: AppContainer, onScan: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val sessions by container.hrDao.observeSessions().collectAsStateWithLifecycle(emptyList())
+    val sessions by remember { container.hrDao.observeSessions() }.collectAsStateWithLifecycle(emptyList())
     var pendingDelete by remember { mutableStateOf<HrSessionSummary?>(null) }
 
     LazyColumn(
@@ -177,8 +186,14 @@ private fun SessionHistory(container: AppContainer, onScan: () -> Unit) {
     }
 }
 
+/** Finds a device and permission to use it. Workouts and the Lab both start here. */
 @Composable
-private fun DevicePicker(container: AppContainer, onClose: () -> Unit) {
+fun DevicePicker(
+    container: AppContainer,
+    showWatchWorkoutSwitch: Boolean,
+    onClose: () -> Unit,
+    onPick: (HeartRateDevice, Boolean) -> Unit,
+) {
     val context = LocalContext.current
     var permissionRequests by remember { mutableIntStateOf(0) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -227,13 +242,15 @@ private fun DevicePicker(container: AppContainer, onClose: () -> Unit) {
                         label = { Text("All nearby (diagnostic)") },
                     )
                 }
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("Workout running on the watch")
-                    Switch(checked = watchWorkout, onCheckedChange = { watchWorkout = it })
+                if (showWatchWorkoutSwitch) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("Workout running on the watch")
+                        Switch(checked = watchWorkout, onCheckedChange = { watchWorkout = it })
+                    }
                 }
                 Hint("Pixel Watch 2: quick settings > Connected Fitness > Connect.")
                 Hint("Amazfit: Zepp app > Device > General > Activity heart rate sharing.")
@@ -249,15 +266,10 @@ private fun DevicePicker(container: AppContainer, onClose: () -> Unit) {
         }
         items(shown, key = { it.address }) { device ->
             DeviceCard(device, showDetails = showAll) {
-                connect(context, device.toHeartRateDevice(), watchWorkout)
-                onClose()
+                onPick(device.toHeartRateDevice(), watchWorkout)
             }
         }
     }
-}
-
-private fun connect(context: android.content.Context, device: HeartRateDevice, watchWorkout: Boolean) {
-    HeartRateForegroundService.start(context, device, watchWorkout)
 }
 
 private fun exportScan(context: android.content.Context, snapshot: ScanSnapshot) {

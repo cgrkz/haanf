@@ -91,10 +91,14 @@ class WorkoutController(
     @Volatile
     private var finishing = false
 
+    @Volatile
+    private var starting = false
+
     val isRunning: Boolean get() = _state.value is WorkoutState.Running && !finishing
 
     fun start(request: WorkoutRequest) {
-        if (_state.value is WorkoutState.Running) return
+        if (starting || _state.value is WorkoutState.Running) return
+        starting = true
         scope.launch {
             val slot = request.slot
             val draft = WorkoutEntity(
@@ -113,6 +117,7 @@ class WorkoutController(
             link.begin(request.device)
             finishing = false
             _state.value = WorkoutState.Running(workout, request, clock.elapsedMs())
+            starting = false
             announcer.say(openingLine(request))
             ticker = launch { runTicks(request) }
         }

@@ -50,7 +50,7 @@ fun TalkTestScreen(container: AppContainer) {
     val scope = rememberCoroutineScope()
     val state by container.recorder.state.collectAsStateWithLifecycle()
     val live by container.live.live.collectAsStateWithLifecycle()
-    val tests by container.talkTestDao.observeAll().collectAsStateWithLifecycle(emptyList())
+    val tests by remember { container.talkTestDao.observeAll() }.collectAsStateWithLifecycle(emptyList())
 
     var type by rememberSaveable { mutableStateOf(TalkTestType.COUNTING) }
     var effort by rememberSaveable { mutableStateOf(Effort.EASY) }
