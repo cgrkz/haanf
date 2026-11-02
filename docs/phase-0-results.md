@@ -2,7 +2,7 @@
 
 Last updated 2 November 2026.
 
-**Status:** the Pixel Watch 2 streams live heart rate to Haanf over the standard profile, confirmed on real hardware with no workout running on the watch. The phone microphone records during a live session. The workout, screen-off, dropout and earbud tests are still to run, the Amazfit is untested, and the Health Connect contents have not been captured.
+**Status:** the Pixel Watch 2 streams live heart rate to Haanf over the standard profile while paired to the phone, with no workout running on the watch. All five data types reach Health Connect through the Fitbit app. The phone microphone records during a live session. The workout, long screen-off, dropout, CSV export and earbud tests are still to run, and the Amazfit is untested.
 
 Result meanings:
 
@@ -19,18 +19,19 @@ The test phone is a Pixel 6 on Android API 37.1, connected by wireless debugging
 | --- | --- | --- | --- |
 | Pixel 6 | Install debug APK | Pass (real) | `adb install` reported Success |
 | Pixel 6 | Launch | Pass (real) | Haanf started, no crash in its logs |
-| Pixel 6 | Stability during the test session | Pass (real) | No Haanf crashes in the phone's crash log |
+| Pixel 6 | Stability during the test sessions | Pass (real) | No Haanf crashes in the phone's crash log |
+| Pixel 6 | Export through the share sheet | Pass (real) | The scan list and Health Connect report both reached the Mac |
 
 ### Test 1: live heart rate
 
 | Device | Test | Result | Evidence |
 | --- | --- | --- | --- |
 | Pixel 6 | Bluetooth scan and permission prompts | Pass (real) | Bluetooth and notification access granted through the app, watch found and connected |
-| Pixel Watch 2 | Appears in the diagnostic view, and which services it advertises | Partial (real) | Listed as "Google Pixel Watch 2". Advertised services not captured, because no scan list was exported. Services found after connecting are listed below. |
-| Pixel Watch 2 | Standard profile, no workout on the watch | Pass (real) | Session 1: connected on the first attempt, 162 readings over 5 minutes 9 seconds, 76 to 87 bpm, no dropouts. Session was still running when read. |
+| Pixel Watch 2 | Appears in the diagnostic view, and which services it advertises | Pass (real) | Exported scan list: advertises Heart Rate (0x180D), connectable, signal -53 dBm, no manufacturer or service data |
+| Pixel Watch 2 | Standard profile, no workout on the watch | Pass (real) | Session 1: connected on the first attempt, 162 readings over 5 minutes 9 seconds, 76 to 87 bpm, no dropouts. Session 2 repeated this. Session 1's raw samples were later deleted on the phone, so its figures here are the record. |
 | Pixel Watch 2 | Standard profile, workout running on the watch | Not tested | |
-| Pixel Watch 2 | Connects while paired to the same phone | Partial (real) | Connected with no pairing activity logged. Whether the watch is paired to this Pixel 6 still needs confirming. |
-| Pixel Watch 2 | Screen off for 10 minutes | Not tested | No gap over 3 seconds so far, but nothing records whether the screen was off |
+| Pixel Watch 2 | Connects while paired to the same phone | Pass (real) | Scan list shows it paired to this Pixel 6, and neither session logged any pairing activity |
+| Pixel Watch 2 | Screen off | Partial (real) | You saw samples keep arriving with the screen off. How long was not recorded, so a 10-minute run is still open. Nothing in a session records the screen state. |
 | Pixel Watch 2 | Dropout and automatic reconnect | Not tested | No dropout has happened yet |
 | Pixel Watch 2 | CSV export | Not tested | No export made on the phone |
 | Amazfit GTR 2e | Appears in the diagnostic view, and which services it advertises | Not tested | |
@@ -54,7 +55,7 @@ The test phone is a Pixel 6 on Android API 37.1, connected by wireless debugging
 | Device | Test | Result | Evidence |
 | --- | --- | --- | --- |
 | Pixel 6 | Read-only permission screen | Pass (real) | All five read permissions granted through the app. The app requests no write permissions. |
-| Pixel Watch 2 | What it provides: 14-day report by type and source | Not tested | Haanf shows this on screen only, and no report was exported |
+| Pixel Watch 2 | What it provides: 14-day report by type and source | Pass (real) | Exported report, summarised below |
 | Amazfit GTR 2e / Zepp | What it provides: 14-day report by type and source | Not tested | |
 
 ## What the Pixel Watch 2 showed
@@ -62,15 +63,35 @@ The test phone is a Pixel 6 on Android API 37.1, connected by wireless debugging
 From session 1 on the Pixel 6, with no workout marked as running on the watch.
 
 - **Standard profile:** yes. The heart rate service (0x180D) answered and sent notifications.
-- **Connection:** about 2.3 seconds, first attempt. The first reading came about 6.6 seconds later.
-- **Reading rate:** about one every 2 seconds. Gaps were always about 1.5 or 3 seconds, so an age of up to 3 seconds on screen is normal.
-- **No RR intervals.** None of the 162 readings carried them, so live HRV cannot come from this stream. Recovery HRV has to come from Health Connect, if the watch provides it there.
+- **Advertising:** it advertises 0x180D while paired to the phone, so the problem reported by Zwift staff did not happen here.
+- **Connection:** about 2.3 seconds on the first attempt, with the first reading about 6.6 seconds later. Session 2 connected and had its first reading in about a second.
+- **Reading rate:** about one every 2 seconds. Gaps were always about 1.5 or 3 seconds in both sessions, so an age of up to 3 seconds on screen is normal.
+- **No RR intervals.** No reading in either session carried them, so live HRV cannot come from this stream. Recovery HRV has to come from Health Connect.
 - **No skin contact signal.** The watch does not report it, so Haanf cannot tell from the stream that the watch is off the wrist.
 - **Services after connecting:** Generic Access, Generic Attribute, Device Information, Heart Rate, Battery, and two vendor services: `e73e0001-ef1b-4e74-8291-2e4f3164f3b5` and `3675c0ff-21a6-4f96-9984-09d4f10c64f9`. Haanf does not use the vendor services.
 - **Heart rate accuracy:** not checked against a reference. Values look plausible for rest.
 - **Audio source:** the Pixel 6 does not offer the unprocessed microphone source, so Haanf used `VOICE_RECOGNITION`. Later breath analysis should allow for any processing that adds.
 
 No code changes were needed after this test.
+
+## What Health Connect holds for the Pixel Watch 2
+
+Last 14 days, read on the Pixel 6 on 2 November at 11:29 UTC. Every record came from one app, Fitbit / Google Health (`com.fitbit.FitbitMobile`).
+
+| Data type | Records | Newest (UTC) | Device named |
+| --- | --- | --- | --- |
+| Heart rate | 9,576, holding 259,214 samples | 2 Nov 10:55 | None |
+| Resting heart rate | 11 | 1 Nov 18:30 | None |
+| HRV (RMSSD) | 575 | 29 Oct 03:20 | Pixel Watch 2 |
+| Sleep | 9 | 29 Oct 03:29 | Pixel Watch 2 |
+| Exercise sessions | 5 | 31 Oct 15:52 | Pixel Watch 2, Google Pixel Watch 2 |
+
+- **All five types are available.** HRV is there, which covers the missing RR intervals in the live stream.
+- **HRV looks tied to sleep.** The newest HRV and sleep records end 9 minutes apart, and there are about 64 HRV records per sleep record. This is an inference from counts, not a confirmed rule.
+- **Recovery data can go stale.** HRV and sleep stopped on 29 October, four days before this report, while heart rate continued. The cause is unknown. AI mode must cope with recovery data that is days old or missing.
+- **Health Connect is not live.** The newest heart rate was 34 minutes old, with a live session recently running. Workouts need the Bluetooth stream.
+- **Heart rate and resting heart rate name no device,** so only the source app identifies them. A second wearable feeding the same app could not be told apart this way.
+- **Zepp data is not covered here.** That needs the Amazfit owner's phone.
 
 ## Software checks
 
@@ -107,22 +128,24 @@ All three are fixed.
 
 ## Known risks for the real test
 
-- **The watch is paired to this phone.** Zwift staff say a watch paired at OS level may not be seen by an app. The Pixel Watch 2 did connect, but it still needs confirming that it is paired to this Pixel 6.
 - **Amazfit GTR 2e is unconfirmed.** No public documentation was found for the Activity heart rate sharing setting on this model. Haanf will report its services if it does not use the standard profile, and goes no further.
-- **Android may cache a watch's old service list.** If a paired watch reports no 0x180D even with Connected Fitness on, this is a likely cause.
 - **Two identical watches nearby could be confused.** Reconnection falls back to matching by name. Any address change is logged.
 - **The Pixel Watch 2 may limit connections.** Google states a limit of 2 for Pixel Watch 3 and newer. It states none for the Watch 2.
 
 ## How to run the remaining tests
 
-Session 1 was still running when these results were read. Stop it from Haanf or its notification, because it keeps the phone awake and costs battery on both devices.
+Session 2 was still running when these results were read. It keeps the phone awake and costs battery on both devices, so stop it when finished.
 
-Quickest next steps on the Pixel 6:
+Still open on the Pixel 6, in the order that takes least effort:
 
-1. On the Health data tab, tap **Export this report**, then close the share sheet. Haanf keeps a copy that can be read for this document.
-2. In the scan screen, open **All nearby (diagnostic)** with Connected Fitness on, and tap **Export this list**.
-3. Confirm that the watch is paired to this Pixel 6.
-4. Run the workout, screen-off and dropout steps below.
+1. Lock the phone for 10 minutes during a session, then stop it. Say when you locked and unlocked it.
+2. Start a workout on the watch, turn **Workout running on the watch** on, and run a session.
+3. Walk away from the phone with the watch for a minute, to force a dropout.
+4. Tap **Export CSV** on a session.
+5. Record the other effort levels and the reading passage, and try one with the phone locked.
+6. Try Bluetooth earbuds, if available.
+
+The Amazfit tests need its owner.
 
 ### Before you start
 
