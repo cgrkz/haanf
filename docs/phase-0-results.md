@@ -2,7 +2,7 @@
 
 Last updated 2 November 2026.
 
-**Status:** the Pixel Watch 2 streams live heart rate to Haanf over the standard profile while paired to the phone, with no workout running on the watch. All five data types reach Health Connect through the Fitbit app. The phone microphone records during a live session. The workout, long screen-off, dropout, CSV export and earbud tests are still to run, and the Amazfit is untested.
+**Status:** Phase 0 closed on 2 November 2026, when the user decided that was enough testing to move on. The Pixel Watch 2 streams live heart rate to Haanf over the standard profile while paired to the phone, with no workout running on the watch, and it kept streaming with the screen off. All five data types reach Health Connect through the Fitbit app. The phone microphone records during a live session. The tests still marked Not tested were deferred, and the Amazfit is untested.
 
 Result meanings:
 
@@ -28,10 +28,10 @@ The test phone is a Pixel 6 on Android API 37.1, connected by wireless debugging
 | --- | --- | --- | --- |
 | Pixel 6 | Bluetooth scan and permission prompts | Pass (real) | Bluetooth and notification access granted through the app, watch found and connected |
 | Pixel Watch 2 | Appears in the diagnostic view, and which services it advertises | Pass (real) | Exported scan list: advertises Heart Rate (0x180D), connectable, signal -53 dBm, no manufacturer or service data |
-| Pixel Watch 2 | Standard profile, no workout on the watch | Pass (real) | Session 1: connected on the first attempt, 162 readings over 5 minutes 9 seconds, 76 to 87 bpm, no dropouts. Session 2 repeated this. Session 1's raw samples were later deleted on the phone, so its figures here are the record. |
+| Pixel Watch 2 | Standard profile, no workout on the watch | Pass (real) | Session 1: connected on the first attempt, 162 readings over 5 minutes 9 seconds, 76 to 87 bpm, no dropouts. Session 2 repeated this with 221 readings, 76 to 88 bpm. Session 1's raw samples were later deleted on the phone, so its figures here are the record. |
 | Pixel Watch 2 | Standard profile, workout running on the watch | Not tested | |
 | Pixel Watch 2 | Connects while paired to the same phone | Pass (real) | Scan list shows it paired to this Pixel 6, and neither session logged any pairing activity |
-| Pixel Watch 2 | Screen off | Partial (real) | You saw samples keep arriving with the screen off. How long was not recorded, so a 10-minute run is still open. Nothing in a session records the screen state. |
+| Pixel Watch 2 | Screen off | Pass (real), shorter than planned | Session 2 ran 7 minutes 3 seconds with a steady 31 readings a minute, no gap over 3 seconds and no dropouts, and the user reports locking the phone during it. The locked stretch was at most those 7 minutes, short of the 10-minute target, and nothing in a session records the screen state. Longer runs are untested. |
 | Pixel Watch 2 | Dropout and automatic reconnect | Not tested | No dropout has happened yet |
 | Pixel Watch 2 | CSV export | Not tested | No export made on the phone |
 | Amazfit GTR 2e | Appears in the diagnostic view, and which services it advertises | Not tested | |
@@ -134,16 +134,14 @@ All three are fixed.
 
 ## How to run the remaining tests
 
-Session 2 was still running when these results were read. It keeps the phone awake and costs battery on both devices, so stop it when finished.
+Testing paused here on 2 November 2026. These remain open for whenever they matter:
 
-Still open on the Pixel 6, in the order that takes least effort:
-
-1. Lock the phone for 10 minutes during a session, then stop it. Say when you locked and unlocked it.
-2. Start a workout on the watch, turn **Workout running on the watch** on, and run a session.
-3. Walk away from the phone with the watch for a minute, to force a dropout.
-4. Tap **Export CSV** on a session.
-5. Record the other effort levels and the reading passage, and try one with the phone locked.
-6. Try Bluetooth earbuds, if available.
+1. A long session with the phone locked, 30 minutes or more.
+2. A session with a workout running on the watch, with **Workout running on the watch** turned on.
+3. Walking away from the phone with the watch for a minute, to force a dropout.
+4. **Export CSV** on a session.
+5. The other effort levels and the reading passage, including one recording with the phone locked.
+6. Bluetooth earbuds, if available.
 
 The Amazfit tests need its owner.
 
