@@ -2,6 +2,21 @@
 
 Phase 0 proved that the Pixel Watch 2 streams live heart rate, so the user asked to move on from testing and keep building. No next phase had been defined, so this one comes from the product brief. Redirect it freely.
 
+## Status
+
+Built on 2 November 2026.
+
+| Area | Result | Evidence |
+| --- | --- | --- |
+| Unit tests | Pass | 99 of 99, from a fresh clone with no cache |
+| Emulator tests | Pass | 16 of 16, including the database migration and program saving |
+| Full workout flow | Pass (simulated) | First launch, enrol, program session against a simulated strap, background, notification, early finish, history |
+| Upgrade on the real Pixel 6 | Pass (real) | Installed over Phase 0 data with no crash. Session 2 with its 221 readings, the talk test and its audio file all survived |
+| Spoken cues | Pass on the emulator only | The speech engine ran. Not heard on a real phone |
+| Workout with the real watch | Not tested | |
+| Vitals with real Health Connect data | Not tested | |
+| A workout counting towards the program, end to end | Not tested | Each part is tested, but no run reached 80% of a plan |
+
 ## Goal
 
 Turn the proven pieces into the real training loop: start a workout, follow a fixed program, and keep a history. The Phase 0 tools stay available in a Lab tab.
