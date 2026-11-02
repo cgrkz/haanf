@@ -57,6 +57,9 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.health.connect)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.anthropic.java)
+    implementation(libs.okhttp)
     ksp(libs.androidx.room.compiler)
 
     testImplementation(libs.junit)
