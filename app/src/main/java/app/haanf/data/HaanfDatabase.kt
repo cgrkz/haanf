@@ -16,18 +16,23 @@ import androidx.room.RoomDatabase
         WorkoutEntity::class,
         EnrolmentEntity::class,
         BenchmarkEntity::class,
+        CoachMessageEntity::class,
+        CoachFactEntity::class,
+        TalkCheckEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 2, to = 3),
+        AutoMigration(from = 3, to = 4),
     ],
 )
 abstract class HaanfDatabase : RoomDatabase() {
     abstract fun hrDao(): HrDao
     abstract fun talkTestDao(): TalkTestDao
     abstract fun trainingDao(): TrainingDao
+    abstract fun coachDao(): CoachDao
 
     companion object {
         fun create(context: Context): HaanfDatabase =

@@ -2,10 +2,23 @@ package app.haanf
 
 import android.content.Context
 import android.os.Build
+import app.haanf.ai.AiSettingsStore
+import app.haanf.ai.CoachChat
+import app.haanf.ai.CoachData
+import app.haanf.ai.CoachHarness
+import app.haanf.ai.CoachTone
+import app.haanf.ai.CoachWorkoutLink
+import app.haanf.ai.LlmProvider
+import app.haanf.ai.OnDeviceSpeech
+import app.haanf.ai.ReviewRunner
+import app.haanf.ai.WorkoutPlanner
+import app.haanf.ai.WorkoutReviewer
 import app.haanf.core.Clock
 import app.haanf.core.SystemTimeClock
 import app.haanf.data.HaanfDatabase
 import app.haanf.data.RoomSessionStore
+import app.haanf.data.TalkAnswer
+import app.haanf.data.TalkCheckEntity
 import app.haanf.health.HealthConnectReader
 import app.haanf.heartrate.HeartRateSourceFactory
 import app.haanf.heartrate.ble.BleDiscovery
@@ -14,6 +27,7 @@ import app.haanf.session.LiveSessionController
 import app.haanf.program.ProgramTracker
 import app.haanf.talktest.TalkTestLibrary
 import app.haanf.talktest.TalkTestRecorder
+import app.haanf.training.TimedBpm
 import app.haanf.workout.Announcer
 import app.haanf.workout.DistanceSource
 import app.haanf.workout.GpsDistanceSource
@@ -26,6 +40,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.time.Instant
 
 /** Wires the app together by hand. One instance lives as long as the process. */
 class AppContainer(
@@ -35,6 +50,7 @@ class AppContainer(
     link: LiveLink = ServiceLiveLink(context.applicationContext),
     announcer: Announcer = SpeechAnnouncer(context.applicationContext),
     distance: DistanceSource = GpsDistanceSource(context.applicationContext),
+    llmOverride: LlmProvider? = null,
 ) {
     private val appContext = context.applicationContext
     private val sessionScope = CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1))
@@ -43,6 +59,7 @@ class AppContainer(
     val hrDao = database.hrDao()
     val talkTestDao = database.talkTestDao()
     val trainingDao = database.trainingDao()
+    val coachDao = database.coachDao()
 
     val live = LiveSessionController(
         scope = sessionScope,
@@ -75,7 +92,46 @@ class AppContainer(
         currentBpm = { live.freshBpm() },
     )
 
+    val aiSettings = AiSettingsStore(appContext)
+    val llm: LlmProvider = llmOverride ?: aiSettings
+    private val tone: () -> CoachTone = { aiSettings.settings.value?.tone ?: CoachTone.WARM }
+    val speech = OnDeviceSpeech(appContext)
+    val coachData = CoachData(trainingDao, coachDao, programs, { health.vitals(Instant.now()) }, clock)
+    val planner = WorkoutPlanner(llm, coachData, tone)
+    val chat = CoachChat(llm, coachDao, coachData, clock, tone)
+    val reviews = ReviewRunner(
+        scope = sessionScope,
+        workouts = workouts,
+        training = trainingDao,
+        reviewer = WorkoutReviewer(llm, coachData, tone) { samples(it) },
+    )
+    val coach = CoachHarness(
+        scope = CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1)),
+        llm = llm,
+        workouts = workouts,
+        data = coachData,
+        link = object : CoachWorkoutLink {
+            override fun bpm(): Int? = live.freshBpm()
+            override fun inDropout(): Boolean = live.live.value.inDropout
+            override fun sessionId(): Long? = live.live.value.sessionId
+            override suspend fun samples(sessionId: Long): List<TimedBpm> = this@AppContainer.samples(sessionId)
+            override suspend fun saveTalkCheck(workoutId: Long, bpm: Int?, answer: TalkAnswer) {
+                coachDao.insertTalkCheck(
+                    TalkCheckEntity(workoutId = workoutId, atMs = clock.nowEpochMs(), bpm = bpm, answer = answer.name),
+                )
+            }
+        },
+        clock = clock,
+        announcer = announcer,
+        tone = tone,
+    )
+
+    private suspend fun samples(sessionId: Long): List<TimedBpm> =
+        hrDao.samples(sessionId).map { TimedBpm(it.receivedAtMs, it.bpm) }
+
     init {
+        coach.attach()
+        reviews.attach()
         sessionScope.launch {
             hrDao.closeOpenSessions(reason = "app_process_ended")
             workouts.recoverInterrupted()

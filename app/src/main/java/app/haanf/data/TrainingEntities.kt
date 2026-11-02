@@ -1,5 +1,6 @@
 package app.haanf.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -44,6 +45,9 @@ data class WorkoutEntity(
     val veryHardSeconds: Int = 0,
     val noReadingSeconds: Int = 0,
     val countedForProgram: Boolean = false,
+    @ColumnInfo(defaultValue = "0") val plannedHard: Boolean = false,
+    @ColumnInfo(defaultValue = "0") val coached: Boolean = false,
+    val review: String? = null,
 )
 
 @Entity(tableName = "program_enrolment")

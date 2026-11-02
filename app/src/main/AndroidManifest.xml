@@ -9,6 +9,9 @@
         tools:targetApi="s" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
+    <!-- Only for the AI provider the user chose, with their own key. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!-- Bluetooth on Android 11 and older. -->
     <uses-permission
         android:name="android.permission.BLUETOOTH"
@@ -50,6 +53,9 @@
         <intent>
             <action android:name="android.intent.action.TTS_SERVICE" />
         </intent>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
     </queries>
 
     <application
@@ -60,6 +66,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
+        android:usesCleartextTraffic="false"
         android:theme="@style/Theme.Haanf"
         tools:targetApi="s">
 
@@ -97,7 +104,7 @@
         <service
             android:name=".session.HeartRateForegroundService"
             android:exported="false"
-            android:foregroundServiceType="connectedDevice|location" />
+            android:foregroundServiceType="connectedDevice|location|microphone" />
 
         <service
             android:name=".talktest.TalkTestService"

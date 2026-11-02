@@ -381,7 +381,7 @@ class WorkoutControllerTest {
         val usedLocation = mutableListOf<Boolean>()
         var ended = 0
 
-        override fun begin(device: HeartRateDevice, usesLocation: Boolean) {
+        override fun begin(device: HeartRateDevice, usesLocation: Boolean, usesMicrophone: Boolean) {
             begun += device
             usedLocation += usesLocation
         }

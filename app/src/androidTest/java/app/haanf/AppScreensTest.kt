@@ -53,7 +53,7 @@ class AppScreensTest {
     private val source = FakeSource()
     private val spoken = CopyOnWriteArrayList<String>()
     private val link = object : LiveLink {
-        override fun begin(device: HeartRateDevice, usesLocation: Boolean) =
+        override fun begin(device: HeartRateDevice, usesLocation: Boolean, usesMicrophone: Boolean) =
             container.live.start(device, watchWorkoutRunning = false)
         override fun end() = container.live.stop()
     }

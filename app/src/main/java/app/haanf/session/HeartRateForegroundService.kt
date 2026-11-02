@@ -1,5 +1,6 @@
 package app.haanf.session
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -7,6 +8,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
@@ -45,6 +47,7 @@ class HeartRateForegroundService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> begin(intent)
+            ACTION_TALK -> container.speech.listen(container.coach::userSaid) { }
             ACTION_STOP ->
                 if (container.workouts.isRunning) {
                     // Finishing the workout comes back here once it has been saved.
@@ -65,7 +68,10 @@ class HeartRateForegroundService : Service() {
                 this,
                 NOTIFICATION_ID,
                 notification("Connecting"),
-                foregroundTypes(intent.getBooleanExtra(EXTRA_USES_LOCATION, false)),
+                foregroundTypes(
+                    usesLocation = intent.getBooleanExtra(EXTRA_USES_LOCATION, false),
+                    usesMicrophone = intent.getBooleanExtra(EXTRA_USES_MICROPHONE, false),
+                ),
             )
         } catch (e: RuntimeException) {
             Log.e(TAG, "Could not enter the foreground", e)
@@ -82,10 +88,17 @@ class HeartRateForegroundService : Service() {
         startNotifier()
     }
 
-    private fun foregroundTypes(usesLocation: Boolean): Int {
+    private fun foregroundTypes(usesLocation: Boolean, usesMicrophone: Boolean): Int {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return 0
         val location = if (usesLocation) ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION else 0
-        return ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE or location
+        val hasMic = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
+        val microphone = if (usesMicrophone && hasMic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+        } else {
+            0
+        }
+        return ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE or location or microphone
     }
 
     private fun startNotifier() {
@@ -136,6 +149,12 @@ class HeartRateForegroundService : Service() {
             Intent(this, HeartRateForegroundService::class.java).setAction(ACTION_STOP),
             PendingIntent.FLAG_IMMUTABLE,
         )
+        val talk = PendingIntent.getService(
+            this,
+            1,
+            Intent(this, HeartRateForegroundService::class.java).setAction(ACTION_TALK),
+            PendingIntent.FLAG_IMMUTABLE,
+        )
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_heart)
             .setContentTitle("Haanf live heart rate")
@@ -143,6 +162,7 @@ class HeartRateForegroundService : Service() {
             .setContentIntent(open)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
+            .apply { if (container.coach.status.value.active) addAction(0, "Talk to coach", talk) }
             .addAction(0, "Stop", stop)
             .build()
     }
@@ -156,11 +176,13 @@ class HeartRateForegroundService : Service() {
         private const val TAG = "HaanfService"
         private const val ACTION_START = "app.haanf.action.START_LIVE"
         private const val ACTION_STOP = "app.haanf.action.STOP_LIVE"
+        private const val ACTION_TALK = "app.haanf.action.TALK_TO_COACH"
         private const val EXTRA_DEVICE_ID = "device_id"
         private const val EXTRA_DEVICE_NAME = "device_name"
         private const val EXTRA_SOURCE_KIND = "source_kind"
         private const val EXTRA_WATCH_WORKOUT = "watch_workout"
         private const val EXTRA_USES_LOCATION = "uses_location"
+        private const val EXTRA_USES_MICROPHONE = "uses_microphone"
         private const val CHANNEL_ID = "live_heart_rate"
         private const val NOTIFICATION_ID = 1
         private const val NOTIFICATION_REFRESH_MS = 2_000L
@@ -171,6 +193,7 @@ class HeartRateForegroundService : Service() {
             device: HeartRateDevice,
             watchWorkoutRunning: Boolean,
             usesLocation: Boolean = false,
+            usesMicrophone: Boolean = false,
         ) {
             val intent = Intent(context, HeartRateForegroundService::class.java)
                 .setAction(ACTION_START)
@@ -179,6 +202,7 @@ class HeartRateForegroundService : Service() {
                 .putExtra(EXTRA_SOURCE_KIND, device.sourceKind)
                 .putExtra(EXTRA_WATCH_WORKOUT, watchWorkoutRunning)
                 .putExtra(EXTRA_USES_LOCATION, usesLocation)
+                .putExtra(EXTRA_USES_MICROPHONE, usesMicrophone)
             ContextCompat.startForegroundService(context, intent)
         }
 

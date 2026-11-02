@@ -33,6 +33,18 @@ interface TrainingDao {
     @Query("SELECT * FROM workout WHERE endedAtMs IS NULL")
     suspend fun unfinishedWorkouts(): List<WorkoutEntity>
 
+    @Query("SELECT * FROM workout WHERE endedAtMs IS NOT NULL ORDER BY startedAtMs DESC LIMIT :limit")
+    suspend fun recentWorkouts(limit: Int): List<WorkoutEntity>
+
+    @Query("SELECT COUNT(*) FROM workout WHERE endedAtMs IS NOT NULL")
+    suspend fun workoutCount(): Int
+
+    @Query("SELECT * FROM workout WHERE id = :id")
+    suspend fun workout(id: Long): WorkoutEntity?
+
+    @Query("UPDATE workout SET review = :review WHERE id = :id")
+    suspend fun saveReview(id: Long, review: String)
+
     @Query("DELETE FROM workout WHERE id = :id")
     suspend fun deleteWorkout(id: Long)
 
@@ -41,6 +53,9 @@ interface TrainingDao {
 
     @Query("SELECT * FROM benchmark ORDER BY takenAtMs DESC")
     fun observeBenchmarks(): Flow<List<BenchmarkEntity>>
+
+    @Query("SELECT * FROM benchmark ORDER BY takenAtMs DESC")
+    suspend fun benchmarks(): List<BenchmarkEntity>
 
     @Query("SELECT * FROM program_enrolment WHERE active = 1 LIMIT 1")
     fun observeEnrolment(): Flow<EnrolmentEntity?>

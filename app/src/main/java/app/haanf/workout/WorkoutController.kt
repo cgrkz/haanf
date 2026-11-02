@@ -27,13 +27,19 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-enum class WorkoutOrigin { FREE, PROGRAM, BENCHMARK }
+enum class WorkoutOrigin { FREE, PROGRAM, BENCHMARK, AI }
 
 data class ProgramSlot(val programId: String, val week: Int, val session: Int)
 
 data class BenchmarkRequest(
     val inputs: BenchmarkInputs,
     val usesGps: Boolean,
+)
+
+/** A workout the AI planned, with what the rule check needs for any later change. */
+data class AiWorkoutContext(
+    val minutesAvailable: Int,
+    val feeling: Int,
 )
 
 data class WorkoutRequest(
@@ -44,6 +50,9 @@ data class WorkoutRequest(
     val plan: WorkoutPlan? = null,
     val slot: ProgramSlot? = null,
     val benchmark: BenchmarkRequest? = null,
+    val ai: AiWorkoutContext? = null,
+    val coached: Boolean = false,
+    val plannedHard: Boolean = false,
 )
 
 sealed interface WorkoutState {
@@ -68,7 +77,7 @@ sealed interface WorkoutState {
 
 /** Starts and stops the heart rate stream without this class knowing how it works. */
 interface LiveLink {
-    fun begin(device: HeartRateDevice, usesLocation: Boolean)
+    fun begin(device: HeartRateDevice, usesLocation: Boolean, usesMicrophone: Boolean)
     fun end()
 }
 
@@ -134,6 +143,7 @@ class WorkoutController(
                 activity = request.activity.name,
                 origin = when {
                     request.benchmark != null -> WorkoutOrigin.BENCHMARK
+                    request.ai != null -> WorkoutOrigin.AI
                     slot != null -> WorkoutOrigin.PROGRAM
                     else -> WorkoutOrigin.FREE
                 }.name,
@@ -143,15 +153,17 @@ class WorkoutController(
                 plannedSeconds = request.plan?.totalSeconds,
                 zoneMaxBpm = request.zones.maxBpm,
                 deviceName = request.device.name,
+                plannedHard = request.plannedHard,
+                coached = request.coached,
             )
             val workout = draft.copy(id = store.open(draft))
             val usesGps = request.benchmark?.usesGps == true
-            link.begin(request.device, usesLocation = usesGps)
+            link.begin(request.device, usesLocation = usesGps, usesMicrophone = request.coached)
             finishing = false
             _state.value = WorkoutState.Running(workout, request, clock.elapsedMs())
             starting = false
             announcer.say(openingLine(request))
-            ticker = launch { runTicks(request) }
+            ticker = launch { runTicks(request.zones) }
             if (usesGps) {
                 tracker = DistanceTracker()
                 distance.start { fix -> scope.launch { onFix(fix) } }
@@ -178,6 +190,17 @@ class WorkoutController(
                 ?.let { score(finished, it.inputs, sessionId, endedAt) }
             _state.value = WorkoutState.Finished(finished, outcome)
             announcer.say(if (running.request.benchmark != null) "Benchmark complete." else "Workout saved.")
+        }
+    }
+
+    /** Swaps what is left of a running AI workout, after the rule check has approved it. */
+    fun replacePlan(plan: WorkoutPlan) {
+        scope.launch {
+            val running = _state.value as? WorkoutState.Running ?: return@launch
+            _state.value = running.copy(
+                request = running.request.copy(plan = plan),
+                workout = running.workout.copy(plannedSeconds = plan.totalSeconds),
+            )
         }
     }
 
@@ -278,14 +301,15 @@ class WorkoutController(
         countedForProgram = counted,
     )
 
-    private suspend fun runTicks(request: WorkoutRequest) {
-        val monitor = OverMaxMonitor(request.zones.maxBpm)
+    private suspend fun runTicks(zones: HeartRateZones) {
+        val monitor = OverMaxMonitor(zones.maxBpm)
         var attachedSession = false
-        var announcedStep = request.plan?.positionAt(0)?.index
+        var announcedStep = (_state.value as? WorkoutState.Running)?.request?.plan?.positionAt(0)?.index
         while (scope.isActive) {
             val running = _state.value as? WorkoutState.Running ?: return
+            val plan = running.request.plan
             val elapsedSeconds = ((clock.elapsedMs() - running.startedElapsedMs) / 1000).toInt()
-            val position = request.plan?.positionAt(elapsedSeconds)
+            val position = plan?.positionAt(elapsedSeconds)
 
             if (!attachedSession) {
                 currentSessionId()?.let {
@@ -297,7 +321,7 @@ class WorkoutController(
                 announcedStep = position.index
                 announcer.say(WorkoutText.stepLine(position.step))
             }
-            val planComplete = request.plan != null && position == null
+            val planComplete = plan != null && position == null
             if (planComplete && !running.planComplete) {
                 announcer.say("Session complete. Finish when you are ready.")
             }

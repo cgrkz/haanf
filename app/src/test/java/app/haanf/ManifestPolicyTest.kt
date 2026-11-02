@@ -6,7 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
-/** Guards the promises the product makes: read-only health data and nothing backed up. */
+/** Guards the promises the product makes: read-only health data, no backups, and known hosts only. */
 class ManifestPolicyTest {
     private val manifest = File("src/main/AndroidManifest.xml").readText()
 
@@ -27,7 +27,22 @@ class ManifestPolicyTest {
     }
 
     @Test
-    fun `has no internet permission, so data cannot leave except by export`() {
-        assertFalse(manifest.contains("android.permission.INTERNET"))
+    fun `allows encrypted connections only`() {
+        assertTrue(manifest.contains("android:usesCleartextTraffic=\"false\""))
+    }
+
+    @Test
+    fun `the only network hosts in the app are the ones the user chose a key for`() {
+        val sources = File("src/main/java").walkTopDown().filter { it.extension == "kt" }
+        val hosts = sources.flatMap { Regex("https://[a-zA-Z0-9.-]+").findAll(it.readText()).map { match -> match.value } }
+            .toSet()
+        assertEquals(setOf("https://openrouter.ai"), hosts)
+    }
+
+    @Test
+    fun `no secret from the dev env file is built into the app`() {
+        val sources = File("src/main/java").walkTopDown().filter { it.extension == "kt" }
+        assertFalse(sources.any { it.readText().contains("hinoki", ignoreCase = true) })
+        assertFalse(File("build.gradle.kts").readText().contains(".env"))
     }
 }

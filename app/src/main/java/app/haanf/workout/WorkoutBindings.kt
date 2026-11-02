@@ -11,8 +11,14 @@ import app.haanf.session.HeartRateForegroundService
 import app.haanf.training.TimedBpm
 
 class ServiceLiveLink(private val context: Context) : LiveLink {
-    override fun begin(device: HeartRateDevice, usesLocation: Boolean) =
-        HeartRateForegroundService.start(context, device, watchWorkoutRunning = false, usesLocation)
+    override fun begin(device: HeartRateDevice, usesLocation: Boolean, usesMicrophone: Boolean) =
+        HeartRateForegroundService.start(
+            context,
+            device,
+            watchWorkoutRunning = false,
+            usesLocation = usesLocation,
+            usesMicrophone = usesMicrophone,
+        )
 
     override fun end() = HeartRateForegroundService.stop(context)
 }
