@@ -8,12 +8,16 @@ Built on 2 November 2026.
 
 | Area | Result | Evidence |
 | --- | --- | --- |
-| Unit tests | Pass | 99 of 99, from a fresh clone with no cache |
-| Emulator tests | Pass | 16 of 16, including the database migration and program saving |
-| Full workout flow | Pass (simulated) | First launch, enrol, program session against a simulated strap, background, notification, early finish, history |
-| Upgrade on the real Pixel 6 | Pass (real) | Installed over Phase 0 data with no crash. Session 2 with its 221 readings, the talk test and its audio file all survived |
+| Unit tests | Pass | 127 of 127, from a fresh clone with no cache |
+| Emulator tests | Pass | 21 of 21, including both database migrations and program saving |
+| Full workout flow | Pass (simulated) | Enrol, program session against a simulated strap, background, notification, early finish, history |
+| Setup and health check | Pass (simulated) | From a clean install to the first benchmark |
+| Outdoor benchmark | Pass (simulated) | A fake GPS route counted up, Haanf stopped itself at the mile, and it refused to score a 3-minute walk |
+| Treadmill benchmark | Pass (simulated) | An 8:38 walk scored 63.6, matching the equation by hand, and unlocked the program |
+| Upgrade on the real Pixel 6 | Partial (real) | The build before benchmarks installed over Phase 0 data, which survived. The benchmark build is not installed yet, because wireless debugging switched off. Its migration passed on the emulator only |
 | Spoken cues | Pass on the emulator only | The speech engine ran. Not heard on a real phone |
-| Workout with the real watch | Not tested | |
+| Workout or benchmark with the real watch | Not tested | |
+| GPS on a real phone | Not tested | |
 | Vitals with real Health Connect data | Not tested | |
 | A workout counting towards the program, end to end | Not tested | Each part is tested, but no run reached 80% of a plan |
 
