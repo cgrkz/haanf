@@ -1,11 +1,17 @@
 package app.haanf.workout
 
 import app.haanf.core.Clock
+import app.haanf.data.BenchmarkEntity
 import app.haanf.data.WorkoutEntity
 import app.haanf.heartrate.HeartRateDevice
 import app.haanf.talktest.TrainingActivity
+import app.haanf.training.BenchmarkInputs
 import app.haanf.training.HeartRateZones
+import app.haanf.training.LocationFix
+import app.haanf.training.RockportWalkTest
+import app.haanf.training.Sex
 import app.haanf.training.TimedBpm
+import app.haanf.training.WalkOutcome
 import app.haanf.training.WorkoutPlan
 import app.haanf.training.WorkoutStep
 import app.haanf.training.Zone
@@ -33,6 +39,7 @@ class WorkoutControllerTest {
     private val store = FakeStore()
     private val link = FakeLink()
     private val spoken = mutableListOf<String>()
+    private val gps = FakeGps()
     private var sessionId: Long? = null
     private var bpm: Int? = null
     private val controller = WorkoutController(
@@ -41,6 +48,7 @@ class WorkoutControllerTest {
         link = link,
         clock = clock,
         announcer = { spoken += it },
+        distance = gps,
         currentSessionId = { sessionId },
         currentBpm = { bpm },
     )
@@ -62,6 +70,25 @@ class WorkoutControllerTest {
         slot = ProgramSlot("foundation-8", 3, 1),
     )
     private val freeRequest = programRequest.copy(title = "Free workout", plan = null, slot = null)
+    private val inputs = BenchmarkInputs(ageYears = 40, sex = Sex.MALE, weightKg = 81.65)
+    private val treadmillBenchmark = freeRequest.copy(
+        title = "1-mile walk benchmark",
+        benchmark = BenchmarkRequest(inputs, usesGps = false),
+    )
+    private val outdoorBenchmark = freeRequest.copy(
+        title = "1-mile walk benchmark",
+        benchmark = BenchmarkRequest(inputs, usesGps = true),
+    )
+
+    private fun steadySamples(seconds: Int, bpm: Int) =
+        (0..seconds step 2).map { TimedBpm(START_MS + it * 1000L, bpm) }
+
+    private fun walk(metresPerFix: Int, fixes: Int) {
+        repeat(fixes) {
+            gps.moveBy(metresPerFix)
+            run(2)
+        }
+    }
 
     @After
     fun tearDown() = scope.cancel()
@@ -206,6 +233,91 @@ class WorkoutControllerTest {
     }
 
     @Test
+    fun `a finished benchmark is scored and saved`() {
+        sessionId = 9
+        store.samples = steadySamples(900, 150)
+        start(treadmillBenchmark)
+        run(900)
+        finish()
+
+        val state = controller.state.value as WorkoutState.Finished
+        val outcome = state.benchmark as WalkOutcome.Scored
+        assertEquals(37.8, outcome.vo2Max, 0.2)
+        assertEquals(WorkoutOrigin.BENCHMARK.name, finished.origin)
+        val saved = store.benchmarks.single()
+        assertEquals(finished.id, saved.workoutId)
+        assertEquals(RockportWalkTest.ID, saved.protocol)
+        assertEquals(150, saved.heartRateBpm)
+        assertEquals("Benchmark complete.", spoken.last())
+    }
+
+    @Test
+    fun `an abandoned benchmark keeps the workout but saves no score`() {
+        sessionId = 9
+        store.samples = steadySamples(900, 150)
+        start(treadmillBenchmark)
+        run(900)
+        controller.finish(mileCompleted = false)
+        scheduler.runCurrent()
+
+        assertNull((controller.state.value as WorkoutState.Finished).benchmark)
+        assertTrue(store.benchmarks.isEmpty())
+        assertEquals(1, store.closed.size)
+    }
+
+    @Test
+    fun `a benchmark never touches the program clock`() {
+        sessionId = 9
+        store.samples = steadySamples(900, 150)
+        start(treadmillBenchmark.copy(plan = plan, slot = null))
+        run(900)
+        finish()
+        assertTrue(store.credited.isEmpty())
+    }
+
+    @Test
+    fun `a treadmill benchmark does not use location`() {
+        start(treadmillBenchmark)
+        assertEquals(false, link.usedLocation.single())
+        assertEquals(0, gps.starts)
+    }
+
+    @Test
+    fun `an outdoor benchmark measures distance and stops itself at the mile`() {
+        sessionId = 9
+        store.samples = steadySamples(1_200, 140)
+        start(outdoorBenchmark)
+        assertEquals(true, link.usedLocation.single())
+        assertEquals(1, gps.starts)
+
+        walk(metresPerFix = 4, fixes = 200)
+        val running = controller.state.value as WorkoutState.Running
+        assertEquals(796.0, running.distanceMetres, 10.0)
+
+        walk(metresPerFix = 4, fixes = 220)
+        assertTrue(spoken.contains("Halfway."))
+        assertEquals("mile_complete", finished.endReason)
+        assertEquals(1, gps.stops)
+        assertEquals(1, store.benchmarks.size)
+    }
+
+    @Test
+    fun `speaks halfway only once`() {
+        start(outdoorBenchmark)
+        walk(metresPerFix = 4, fixes = 300)
+        assertEquals(1, spoken.count { it == "Halfway." })
+    }
+
+    @Test
+    fun `gps stops if the user finishes an outdoor benchmark early`() {
+        start(outdoorBenchmark)
+        walk(metresPerFix = 4, fixes = 10)
+        controller.finish(mileCompleted = false)
+        scheduler.runCurrent()
+        assertEquals(1, gps.stops)
+    }
+
+    @Test
     fun `a double tap on start opens one workout`() {
         controller.start(freeRequest)
         controller.start(freeRequest)
@@ -239,12 +351,39 @@ class WorkoutControllerTest {
         assertEquals(WorkoutState.Idle, controller.state.value)
     }
 
+    private class FakeGps : DistanceSource {
+        private var onFix: ((LocationFix) -> Unit)? = null
+        private var latitude = 12.9
+        private var elapsedMs = 0L
+        var starts = 0
+        var stops = 0
+
+        override fun start(onFix: (LocationFix) -> Unit) {
+            starts++
+            this.onFix = onFix
+            onFix(LocationFix(latitude, 77.6, 5f, elapsedMs))
+        }
+
+        override fun stop() {
+            stops++
+            onFix = null
+        }
+
+        fun moveBy(metres: Int) {
+            latitude += metres / 111_195.0
+            elapsedMs += 2_000
+            onFix?.invoke(LocationFix(latitude, 77.6, 5f, elapsedMs))
+        }
+    }
+
     private class FakeLink : LiveLink {
         val begun = mutableListOf<HeartRateDevice>()
+        val usedLocation = mutableListOf<Boolean>()
         var ended = 0
 
-        override fun begin(device: HeartRateDevice) {
+        override fun begin(device: HeartRateDevice, usesLocation: Boolean) {
             begun += device
+            usedLocation += usesLocation
         }
 
         override fun end() {
@@ -259,6 +398,7 @@ class WorkoutControllerTest {
         val closed = mutableListOf<WorkoutEntity>()
         val credited = mutableListOf<String>()
         val attached = mutableListOf<Pair<Long, Long>>()
+        val benchmarks = mutableListOf<BenchmarkEntity>()
 
         override suspend fun open(workout: WorkoutEntity): Long = nextId++
 
@@ -276,6 +416,10 @@ class WorkoutControllerTest {
 
         override suspend fun creditProgram(programId: String) {
             credited += programId
+        }
+
+        override suspend fun saveBenchmark(benchmark: BenchmarkEntity) {
+            benchmarks += benchmark
         }
     }
 

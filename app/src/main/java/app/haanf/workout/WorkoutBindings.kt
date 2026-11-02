@@ -1,6 +1,7 @@
 package app.haanf.workout
 
 import android.content.Context
+import app.haanf.data.BenchmarkEntity
 import app.haanf.data.HrDao
 import app.haanf.data.TrainingDao
 import app.haanf.data.WorkoutEntity
@@ -10,8 +11,8 @@ import app.haanf.session.HeartRateForegroundService
 import app.haanf.training.TimedBpm
 
 class ServiceLiveLink(private val context: Context) : LiveLink {
-    override fun begin(device: HeartRateDevice) =
-        HeartRateForegroundService.start(context, device, watchWorkoutRunning = false)
+    override fun begin(device: HeartRateDevice, usesLocation: Boolean) =
+        HeartRateForegroundService.start(context, device, watchWorkoutRunning = false, usesLocation)
 
     override fun end() = HeartRateForegroundService.stop(context)
 }
@@ -34,4 +35,6 @@ class RoomWorkoutStore(
         heartRate.samples(sessionId).map { TimedBpm(it.receivedAtMs, it.bpm) }
 
     override suspend fun creditProgram(programId: String) = programs.credit(programId)
+
+    override suspend fun saveBenchmark(benchmark: BenchmarkEntity) = training.insertBenchmark(benchmark)
 }

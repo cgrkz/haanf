@@ -36,6 +36,12 @@ interface TrainingDao {
     @Query("DELETE FROM workout WHERE id = :id")
     suspend fun deleteWorkout(id: Long)
 
+    @Insert
+    suspend fun insertBenchmark(benchmark: BenchmarkEntity)
+
+    @Query("SELECT * FROM benchmark ORDER BY takenAtMs DESC")
+    fun observeBenchmarks(): Flow<List<BenchmarkEntity>>
+
     @Query("SELECT * FROM program_enrolment WHERE active = 1 LIMIT 1")
     fun observeEnrolment(): Flow<EnrolmentEntity?>
 

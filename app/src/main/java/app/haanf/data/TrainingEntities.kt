@@ -1,6 +1,7 @@
 package app.haanf.data
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
@@ -10,6 +11,9 @@ data class ProfileEntity(
     @PrimaryKey val id: Int = 1,
     val birthYear: Int,
     val measuredMaxBpm: Int? = null,
+    val sex: String? = null,
+    val weightKg: Double? = null,
+    val healthCheckClearedAtMs: Long? = null,
     val deviceId: String? = null,
     val deviceName: String? = null,
     val deviceSourceKind: String? = null,
@@ -53,4 +57,30 @@ data class EnrolmentEntity(
     val lastWeekTrained: Int? = null,
     val lastWorkoutEpochDay: Long? = null,
     val completedAtMs: Long? = null,
+)
+
+/** A scored benchmark. Its inputs are kept so a result can always be explained later. */
+@Entity(
+    tableName = "benchmark",
+    foreignKeys = [
+        ForeignKey(
+            entity = WorkoutEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["workoutId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("workoutId")],
+)
+data class BenchmarkEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val workoutId: Long,
+    val protocol: String,
+    val takenAtMs: Long,
+    val timeSeconds: Int,
+    val heartRateBpm: Int,
+    val ageYears: Int,
+    val sex: String,
+    val weightKg: Double,
+    val vo2Max: Double,
 )

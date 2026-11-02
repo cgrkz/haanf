@@ -15,6 +15,8 @@ import app.haanf.program.ProgramTracker
 import app.haanf.talktest.TalkTestLibrary
 import app.haanf.talktest.TalkTestRecorder
 import app.haanf.workout.Announcer
+import app.haanf.workout.DistanceSource
+import app.haanf.workout.GpsDistanceSource
 import app.haanf.workout.LiveLink
 import app.haanf.workout.RoomWorkoutStore
 import app.haanf.workout.ServiceLiveLink
@@ -32,6 +34,7 @@ class AppContainer(
     database: HaanfDatabase = HaanfDatabase.create(context.applicationContext),
     link: LiveLink = ServiceLiveLink(context.applicationContext),
     announcer: Announcer = SpeechAnnouncer(context.applicationContext),
+    distance: DistanceSource = GpsDistanceSource(context.applicationContext),
 ) {
     private val appContext = context.applicationContext
     private val sessionScope = CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1))
@@ -67,6 +70,7 @@ class AppContainer(
         link = link,
         clock = clock,
         announcer = announcer,
+        distance = distance,
         currentSessionId = { live.live.value.sessionId },
         currentBpm = { live.freshBpm() },
     )

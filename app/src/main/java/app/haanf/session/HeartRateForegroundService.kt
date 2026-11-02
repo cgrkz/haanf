@@ -65,11 +65,7 @@ class HeartRateForegroundService : Service() {
                 this,
                 NOTIFICATION_ID,
                 notification("Connecting"),
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
-                } else {
-                    0
-                },
+                foregroundTypes(intent.getBooleanExtra(EXTRA_USES_LOCATION, false)),
             )
         } catch (e: RuntimeException) {
             Log.e(TAG, "Could not enter the foreground", e)
@@ -84,6 +80,12 @@ class HeartRateForegroundService : Service() {
         )
         live.start(device, intent.getBooleanExtra(EXTRA_WATCH_WORKOUT, false))
         startNotifier()
+    }
+
+    private fun foregroundTypes(usesLocation: Boolean): Int {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return 0
+        val location = if (usesLocation) ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION else 0
+        return ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE or location
     }
 
     private fun startNotifier() {
@@ -158,18 +160,25 @@ class HeartRateForegroundService : Service() {
         private const val EXTRA_DEVICE_NAME = "device_name"
         private const val EXTRA_SOURCE_KIND = "source_kind"
         private const val EXTRA_WATCH_WORKOUT = "watch_workout"
+        private const val EXTRA_USES_LOCATION = "uses_location"
         private const val CHANNEL_ID = "live_heart_rate"
         private const val NOTIFICATION_ID = 1
         private const val NOTIFICATION_REFRESH_MS = 2_000L
         private const val WAKE_LOCK_LIMIT_MS = 8 * 60 * 60 * 1000L
 
-        fun start(context: Context, device: HeartRateDevice, watchWorkoutRunning: Boolean) {
+        fun start(
+            context: Context,
+            device: HeartRateDevice,
+            watchWorkoutRunning: Boolean,
+            usesLocation: Boolean = false,
+        ) {
             val intent = Intent(context, HeartRateForegroundService::class.java)
                 .setAction(ACTION_START)
                 .putExtra(EXTRA_DEVICE_ID, device.id)
                 .putExtra(EXTRA_DEVICE_NAME, device.name)
                 .putExtra(EXTRA_SOURCE_KIND, device.sourceKind)
                 .putExtra(EXTRA_WATCH_WORKOUT, watchWorkoutRunning)
+                .putExtra(EXTRA_USES_LOCATION, usesLocation)
             ContextCompat.startForegroundService(context, intent)
         }
 

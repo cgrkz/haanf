@@ -16,6 +16,12 @@ object AppPermissions {
 
     val microphone: List<String> = listOf(Manifest.permission.RECORD_AUDIO)
 
+    /** Only for measuring an outdoor mile. Coarse is listed because Android requires it alongside fine. */
+    val location: List<String> = listOf(
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.ACCESS_COARSE_LOCATION,
+    )
+
     /** Asked for alongside the others, but neither feature depends on it. */
     val notifications: List<String> =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

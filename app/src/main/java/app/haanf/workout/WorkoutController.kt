@@ -1,13 +1,19 @@
 package app.haanf.workout
 
 import app.haanf.core.Clock
+import app.haanf.data.BenchmarkEntity
 import app.haanf.data.WorkoutEntity
 import app.haanf.heartrate.HeartRateDevice
 import app.haanf.talktest.TrainingActivity
+import app.haanf.training.BenchmarkInputs
+import app.haanf.training.DistanceTracker
 import app.haanf.training.HeartRateZones
+import app.haanf.training.LocationFix
 import app.haanf.training.OverMaxMonitor
+import app.haanf.training.RockportWalkTest
 import app.haanf.training.SafetyRules
 import app.haanf.training.TimedBpm
+import app.haanf.training.WalkOutcome
 import app.haanf.training.WorkoutPlan
 import app.haanf.training.WorkoutSummaries
 import app.haanf.training.WorkoutSummary
@@ -21,9 +27,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-enum class WorkoutOrigin { FREE, PROGRAM }
+enum class WorkoutOrigin { FREE, PROGRAM, BENCHMARK }
 
 data class ProgramSlot(val programId: String, val week: Int, val session: Int)
+
+data class BenchmarkRequest(
+    val inputs: BenchmarkInputs,
+    val usesGps: Boolean,
+)
 
 data class WorkoutRequest(
     val title: String,
@@ -32,6 +43,7 @@ data class WorkoutRequest(
     val zones: HeartRateZones,
     val plan: WorkoutPlan? = null,
     val slot: ProgramSlot? = null,
+    val benchmark: BenchmarkRequest? = null,
 )
 
 sealed interface WorkoutState {
@@ -45,20 +57,32 @@ sealed interface WorkoutState {
         val stepIndex: Int? = null,
         val stepRemainingSeconds: Int? = null,
         val planComplete: Boolean = false,
+        val distanceMetres: Double = 0.0,
     ) : WorkoutState
 
-    data class Finished(val workout: WorkoutEntity) : WorkoutState
+    data class Finished(
+        val workout: WorkoutEntity,
+        val benchmark: WalkOutcome? = null,
+    ) : WorkoutState
 }
 
 /** Starts and stops the heart rate stream without this class knowing how it works. */
 interface LiveLink {
-    fun begin(device: HeartRateDevice)
+    fun begin(device: HeartRateDevice, usesLocation: Boolean)
     fun end()
+}
+
+/** Reports position while a measured distance is running. Nothing here stores it. */
+interface DistanceSource {
+    fun start(onFix: (LocationFix) -> Unit)
+    fun stop()
 }
 
 fun interface Announcer {
     fun say(text: String)
 }
+
+private val HALFWAY_METRES = RockportWalkTest.MILE_METRES / 2
 
 interface WorkoutStore {
     suspend fun open(workout: WorkoutEntity): Long
@@ -67,6 +91,7 @@ interface WorkoutStore {
     suspend fun unfinished(): List<WorkoutEntity>
     suspend fun samples(sessionId: Long): List<TimedBpm>
     suspend fun creditProgram(programId: String)
+    suspend fun saveBenchmark(benchmark: BenchmarkEntity)
 }
 
 /**
@@ -79,6 +104,7 @@ class WorkoutController(
     private val link: LiveLink,
     private val clock: Clock,
     private val announcer: Announcer,
+    private val distance: DistanceSource,
     private val currentSessionId: () -> Long?,
     private val currentBpm: () -> Int?,
     private val tickMs: Long = 1_000,
@@ -87,6 +113,7 @@ class WorkoutController(
     val state: StateFlow<WorkoutState> = _state.asStateFlow()
 
     private var ticker: Job? = null
+    private var tracker: DistanceTracker? = null
 
     @Volatile
     private var finishing = false
@@ -105,7 +132,11 @@ class WorkoutController(
                 startedAtMs = clock.nowEpochMs(),
                 title = request.title,
                 activity = request.activity.name,
-                origin = (if (slot != null) WorkoutOrigin.PROGRAM else WorkoutOrigin.FREE).name,
+                origin = when {
+                    request.benchmark != null -> WorkoutOrigin.BENCHMARK
+                    slot != null -> WorkoutOrigin.PROGRAM
+                    else -> WorkoutOrigin.FREE
+                }.name,
                 programId = slot?.programId,
                 programWeek = slot?.week,
                 programSession = slot?.session,
@@ -114,28 +145,39 @@ class WorkoutController(
                 deviceName = request.device.name,
             )
             val workout = draft.copy(id = store.open(draft))
-            link.begin(request.device)
+            val usesGps = request.benchmark?.usesGps == true
+            link.begin(request.device, usesLocation = usesGps)
             finishing = false
             _state.value = WorkoutState.Running(workout, request, clock.elapsedMs())
             starting = false
             announcer.say(openingLine(request))
             ticker = launch { runTicks(request) }
+            if (usesGps) {
+                tracker = DistanceTracker()
+                distance.start { fix -> scope.launch { onFix(fix) } }
+            }
         }
     }
 
-    fun finish(reason: String = "user_finished") {
+    /** [mileCompleted] is false when a benchmark was abandoned, which must not be scored. */
+    fun finish(reason: String = "user_finished", mileCompleted: Boolean = true) {
         val running = _state.value as? WorkoutState.Running ?: return
         if (finishing) return
         finishing = true
         scope.launch {
             ticker?.cancel()
+            if (tracker != null) distance.stop()
+            tracker = null
             val sessionId = currentSessionId() ?: running.workout.hrSessionId
             val endedAt = clock.nowEpochMs()
             val elapsedSeconds = ((clock.elapsedMs() - running.startedElapsedMs) / 1000).toInt()
             link.end()
             val finished = complete(running.workout, sessionId, endedAt, elapsedSeconds, reason)
-            _state.value = WorkoutState.Finished(finished)
-            announcer.say("Workout saved.")
+            val outcome = running.request.benchmark
+                ?.takeIf { mileCompleted }
+                ?.let { score(finished, it.inputs, sessionId, endedAt) }
+            _state.value = WorkoutState.Finished(finished, outcome)
+            announcer.say(if (running.request.benchmark != null) "Benchmark complete." else "Workout saved.")
         }
     }
 
@@ -180,6 +222,40 @@ class WorkoutController(
         store.close(finished)
         if (counted) store.creditProgram(requireNotNull(workout.programId))
         return finished
+    }
+
+    private suspend fun score(
+        workout: WorkoutEntity,
+        inputs: BenchmarkInputs,
+        sessionId: Long?,
+        endedAt: Long,
+    ): WalkOutcome {
+        val samples = sessionId?.let { store.samples(it) }.orEmpty()
+        val outcome = RockportWalkTest.evaluate(inputs, samples, workout.startedAtMs, endedAt)
+        if (outcome is WalkOutcome.Scored) {
+            store.saveBenchmark(
+                BenchmarkEntity(
+                    workoutId = workout.id,
+                    protocol = RockportWalkTest.ID,
+                    takenAtMs = endedAt,
+                    timeSeconds = outcome.timeSeconds,
+                    heartRateBpm = outcome.heartRateBpm,
+                    ageYears = inputs.ageYears,
+                    sex = inputs.sex.name,
+                    weightKg = inputs.weightKg,
+                    vo2Max = outcome.vo2Max,
+                ),
+            )
+        }
+        return outcome
+    }
+
+    private fun onFix(fix: LocationFix) {
+        val running = _state.value as? WorkoutState.Running ?: return
+        val total = tracker?.add(fix) ?: return
+        if (running.distanceMetres < HALFWAY_METRES && total >= HALFWAY_METRES) announcer.say("Halfway.")
+        _state.value = running.copy(distanceMetres = total)
+        if (total >= RockportWalkTest.MILE_METRES) finish(reason = "mile_complete")
     }
 
     private fun WorkoutEntity.withSummary(
@@ -230,7 +306,7 @@ class WorkoutController(
                 announcer.say("Your heart rate is above your estimated maximum. Ease off.")
             }
 
-            _state.value = running.copy(
+            _state.value = (_state.value as? WorkoutState.Running ?: return).copy(
                 elapsedSeconds = elapsedSeconds,
                 stepIndex = position?.index,
                 stepRemainingSeconds = position?.remainingSeconds,
@@ -241,6 +317,14 @@ class WorkoutController(
     }
 
     private fun openingLine(request: WorkoutRequest): String {
+        request.benchmark?.let { benchmark ->
+            val ending = if (benchmark.usesGps) {
+                "Haanf will stop when you reach one mile."
+            } else {
+                "Tap finish when the treadmill shows one mile."
+            }
+            return "Walk as fast as you can, without running. $ending"
+        }
         val first = request.plan?.steps?.firstOrNull() ?: return "Workout started."
         return "${request.title}. ${WorkoutText.stepLine(first)}"
     }
