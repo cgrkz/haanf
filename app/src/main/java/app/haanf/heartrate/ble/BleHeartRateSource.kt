@@ -215,6 +215,8 @@ class BleHeartRateSource(
         }
     }
 
+    // Deprecated only in API 37. Its replacement needs that API, and minSdk is 26.
+    @Suppress("DEPRECATION")
     private fun connect() {
         if (stopped || finished) return
         val adapter = manager?.adapter
