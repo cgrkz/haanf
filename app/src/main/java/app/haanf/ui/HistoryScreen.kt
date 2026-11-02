@@ -61,6 +61,7 @@ fun HistoryScreen(container: AppContainer) {
                     Fact("Estimated VO2max", "%.1f".format(it.vo2Max))
                 }
                 WorkoutFacts(workout)
+                workout.review?.let { Hint(it) }
                 if (workout.programWeek != null) {
                     Hint(
                         "Program week ${workout.programWeek}" +

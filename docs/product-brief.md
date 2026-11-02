@@ -22,6 +22,10 @@ Benchmarks are fixed, research-based tests. The AI chooses when and which, never
 
 Every user does a benchmark right after setup, because it shows how fit they are before training starts. The program stays locked until it is done. See [benchmarks.md](benchmarks.md).
 
+## The AI coach
+
+Users bring their own OpenRouter or Claude key. The coach creates workouts, guides you through them, reviews them, and keeps an ongoing chat that remembers what matters. See [ai-mode-spec.md](ai-mode-spec.md).
+
 ## Talk test
 
 The user speaks during a workout and the app assesses comfort from the audio. It is optional for normal workouts. Combined with heart rate, it estimates the personal threshold where talking gets hard.

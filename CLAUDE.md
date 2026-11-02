@@ -26,6 +26,12 @@ adb -s emulator-5554 install -r -t app/build/outputs/apk/androidTest/debug/app-d
 adb -s emulator-5554 shell am instrument -w app.haanf.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
+Real AI calls with made-up data, using the development key in `.env`:
+
+```bash
+HAANF_LIVE_LLM=1 ./gradlew :app:testDebugUnitTest --tests '*LiveLlmTest*' --rerun-tasks
+```
+
 Live logs from a phone, Haanf's tags only:
 
 ```bash
@@ -36,6 +42,7 @@ adb logcat HaanfBle:I HaanfScan:I HaanfSession:I HaanfService:I '*:S'
 
 One Gradle module, `:app`, with packages under `app.haanf`:
 
+- `ai`: the coach. `LlmClient` is the provider boundary. `CoachHarness` is the background loop during workouts, `WorkoutPlanner` creates workouts, `AiWorkoutRules` is the rule check, and `CoachContext` decides what the AI sees. See `docs/ai-mode-spec.md`.
 - `heartrate`: the device boundary. `HeartRateSource` is the only thing workout logic knows about a wearable.
 - `heartrate.ble`: the Bluetooth Heart Rate Profile implementation. Only this package and the scan screen may touch Bluetooth types.
 - `training`: pure rules with no Android types. Zones, workout plans, summaries, safety, the walk test, fitness norms and GPS distance.
@@ -53,13 +60,16 @@ To add a wearable, implement `HeartRateSource` and return it from a `HeartRateSo
 
 ## Rules
 
-- Never declare a Health Connect write permission or the internet permission. `ManifestPolicyTest` enforces both.
-- Data leaves the phone only through `ShareFiles`, from a user tapping export. Backups stay off.
+- Never declare a Health Connect write permission. Network hosts are limited to the AI providers. `ManifestPolicyTest` enforces both.
+- Data leaves the phone only through `ShareFiles` from a user tapping export, or to the AI provider the user chose with their own key. Backups stay off.
+- Never send audio, location or device details to an AI. `CoachSnapshot` has no place for them.
+- `.env` holds a development key. Never read it from app code, print it, or commit it. Hinoki is for testing with made-up data only.
+- Every AI workout and change must pass `AiWorkoutRules`. Increases may only follow the athlete asking.
 - Never report hardware behaviour as verified unless it was tested on a real device. The emulator checks builds and screens only.
 - Do not reverse-engineer a wearable that lacks the standard heart rate profile. Report it instead.
 - Only program workouts may reach `ProgramTracker.credit`. Free and AI workouts must never touch the program clock.
 - Programs are fixed. The AI may coach a session but never changes a plan.
 - Benchmark protocols are fixed too. The AI may choose when and which, never how.
 - GPS is for measuring a distance only. Never store coordinates or a route.
-- Keep AI calls, backends, accounts and paid services out until the user decides otherwise.
+- Keep backends, accounts and subscriptions out until the user decides otherwise. AI is bring-your-own-key.
 - Add database changes as a new Room version with a migration, and test it in `MigrationTest`. Real phones hold data.

@@ -22,7 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.haanf.AppContainer
 import app.haanf.workout.WorkoutState
 
-private val tabs = listOf("Today" to "🏃", "History" to "📅", "Vitals" to "📈", "Lab" to "🧪")
+private val tabs = listOf("Today" to "🏃", "Coach" to "💬", "History" to "📅", "Vitals" to "📈", "Lab" to "🧪")
 private val labTools = listOf("Heart rate", "Talk test", "Health data")
 
 @Composable
@@ -57,6 +57,7 @@ fun HaanfRoot(container: AppContainer) {
                     val profile by remember { container.trainingDao.observeProfile() }
                         .collectAsStateWithLifecycle(null)
                     FinishedWorkoutScreen(
+                        container = container,
                         workout = current.workout,
                         outcome = current.benchmark,
                         inputs = profile?.benchmarkInputs(container.programs.today()),
@@ -66,8 +67,9 @@ fun HaanfRoot(container: AppContainer) {
                 }
                 starting != null -> StartWorkoutScreen(container, starting) { pending = null }
                 tab == 0 -> TodayScreen(container) { pending = it }
-                tab == 1 -> HistoryScreen(container)
-                tab == 2 -> VitalsScreen(container)
+                tab == 1 -> CoachScreen(container) { pending = it }
+                tab == 2 -> HistoryScreen(container)
+                tab == 3 -> VitalsScreen(container)
                 else -> LabScreen(container)
             }
         }

@@ -1,5 +1,6 @@
 package app.haanf.ui
 
+import android.Manifest
 import android.location.LocationManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,6 +16,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -25,13 +27,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.haanf.AppContainer
+import app.haanf.ai.ReviewState
 import app.haanf.data.ProfileEntity
+import app.haanf.data.TalkAnswer
 import app.haanf.data.WorkoutEntity
 import app.haanf.heartrate.HeartRateDevice
 import app.haanf.session.LiveText
@@ -62,6 +67,11 @@ fun StartWorkoutScreen(container: AppContainer, pending: PendingWorkout, onCance
     val live by container.live.live.collectAsStateWithLifecycle()
     var activity by rememberSaveable { mutableStateOf(TrainingActivity.OUTDOOR_RUN) }
     var picking by rememberSaveable { mutableStateOf(false) }
+    var coached by rememberSaveable { mutableStateOf(true) }
+    val coachReady = !pending.benchmark && remember { container.llm.client() != null }
+    var micRequests by remember { mutableIntStateOf(0) }
+    val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { micRequests++ }
+    val micMissing = remember(micRequests) { AppPermissions.missing(context, AppPermissions.microphone).isNotEmpty() }
 
     val current = profile ?: return
     val device = current.device()
@@ -135,6 +145,24 @@ fun StartWorkoutScreen(container: AppContainer, pending: PendingWorkout, onCance
             Hint("Turn on heart rate sharing on the watch before you start.")
             TextButton(onClick = { picking = true }) { Text("Change device") }
         }
+        if (coachReady) {
+            InfoCard {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("Coach me during this workout")
+                    Switch(checked = coached, onCheckedChange = { coached = it })
+                }
+                if (coached && micMissing && container.speech.available) {
+                    Hint("Allow the microphone to talk back. Speech is turned into text on this phone.")
+                    TextButton(onClick = { micLauncher.launch(Manifest.permission.RECORD_AUDIO) }) {
+                        Text("Allow microphone")
+                    }
+                }
+            }
+        }
         if (live.sessionId != null) {
             ErrorText("A Lab session is running. Stop it in the Lab tab first.")
         }
@@ -159,6 +187,9 @@ fun StartWorkoutScreen(container: AppContainer, pending: PendingWorkout, onCance
                         zones = zones,
                         plan = pending.plan,
                         slot = pending.slot,
+                        ai = pending.ai,
+                        coached = coachReady && coached,
+                        plannedHard = pending.hard,
                         benchmark = if (pending.benchmark) {
                             current.benchmarkInputs(today)?.let { BenchmarkRequest(it, usesGps = walksOutdoors) }
                         } else {
@@ -258,6 +289,7 @@ fun LiveWorkoutScreen(container: AppContainer, running: WorkoutState.Running) {
                 Hint(SafetyRules.BENCHMARK_STOP_RULE)
             }
         }
+        CoachPanel(container)
         InfoCard {
             Fact("Last reading", LiveText.age(live, now))
             Fact("Status", live.connection.label)
@@ -315,6 +347,58 @@ fun LiveWorkoutScreen(container: AppContainer, running: WorkoutState.Running) {
     }
 }
 
+/** The coach's latest words, and every way of answering it. */
+@Composable
+private fun CoachPanel(container: AppContainer) {
+    val context = LocalContext.current
+    val coach by container.coach.status.collectAsStateWithLifecycle()
+    val listening by container.speech.listening.collectAsStateWithLifecycle()
+    var problem by remember { mutableStateOf<String?>(null) }
+    if (!coach.active && !coach.offline) return
+
+    val canSpeak = container.speech.available &&
+        AppPermissions.missing(context, AppPermissions.microphone).isEmpty()
+
+    InfoCard {
+        Text("Coach", style = MaterialTheme.typography.titleMedium)
+        coach.lastMessage?.takeIf { it.isNotBlank() }?.let { Text(it) }
+        if (coach.thinking) Hint("Thinking")
+        if (coach.offline) ErrorText("The coach is offline. Your workout carries on.")
+        if (coach.awaitingTalkAnswer) {
+            ChoiceRow(
+                title = "Could you talk?",
+                options = TalkAnswer.entries.toList<TalkAnswer?>(),
+                selected = null,
+                enabled = true,
+                label = { it?.label.orEmpty() },
+            ) { answer -> answer?.let(container.coach::answerTalkTest) }
+        }
+        if (coach.active) {
+            if (canSpeak) {
+                Button(
+                    onClick = {
+                        problem = null
+                        container.speech.listen(container.coach::userSaid) { problem = it }
+                    },
+                    enabled = !listening,
+                    modifier = Modifier.fillMaxWidth().testTag("talk-to-coach"),
+                ) {
+                    Text(if (listening) "Listening" else "Talk to coach")
+                }
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    QUICK_REPLIES.forEach { reply ->
+                        OutlinedButton(onClick = { container.coach.userSaid(reply) }) { Text(reply) }
+                    }
+                }
+            }
+            problem?.let { Hint(it) }
+        }
+    }
+}
+
+private val QUICK_REPLIES = listOf("Too easy", "OK", "Too hard")
+
 @Composable
 fun WorkoutFacts(workout: WorkoutEntity) {
     val duration = ((workout.endedAtMs ?: workout.startedAtMs) - workout.startedAtMs) / 1000
@@ -331,6 +415,27 @@ fun WorkoutFacts(workout: WorkoutEntity) {
         Fact(zone.label, WorkoutText.clock(seconds))
     }
     if (workout.noReadingSeconds >= 30) Fact("No reading", WorkoutText.clock(workout.noReadingSeconds))
+}
+
+@Composable
+private fun ReviewCard(container: AppContainer, workout: WorkoutEntity) {
+    val review by container.reviews.state.collectAsStateWithLifecycle()
+    when (val current = review) {
+        is ReviewState.Working -> Hint("The coach is reviewing this workout")
+        is ReviewState.Done -> if (current.workoutId == workout.id) {
+            InfoCard {
+                Text("Coach's review", style = MaterialTheme.typography.titleMedium)
+                Text(current.text)
+            }
+        }
+        is ReviewState.Failed -> if (current.workoutId == workout.id) {
+            InfoCard {
+                ErrorText(current.message)
+                TextButton(onClick = { container.reviews.retry(workout) }) { Text("Retry review") }
+            }
+        }
+        ReviewState.Idle -> Unit
+    }
 }
 
 @Composable
@@ -367,6 +472,7 @@ private fun BenchmarkResultCard(outcome: WalkOutcome?, inputs: BenchmarkInputs?)
 
 @Composable
 fun FinishedWorkoutScreen(
+    container: AppContainer,
     workout: WorkoutEntity,
     outcome: WalkOutcome?,
     inputs: BenchmarkInputs?,
@@ -384,6 +490,7 @@ fun FinishedWorkoutScreen(
         Text(workout.title, style = MaterialTheme.typography.titleMedium)
         if (isBenchmark) BenchmarkResultCard(outcome, inputs)
         InfoCard { WorkoutFacts(workout) }
+        ReviewCard(container, workout)
         if (workout.programId != null) {
             Text(
                 if (workout.countedForProgram) {

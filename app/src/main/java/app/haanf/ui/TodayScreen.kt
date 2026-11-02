@@ -29,7 +29,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.haanf.AppContainer
 import app.haanf.data.BenchmarkEntity
+import app.haanf.data.CoachFactEntity
 import app.haanf.data.EnrolmentEntity
+import app.haanf.data.FactKind
+import app.haanf.data.FactStatus
 import app.haanf.data.ProfileEntity
 import app.haanf.program.ProgramDefinition
 import app.haanf.program.ProgramNotice
@@ -46,6 +49,7 @@ import app.haanf.training.SafetyRules
 import app.haanf.training.Sex
 import app.haanf.training.WorkoutPlan
 import app.haanf.training.Zone
+import app.haanf.workout.AiWorkoutContext
 import app.haanf.workout.ProgramSlot
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -55,6 +59,8 @@ data class PendingWorkout(
     val plan: WorkoutPlan?,
     val slot: ProgramSlot?,
     val benchmark: Boolean = false,
+    val ai: AiWorkoutContext? = null,
+    val hard: Boolean = false,
 )
 
 private val LOADING = ProfileEntity(birthYear = 0)
@@ -96,8 +102,18 @@ fun TodayScreen(container: AppContainer, onStart: (PendingWorkout) -> Unit) {
 
         val today = container.programs.today()
         if (current == null || current.benchmarkInputs(today) == null || editingProfile) {
-            ProfileCard(current) { birthYear, sex, weightKg, measuredMax ->
+            ProfileCard(current) { birthYear, sex, weightKg, measuredMax, health ->
                 scope.launch {
+                    if (health.isNotBlank()) {
+                        container.coachDao.insertFact(
+                            CoachFactEntity(
+                                createdAtMs = container.clock.nowEpochMs(),
+                                kind = FactKind.INJURY.name,
+                                text = health.trim(),
+                                status = FactStatus.ACTIVE.name,
+                            ),
+                        )
+                    }
                     container.trainingDao.saveProfile(
                         (current ?: ProfileEntity(birthYear = birthYear)).copy(
                             birthYear = birthYear,
@@ -165,11 +181,12 @@ fun TodayScreen(container: AppContainer, onStart: (PendingWorkout) -> Unit) {
 }
 
 @Composable
-private fun ProfileCard(existing: ProfileEntity?, onSave: (Int, Sex, Double, Int?) -> Unit) {
+private fun ProfileCard(existing: ProfileEntity?, onSave: (Int, Sex, Double, Int?, String) -> Unit) {
     var birthYear by rememberSaveable { mutableStateOf(existing?.birthYear?.toString().orEmpty()) }
     var measuredMax by rememberSaveable { mutableStateOf(existing?.measuredMaxBpm?.toString().orEmpty()) }
     var weight by rememberSaveable { mutableStateOf(existing?.weightKg?.toString().orEmpty()) }
     var sex by rememberSaveable { mutableStateOf(existing?.sex?.let(Sex::valueOf)) }
+    var health by rememberSaveable { mutableStateOf("") }
     val year = birthYear.toIntOrNull()
     val max = measuredMax.toIntOrNull()
     val kilograms = weight.toDoubleOrNull()
@@ -214,8 +231,16 @@ private fun ProfileCard(existing: ProfileEntity?, onSave: (Int, Sex, Double, Int
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
+        OutlinedTextField(
+            value = health,
+            onValueChange = { health = it },
+            label = { Text("Any injuries or health conditions? (optional)") },
+            modifier = Modifier.fillMaxWidth(),
+        )
         Button(
-            onClick = { onSave(requireNotNull(year), requireNotNull(chosenSex), requireNotNull(kilograms), max) },
+            onClick = {
+                onSave(requireNotNull(year), requireNotNull(chosenSex), requireNotNull(kilograms), max, health)
+            },
             enabled = valid,
         ) {
             Text("Save")
@@ -353,6 +378,7 @@ private fun EnrolledCard(
                             title = session.plan.title,
                             plan = session.plan,
                             slot = ProgramSlot(program.id, position.week, position.session),
+                            hard = session.hard,
                         ),
                     )
                 },

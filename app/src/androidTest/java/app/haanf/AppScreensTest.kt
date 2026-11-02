@@ -174,7 +174,7 @@ class AppScreensTest {
         compose.onNodeWithText("Year of birth").performTextInput("1996")
         compose.onNodeWithText("Weight in kg").performTextInput("75")
         compose.onNodeWithText("Male").performClick()
-        compose.onNodeWithText("Save").performClick()
+        compose.onNodeWithText("Save").performScrollTo().performClick()
 
         waitForText("A quick health check")
         compose.onNodeWithText("Neither applies to me").performClick()

@@ -70,7 +70,16 @@ The effort label is chosen before recording. Music is not paused automatically, 
 
 ## Privacy
 
-There is no internet permission at all, so the app cannot send anything itself. Backups and device transfer are off for every data domain. Recordings live in app-private storage. The only route out is the share sheet, after the user taps export, and the export cache is cleared on each new export and on delete. A manifest test guards these promises.
+Haanf talks to the internet only for the AI provider the user chose, with their own key, after a screen listing what is sent. Without a key it makes no network calls. Connections are encrypted only, and a test fails if any other host appears in the code. Audio, location and device details never go to the AI. Backups and device transfer are off for every data domain. Recordings live in app-private storage. Otherwise data leaves only through the share sheet, after the user taps export, and the export cache is cleared on each new export and on delete.
+
+## AI
+
+- **Providers sit behind `LlmClient`,** so a subscription can replace bring-your-own-key later.
+- **OpenRouter uses plain HTTP, and Claude uses the official SDK.** The SDK adds about 13 MB to the debug APK. Its default sends the key as a Bearer token, so `ClaudeClient` sets `x-api-key` explicitly, as Anthropic documents for API keys.
+- **Keys are encrypted with the Android Keystore,** and `.env` is never built into the app. A test fails if the development endpoint appears in app code.
+- **The rule check has no AI in it.** It decides, and the model only ever receives its reasons.
+- **Increases are refused in code,** in any turn the athlete's own words did not trigger.
+- **The coach is heard only through its `speak` tool.** Some models put private reasoning in their reply text, which must never be read aloud.
 
 The Bluetooth diagnostic export contains the names and addresses of nearby devices, including other people's, so check it before sharing it.
 

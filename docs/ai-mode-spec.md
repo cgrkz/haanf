@@ -2,6 +2,22 @@
 
 Agreed with the user on 2 November 2026. Items marked **default** were not asked about. They are choices made during the build, so change them freely.
 
+## Status
+
+Built on 2 November 2026.
+
+| Area | Result | Evidence |
+| --- | --- | --- |
+| Unit tests | Pass | 208 of 208 |
+| Emulator tests | Pass | 31 of 31, including all database migrations and the full loop from plan to coach to review, with a scripted AI |
+| Planner and coach against a real model | Pass (development) | Hinoki key with made-up data, over the same Chat Completions path OpenRouter uses. It called the heart rate overview, then spoke, and chose its own next check-in. Its plan passed the rule check |
+| Claude and OpenRouter from Android | Pass, as far as a fake key can show | Real calls from the emulator reached both, and both rejected a fake key, which Haanf reported correctly |
+| A real OpenRouter or Claude key | Not tested | None was available. Whether a real call succeeds is unproven |
+| Claude's tool loop against the real API | Not tested | Tested against a local server only |
+| Coach during a real workout with the real watch | Not tested | |
+| On-device speech on a real phone | Not tested | The emulator has none, so it showed the quick replies |
+| Spoken coach through earbuds or a phone speaker | Not tested | |
+
 ## What the AI does
 
 1. **Creates workouts.** You say how much time you have and how you feel. It reads your history and recovery, and proposes a workout.
@@ -39,7 +55,9 @@ The harness runs while a workout runs, in the foreground service, so it works wi
 
 **Timing:** the AI picks each sleep, within 2 to 10 minutes. These events wake it early: a step change, a heart rate spike, a dropout, or you speaking.
 
-**Limits (default):** at most 15 calls per workout, and at least 60 seconds between calls, except when you speak.
+**Limits (default):** at most 15 calls per workout, and at least 60 seconds between calls. When you speak, it always answers, even past the limit.
+
+**Each wake-up is a fresh request (default)** with a short log of what the coach has said. A long conversation would cost more with every call, and it can't be trimmed once a model's thinking is involved.
 
 **What it speaks:** only the message the AI passes to a `speak` tool, so a model's private reasoning can never be read aloud.
 
