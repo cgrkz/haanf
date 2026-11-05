@@ -134,4 +134,4 @@ The emulator checks builds and screens only.
 - GPS distance on the benchmark screen.
 - "Last night" and the vitals sparklines with real Health Connect data.
 - Fonts and light status bar icons on the dark and coloured screens.
-- Upgrading in place to database version 5. That phone has a profile without weight or sex and no benchmark, so it should open on About you, then Connect your watch unless a watch is already saved, then the first benchmark.
+- The new screens on the phone itself. The upgrade in place was done on 5 November 2026: the database moved to version 5, and both heart rate sessions, all 222 samples, the talk test, the workout and the profile survived. The phone was locked, so nothing was seen on screen. Its profile has no weight, sex or benchmark, so it should open on About you, then Connect your watch unless a watch is already saved, then the first benchmark.
