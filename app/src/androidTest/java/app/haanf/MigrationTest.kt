@@ -92,6 +92,29 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun version4DataSurvivesTheMoveToVersion5() {
+        helper.createDatabase(DB, 4).use { db ->
+            db.execSQL(
+                "INSERT INTO workout (id, startedAtMs, endedAtMs, title, activity, origin, recoverySeconds, " +
+                    "easySeconds, hardSeconds, veryHardSeconds, noReadingSeconds, countedForProgram, plannedHard, " +
+                    "coached, review) " +
+                    "VALUES (9, 1000, 61000, 'Intervals', 'OUTDOOR_RUN', 'AI', 0, 30, 30, 0, 0, 0, 1, 1, 'Good work')",
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB, 5, true).use { db ->
+            db.query("SELECT hardSeconds, coached, review, effortRating, hrDropBpm FROM workout WHERE id = 9").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(30, cursor.getInt(0))
+                assertEquals(1, cursor.getInt(1))
+                assertEquals("Good work", cursor.getString(2))
+                assertEquals(true, cursor.isNull(3))
+                assertEquals(true, cursor.isNull(4))
+            }
+        }
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

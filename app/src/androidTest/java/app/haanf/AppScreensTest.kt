@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -14,26 +15,18 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import app.haanf.data.BenchmarkEntity
 import app.haanf.data.HaanfDatabase
 import app.haanf.data.ProfileEntity
-import app.haanf.data.WorkoutEntity
 import app.haanf.data.TalkTestEntity
 import app.haanf.heartrate.HeartRateDevice
 import app.haanf.heartrate.HeartRateReading
-import app.haanf.heartrate.HeartRateSource
 import app.haanf.heartrate.SourceState
 import app.haanf.talktest.TalkTestScript
-import app.haanf.training.LocationFix
 import app.haanf.training.SafetyRules
 import app.haanf.ui.HaanfRoot
-import app.haanf.ui.HaanfTheme
-import app.haanf.workout.DistanceSource
+import app.haanf.ui.LabTool
+import app.haanf.ui.theme.HaanfTheme
 import app.haanf.workout.LiveLink
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -50,6 +43,7 @@ class AppScreensTest {
     val compose = createComposeRule()
 
     private lateinit var container: AppContainer
+    private lateinit var context: Context
     private val source = FakeSource()
     private val spoken = CopyOnWriteArrayList<String>()
     private val link = object : LiveLink {
@@ -58,46 +52,20 @@ class AppScreensTest {
         override fun end() = container.live.stop()
     }
 
-    private val noGps = object : DistanceSource {
-        override fun start(onFix: (LocationFix) -> Unit) = Unit
-        override fun stop() = Unit
-    }
-
-    private fun seedProfile() = runBlocking {
-        container.trainingDao.saveProfile(
-            ProfileEntity(
-                birthYear = 1996,
-                sex = "MALE",
-                weightKg = 75.0,
-                healthCheckClearedAtMs = 1,
-                deviceId = "fake",
-                deviceName = "Fake Watch",
-                deviceSourceKind = "fake",
-            ),
-        )
-    }
-
-    private fun seedBenchmark() = runBlocking {
-        val id = container.trainingDao.insertWorkout(
-            WorkoutEntity(startedAtMs = 0, endedAtMs = 900_000, title = "Walk", activity = "TREADMILL", origin = "BENCHMARK"),
-        )
-        container.trainingDao.insertBenchmark(
-            BenchmarkEntity(
-                workoutId = id, protocol = "rockport-1-mile", takenAtMs = 900_000, timeSeconds = 900,
-                heartRateBpm = 150, ageYears = 30, sex = "MALE", weightKg = 75.0, vo2Max = 41.2,
-            ),
-        )
-    }
-
-    private fun openLab() {
-        compose.onNodeWithText("Lab").performClick()
-    }
-
     @Before
     fun setUp() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
+        context = ApplicationProvider.getApplicationContext()
+        TestSupport.grantBluetooth()
+    }
+
+    private fun launch(onboarded: Boolean) {
+        // The container reads first-run progress when it is built, so reset it first.
+        TestSupport.resetOnboarding(context, done = onboarded)
         val database = Room.inMemoryDatabaseBuilder(context, HaanfDatabase::class.java).build()
-        container = AppContainer(context, { source }, database, link, { spoken += it }, noGps)
+        container = AppContainer(context, { source }, database, link, { spoken += it }, noGps, { null })
+    }
+
+    private fun show() {
         compose.setContent {
             HaanfTheme {
                 HaanfRoot(container)
@@ -105,16 +73,28 @@ class AppScreensTest {
         }
     }
 
+    private fun openLab(tool: LabTool) {
+        launch(onboarded = true)
+        TestSupport.seedProfile(container)
+        TestSupport.seedBenchmark(container)
+        show()
+        waitForText("Progress")
+        compose.onNodeWithText("Progress").performClick()
+        compose.onNodeWithContentDescription("Settings and Lab").performClick()
+        waitForText(tool.title)
+        compose.onNodeWithText(tool.title).performScrollTo().performClick()
+    }
+
     @Test
     fun heartRateToolOffersAScanWhenIdle() {
-        openLab()
-        compose.onNodeWithText("Scan for a heart rate device").assertIsDisplayed()
+        openLab(LabTool.HEART_RATE)
+        waitForText("Scan for a heart rate device")
         compose.onNodeWithText("No sessions yet.").assertIsDisplayed()
     }
 
     @Test
     fun liveSessionShowsHeartRateFromAnySource() {
-        openLab()
+        openLab(LabTool.HEART_RATE)
         container.live.start(source.device, watchWorkoutRunning = false)
         compose.waitUntil(timeoutMillis = 5_000) { container.live.live.value.sessionId != null }
         compose.waitUntil(timeoutMillis = 5_000) {
@@ -132,14 +112,15 @@ class AppScreensTest {
 
     @Test
     fun talkTestToolShowsTheFixedPassage() {
-        openLab()
-        compose.onNodeWithText("Talk test").performClick()
+        openLab(LabTool.TALK_TEST)
+        waitForText("Passage")
         compose.onNodeWithText("Passage").performClick()
         compose.onNodeWithText(TalkTestScript.PASSAGE).assertIsDisplayed()
     }
 
     @Test
     fun exportingARecordingOpensTheShareSheetWithoutCrashing() {
+        launch(onboarded = true)
         runBlocking {
             container.talkTestDao.insert(
                 TalkTestEntity(
@@ -150,11 +131,14 @@ class AppScreensTest {
                 ),
             )
         }
-        openLab()
-        compose.onNodeWithText("Talk test").performClick()
-        compose.waitUntil(timeoutMillis = 5_000) {
-            compose.onAllNodesWithText("Export all with labels").fetchSemanticsNodes().isNotEmpty()
-        }
+        TestSupport.seedProfile(container)
+        TestSupport.seedBenchmark(container)
+        show()
+        compose.onNodeWithText("Progress").performClick()
+        compose.onNodeWithContentDescription("Settings and Lab").performClick()
+        waitForText(LabTool.TALK_TEST.title)
+        compose.onNodeWithText(LabTool.TALK_TEST.title).performScrollTo().performClick()
+        waitForText("Export all with labels")
         compose.onNodeWithText("Export all with labels").performClick()
         compose.waitForIdle()
         InstrumentationRegistry.getInstrumentation().uiAutomation
@@ -163,82 +147,103 @@ class AppScreensTest {
 
     @Test
     fun healthToolStatesItIsReadOnly() {
-        openLab()
-        compose.onNodeWithText("Health data").performClick()
+        openLab(LabTool.HEALTH_DATA)
+        waitForText("Health Connect")
         compose.onNodeWithText("Health Connect").assertIsDisplayed()
     }
 
     @Test
-    fun setupLeadsThroughTheHealthCheckToTheBenchmark() {
-        waitForText("About you")
-        compose.onNodeWithText("Year of birth").performTextInput("1996")
-        compose.onNodeWithText("Weight in kg").performTextInput("75")
-        compose.onNodeWithText("Male").performClick()
-        compose.onNodeWithText("Save").performScrollTo().performClick()
+    fun firstRunGoesFromWelcomeThroughTheHealthCheckToTheBenchmark() {
+        launch(onboarded = false)
+        show()
+        waitForText("Get started")
+        compose.onNodeWithText("Get started").performClick()
 
-        waitForText("A quick health check")
-        compose.onNodeWithText("Neither applies to me").performClick()
+        waitForText("About you")
+        compose.onNode(field("Year of birth")).performTextInput("1996")
+        compose.onNode(field("Weight in kg")).performTextInput("75")
+        compose.onNodeWithText("Male").performClick()
+        compose.onNodeWithText("Neither applies to me").performScrollTo().performClick()
+
+        waitForText("Connect your watch")
+        compose.onNodeWithText("Continue without a watch").performScrollTo().performClick()
 
         waitForText("Your first step: a fitness benchmark")
         compose.onNodeWithText("Your program unlocks after this.").assertExists()
-        assertEquals(0, compose.onAllNodesWithText("Start this program").fetchSemanticsNodes().size)
+        assertEquals(0, compose.onAllNodesWithText("Start Foundation 8").fetchSemanticsNodes().size)
     }
 
     @Test
     fun aHealthConcernPointsToADoctorBeforeTheBenchmark() {
+        launch(onboarded = false)
         runBlocking {
             container.trainingDao.saveProfile(ProfileEntity(birthYear = 1996, sex = "MALE", weightKg = 75.0))
         }
-        waitForText("A quick health check")
-        compose.onNodeWithText("One or both apply to me").performClick()
-        compose.onNodeWithText(SafetyRules.HEALTH_CHECK_ADVICE).assertIsDisplayed()
-        compose.onNodeWithText("My doctor has cleared me").performClick()
-        waitForText("Your first step: a fitness benchmark")
+        show()
+        waitForText("About you")
+        compose.onNodeWithText("One or both apply to me").performScrollTo().performClick()
+        compose.onNodeWithText(SafetyRules.HEALTH_CHECK_ADVICE).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("My doctor has cleared me").performScrollTo().performClick()
+        waitForText("Connect your watch")
     }
 
     @Test
     fun aProfileFromBeforeBenchmarksIsAskedForTheMissingDetails() {
+        launch(onboarded = false)
         runBlocking { container.trainingDao.saveProfile(ProfileEntity(birthYear = 1996)) }
+        show()
         waitForText("About you")
-        compose.onNodeWithText("Weight in kg").assertExists()
+        compose.onNode(field("Weight in kg")).assertExists()
     }
 
     @Test
     fun aScoredBenchmarkUnlocksTheProgram() {
-        seedProfile()
-        seedBenchmark()
-        waitForText("Your fitness")
-        compose.onNodeWithText("41.2").assertExists()
-        compose.onNodeWithText("Below average").assertDoesNotExist()
-        compose.onNodeWithText("Average").assertExists()
-        compose.onNodeWithText("Start this program").performScrollTo().performClick()
+        launch(onboarded = true)
+        TestSupport.seedProfile(container)
+        TestSupport.seedBenchmark(container)
+        show()
+        waitForText("Start Foundation 8")
+        compose.onNodeWithText("Start Foundation 8").performScrollTo().performClick()
         compose.onNodeWithText("I understand").performClick()
-        waitForText("Week 1 of 8, session 1 of 3")
+        waitForText("Week 1 of 8")
+        compose.onNodeWithText("Start session").assertExists()
+
+        compose.onNodeWithText("Progress").performClick()
+        waitForText("41.2")
+        waitForText("Average for your age and sex", substring = true)
     }
 
     @Test
     fun anAbandonedBenchmarkGivesNoScoreAndKeepsTheProgramLocked() {
-        seedProfile()
-        waitForText("Start benchmark")
-        compose.onNodeWithText("Start benchmark").performClick()
+        launch(onboarded = false)
+        TestSupport.seedProfile(container)
+        show()
+        waitForText("Your first step: a fitness benchmark")
+        compose.onNodeWithText("Start benchmark").performScrollTo().performClick()
         waitForText("How it works")
         compose.onNodeWithText("Treadmill").performClick()
-        compose.onNodeWithText("Go").performScrollTo().performClick()
+        compose.onNodeWithText("Start workout").performScrollTo().performClick()
         waitForText("Walk as fast as you can. No running.")
-        compose.onNodeWithText("Finish").performScrollTo().performClick()
+        compose.onNodeWithText("Finish").performClick()
         compose.onNodeWithText("No, stop without a score").performClick()
         waitForText("No score this time")
         compose.onNodeWithText("Done").performScrollTo().performClick()
-        waitForText("Your first step: a fitness benchmark")
+        waitForText("First, a fitness benchmark")
+        assertEquals(0, compose.onAllNodesWithText("Start Foundation 8").fetchSemanticsNodes().size)
     }
 
     @Test
-    fun aFreeWorkoutRunsAndLandsInHistory() {
-        seedProfile()
-        waitForText("Start free workout")
-        compose.onNodeWithText("Start free workout").performScrollTo().performClick()
-        waitForText("Go")
-        compose.onNodeWithText("Go").performClick()
+    fun aFreeWorkoutRunsAndLandsInProgress() {
+        launch(onboarded = true)
+        TestSupport.seedProfile(container)
+        TestSupport.seedBenchmark(container)
+        show()
+        waitForText("Coach")
+        compose.onNodeWithText("Coach").performClick()
+        waitForText("Start a free workout")
+        compose.onNodeWithText("Start a free workout").performScrollTo().performClick()
+        waitForText("Start workout")
+        compose.onNodeWithText("Start workout").performScrollTo().performClick()
 
         compose.waitUntil(timeoutMillis = 5_000) { container.live.live.value.sessionId != null && source.started }
         compose.waitUntil(timeoutMillis = 5_000) { source.readingsFlow.subscriptionCount.value > 0 }
@@ -246,42 +251,23 @@ class AppScreensTest {
         source.readingsFlow.tryEmit(HeartRateReading(142, System.currentTimeMillis(), container.clock.elapsedMs()))
         compose.waitUntil(timeoutMillis = 5_000) { container.live.live.value.bpm == 142 }
         compose.onNodeWithTag("workout-bpm").assertIsDisplayed()
-        waitForText("142 bpm")
-        compose.onNodeWithText("Hard").assertIsDisplayed()
+        waitForText("142")
+        compose.onNodeWithText("In your hard zone.").assertIsDisplayed()
 
-        compose.onNodeWithText("Finish").performScrollTo().performClick()
+        compose.onNodeWithText("Finish").performClick()
         compose.onAllNodesWithText("Finish")[1].performClick()
-        waitForText("Workout saved")
-        waitForText("Done")
-        compose.onNodeWithText("Done").performClick()
+        waitForText("Workout done")
+        compose.onNodeWithText("Done").performScrollTo().performClick()
 
-        waitForText("History")
-        compose.onNodeWithText("History").performClick()
+        waitForText("Progress")
+        compose.onNodeWithText("Progress").performClick()
         waitForText("Free workout")
         assertTrue(spoken.contains("Workout started."))
     }
 
-    private fun waitForText(text: String) {
-        compose.waitUntil(timeoutMillis = 5_000) {
-            compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
+    private fun waitForText(text: String, substring: Boolean = false) {
+        compose.waitUntil(timeoutMillis = 8_000) {
+            compose.onAllNodesWithText(text, substring = substring).fetchSemanticsNodes().isNotEmpty()
         }
-    }
-
-    private class FakeSource : HeartRateSource {
-        override val device = HeartRateDevice("fake", "Fake Watch", "fake")
-        val stateFlow = MutableStateFlow<SourceState>(SourceState.Idle)
-        val readingsFlow = MutableSharedFlow<HeartRateReading>(extraBufferCapacity = 16)
-        var started = false
-
-        override val state: StateFlow<SourceState> = stateFlow
-        override val readings: Flow<HeartRateReading> = readingsFlow
-        override val notes: Flow<String> = MutableSharedFlow()
-
-        override fun start() {
-            started = true
-        }
-
-        override fun stop() = Unit
-        override fun reconnect(reason: String) = Unit
     }
 }

@@ -3,6 +3,7 @@ package app.haanf.export
 import app.haanf.data.HrEventEntity
 import app.haanf.data.HrSampleEntity
 import app.haanf.data.TalkTestEntity
+import app.haanf.data.WorkoutEntity
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -51,5 +52,32 @@ class CsvTest {
                 "UNPROCESSED,44100,12000,,,",
             csv.lines()[1],
         )
+    }
+
+    @Test
+    fun `writes workouts without device details`() {
+        val csv = Csv.workouts(
+            listOf(
+                WorkoutEntity(
+                    startedAtMs = 0,
+                    endedAtMs = 60_000,
+                    title = "Easy, 30 minutes",
+                    activity = "OUTDOOR_RUN",
+                    origin = "AI",
+                    deviceName = "Pixel Watch 2",
+                    avgBpm = 120,
+                    easySeconds = 60,
+                    hrDropBpm = 25,
+                    effortRating = 3,
+                ),
+            ),
+        )
+        val lines = csv.trimEnd().lines()
+        assertEquals(2, lines.size)
+        assertEquals(
+            "1970-01-01T00:00:00Z,1970-01-01T00:01:00Z,\"Easy, 30 minutes\",OUTDOOR_RUN,AI,,,false,120,,0,60,0,0,0,25,3",
+            lines[1],
+        )
+        assertEquals(false, csv.contains("Pixel"))
     }
 }

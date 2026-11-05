@@ -13,7 +13,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import app.haanf.ui.HaanfTheme
+import app.haanf.ui.theme.HaanfTheme
 
 /** The privacy explanation Android shows from the Health Connect permission screen. */
 class HealthRationaleActivity : ComponentActivity() {

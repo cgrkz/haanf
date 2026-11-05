@@ -3,6 +3,7 @@ package app.haanf.export
 import app.haanf.data.HrEventEntity
 import app.haanf.data.HrSampleEntity
 import app.haanf.data.TalkTestEntity
+import app.haanf.data.WorkoutEntity
 import java.time.Instant
 
 object Csv {
@@ -39,6 +40,22 @@ object Csv {
                 it.fileName, iso(it.recordedAtMs), it.testType, it.effort, it.activity,
                 it.requestedInput, it.actualInput, it.audioSource, it.sampleRateHz, it.durationMs,
                 it.hrStartBpm, it.hrEndBpm, it.hrSessionId,
+            )
+        },
+    )
+
+    /** One row per workout. No device details, so the file is safe to pass around. */
+    fun workouts(rows: List<WorkoutEntity>): String = table(
+        listOf(
+            "started_utc", "ended_utc", "title", "activity", "origin", "program", "program_week",
+            "counted_for_program", "avg_bpm", "max_bpm", "recovery_s", "easy_s", "hard_s", "very_hard_s",
+            "no_reading_s", "hr_drop_1min_bpm", "effort_rating",
+        ),
+        rows.map {
+            listOf(
+                iso(it.startedAtMs), it.endedAtMs?.let(::iso), it.title, it.activity, it.origin, it.programId,
+                it.programWeek, it.countedForProgram, it.avgBpm, it.maxBpm, it.recoverySeconds, it.easySeconds,
+                it.hardSeconds, it.veryHardSeconds, it.noReadingSeconds, it.hrDropBpm, it.effortRating,
             )
         },
     )

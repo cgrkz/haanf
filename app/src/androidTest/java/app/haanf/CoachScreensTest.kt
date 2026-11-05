@@ -5,6 +5,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
@@ -16,25 +18,14 @@ import app.haanf.ai.LlmItem
 import app.haanf.ai.LlmReply
 import app.haanf.ai.LlmRequest
 import app.haanf.ai.ToolCall
-import app.haanf.data.BenchmarkEntity
 import app.haanf.data.CoachFactEntity
 import app.haanf.data.FactStatus
 import app.haanf.data.HaanfDatabase
-import app.haanf.data.ProfileEntity
-import app.haanf.data.WorkoutEntity
 import app.haanf.heartrate.HeartRateDevice
-import app.haanf.heartrate.HeartRateReading
-import app.haanf.heartrate.HeartRateSource
 import app.haanf.heartrate.SourceState
-import app.haanf.training.LocationFix
 import app.haanf.ui.HaanfRoot
-import app.haanf.ui.HaanfTheme
-import app.haanf.workout.DistanceSource
+import app.haanf.ui.theme.HaanfTheme
 import app.haanf.workout.LiveLink
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -112,13 +103,10 @@ class CoachScreensTest {
         override fun end() = container.live.stop()
     }
 
-    private val noGps = object : DistanceSource {
-        override fun start(onFix: (LocationFix) -> Unit) = Unit
-        override fun stop() = Unit
-    }
-
     private fun launch(withAi: Boolean = true, seed: Boolean = true) {
         val context = ApplicationProvider.getApplicationContext<Context>()
+        TestSupport.resetOnboarding(context, done = true)
+        TestSupport.grantBluetooth()
         val database = Room.inMemoryDatabaseBuilder(context, HaanfDatabase::class.java).build()
         container = AppContainer(context, { source }, database, link, { spoken += it }, noGps, { if (withAi) fakeAi else null })
         if (seed) seed()
@@ -129,27 +117,9 @@ class CoachScreensTest {
         }
     }
 
-    private fun seed() = runBlocking {
-        container.trainingDao.saveProfile(
-            ProfileEntity(
-                birthYear = 1996,
-                sex = "MALE",
-                weightKg = 75.0,
-                healthCheckClearedAtMs = 1,
-                deviceId = "fake",
-                deviceName = "Fake Watch",
-                deviceSourceKind = "fake",
-            ),
-        )
-        val id = container.trainingDao.insertWorkout(
-            WorkoutEntity(startedAtMs = 0, endedAtMs = 900_000, title = "Walk", activity = "TREADMILL", origin = "BENCHMARK"),
-        )
-        container.trainingDao.insertBenchmark(
-            BenchmarkEntity(
-                workoutId = id, protocol = "rockport-1-mile", takenAtMs = 900_000, timeSeconds = 900,
-                heartRateBpm = 150, ageYears = 30, sex = "MALE", weightKg = 75.0, vo2Max = 41.2,
-            ),
-        )
+    private fun seed() {
+        TestSupport.seedProfile(container)
+        TestSupport.seedBenchmark(container)
     }
 
     private fun waitForText(text: String, timeoutMs: Long = 8_000) {
@@ -162,6 +132,15 @@ class CoachScreensTest {
         compose.onNodeWithText("Coach").performClick()
     }
 
+    private fun openChat() {
+        openCoach()
+        compose.waitUntil(timeoutMillis = 8_000) {
+            compose.onAllNodesWithContentDescription("Chat with your coach").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithContentDescription("Chat with your coach").performClick()
+        waitForText("What the coach knows")
+    }
+
     @Test
     fun withoutAKeyTheCoachTabExplainsWhatIsSentBeforeAnything() {
         launch(withAi = false)
@@ -170,19 +149,21 @@ class CoachScreensTest {
         compose.onNodeWithText("It never receives your location, your voice, or your device details.")
             .performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Tough and pushy").assertExists()
+        compose.onNodeWithText("Start a free workout").performScrollTo().assertIsDisplayed()
     }
 
     @Test
     fun theWholeLoopFromPlanToCoachToReview() {
         launch()
         openCoach()
-        waitForText("Plan today's workout")
-        compose.onNodeWithText("Plan my workout").performScrollTo().performClick()
+        waitForText("Let's find today's workout")
+        compose.onNodeWithText("Find my workout").performScrollTo().performClick()
         waitForText("Coach easy run")
-        compose.onNodeWithText("Start this workout").performScrollTo().performClick()
+        compose.onNodeWithText("Checked against your safety rules").assertExists()
+        compose.onNodeWithText("Start workout").performScrollTo().performClick()
 
         waitForText("Coach me during this workout")
-        compose.onNodeWithText("Go").performScrollTo().performClick()
+        compose.onNodeWithText("Start workout").performScrollTo().performClick()
 
         waitForText("Nice and steady, keep it easy.")
         assertTrue(spoken.contains("Nice and steady, keep it easy."))
@@ -191,11 +172,11 @@ class CoachScreensTest {
         compose.waitUntil(timeoutMillis = 5_000) { source.readingsFlow.subscriptionCount.value > 0 }
         source.stateFlow.value = SourceState.Streaming
 
-        compose.onNodeWithText("Too hard").performScrollTo().performClick()
+        compose.onNodeWithText("Too hard").performClick()
 
-        compose.onNodeWithText("Finish").performScrollTo().performClick()
+        compose.onNodeWithText("Finish").performClick()
         compose.onAllNodesWithText("Finish")[1].performClick()
-        waitForText("Workout saved")
+        waitForText("Workout done")
         waitForText("Solid session.")
         compose.onNodeWithText("Done").performScrollTo().performClick()
 
@@ -205,17 +186,40 @@ class CoachScreensTest {
     }
 
     @Test
-    fun theChatProposesAFactAndOnlyKeepsItAfterConfirmation() {
+    fun makeItEasierGoesBackThroughThePlannerAndNeverAddsWork() {
         launch()
         openCoach()
-        waitForText("Your training log")
+        waitForText("Let's find today's workout")
+        compose.onNodeWithText("Find my workout").performScrollTo().performClick()
+        waitForText("Coach easy run")
+        compose.onNodeWithText("Make it easier").performScrollTo().performClick()
+        // The scripted AI offers the same 20 minutes again. The rule check refuses that as easier,
+        // so Haanf's own shorter workout replaces it.
+        waitForText("couldn't plan a workout that passed your safety rules")
+        assertEquals(0, compose.onAllNodesWithText("20 min").fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun feelingUnwellGivesRestInsteadOfAWorkout() {
+        launch()
+        openCoach()
+        waitForText("Let's find today's workout")
+        compose.onNodeWithText("Unwell").performClick()
+        waitForText("Rest is the right call today.")
+        assertEquals(0, compose.onAllNodesWithText("Find my workout").fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun theChatProposesAFactAndOnlyKeepsItAfterConfirmation() {
+        launch()
+        openChat()
         compose.onNodeWithText("Message your coach").performTextInput("my left knee hurts")
-        compose.onNodeWithText("Send").performClick()
+        compose.onNodeWithContentDescription("Send").performClick()
         waitForText("I'll keep your knee in mind.")
         waitForText("Remember this? Left knee sore")
 
         assertEquals(0, runBlocking { container.coachDao.activeFacts() }.size)
-        compose.onNodeWithText("Remember").performScrollTo().performClick()
+        compose.onNodeWithText("Remember").performClick()
         compose.waitUntil(timeoutMillis = 5_000) {
             runBlocking { container.coachDao.activeFacts() }.singleOrNull()?.text == "Left knee sore"
         }
@@ -229,36 +233,22 @@ class CoachScreensTest {
                 CoachFactEntity(createdAtMs = 0, kind = "INJURY", text = "Sore ankle", status = FactStatus.ACTIVE.name),
             )
         }
-        openCoach()
+        openChat()
         waitForText("Injury: Sore ankle")
-        compose.onNodeWithText("Mark resolved").performScrollTo().performClick()
+        compose.onNodeWithText("Mark resolved").performClick()
         compose.waitUntil(timeoutMillis = 5_000) { runBlocking { container.coachDao.activeFacts() }.isEmpty() }
     }
 
     @Test
     fun benchmarksRunWithoutTheCoach() {
         launch()
-        waitForText("Your fitness")
-        compose.onNodeWithText("Repeat benchmark").performScrollTo().performClick()
+        waitForText("Progress")
+        compose.onNodeWithText("Progress").performClick()
+        waitForText("See benchmarks")
+        compose.onNodeWithText("See benchmarks").performScrollTo().performClick()
+        waitForText("Start benchmark")
+        compose.onNodeWithText("Start benchmark").performScrollTo().performClick()
         waitForText("How it works")
         assertEquals(0, compose.onAllNodesWithText("Coach me during this workout").fetchSemanticsNodes().size)
-    }
-
-    private class FakeSource : HeartRateSource {
-        override val device = HeartRateDevice("fake", "Fake Watch", "fake")
-        val stateFlow = MutableStateFlow<SourceState>(SourceState.Idle)
-        val readingsFlow = MutableSharedFlow<HeartRateReading>(extraBufferCapacity = 16)
-        var started = false
-
-        override val state: StateFlow<SourceState> = stateFlow
-        override val readings: Flow<HeartRateReading> = readingsFlow
-        override val notes: Flow<String> = MutableSharedFlow()
-
-        override fun start() {
-            started = true
-        }
-
-        override fun stop() = Unit
-        override fun reconnect(reason: String) = Unit
     }
 }

@@ -3,8 +3,12 @@ package app.haanf.ui
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,6 +18,8 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -50,6 +56,8 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Dp
@@ -77,15 +85,19 @@ fun HScreen(
     spacing: Dp = 16.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(
-        modifier
-            .fillMaxSize()
-            .background(background)
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(spacing),
-        content = content,
-    )
+    // At least a screen tall, so BottomActions can sit at the bottom of a short screen.
+    BoxWithConstraints(Modifier.fillMaxSize().background(background).then(modifier)) {
+        val viewport = maxHeight
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .heightIn(min = viewport)
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(spacing),
+            content = content,
+        )
+    }
 }
 
 @Composable
@@ -196,16 +208,21 @@ fun SecondaryButton(
     }
 }
 
-/** An underlined text action, sized for a thumb. */
+/** An underlined text action, sized for a thumb and aligned with the text around it. */
 @Composable
 fun LinkButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, color: Color = HaanfColors.Text) {
-    TextButton(
-        onClick = onClick,
-        modifier = modifier.defaultMinSize(minHeight = 48.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp),
-        colors = ButtonDefaults.textButtonColors(contentColor = color),
+    Box(
+        modifier
+            .defaultMinSize(minHeight = 48.dp)
+            .clip(Corner)
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.CenterStart,
     ) {
-        Text(text, style = body(16.sp, FontWeight.SemiBold).copy(textDecoration = TextDecoration.Underline))
+        Text(
+            text,
+            style = body(16.sp, FontWeight.SemiBold).copy(textDecoration = TextDecoration.Underline),
+            color = color,
+        )
     }
 }
 
@@ -343,6 +360,14 @@ fun StatTile(value: String, label: String, modifier: Modifier = Modifier, size: 
     }
 }
 
+/** Stat tiles side by side, all as tall as the tallest. */
+@Composable
+fun StatRow(vararg tiles: Pair<String, String>, size: Int = 30) {
+    Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        tiles.forEach { (value, label) -> StatTile(value, label, Modifier.weight(1f).fillMaxHeight(), size) }
+    }
+}
+
 /** A row of a list, with a divider below unless it is the last. */
 @Composable
 fun ListRow(
@@ -437,6 +462,9 @@ fun HTextField(
     numeric: Boolean = false,
     placeholder: String? = null,
     singleLine: Boolean = true,
+    password: Boolean = false,
+    enabled: Boolean = true,
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(label, style = body(14.sp, FontWeight.SemiBold), color = HaanfColors.Text)
@@ -444,10 +472,17 @@ fun HTextField(
             value = value,
             onValueChange = onValueChange,
             singleLine = singleLine,
+            enabled = enabled,
+            trailingIcon = trailing,
+            visualTransformation = if (password) PasswordVisualTransformation() else VisualTransformation.None,
             placeholder = placeholder?.let { { Text(it, style = body(16.sp), color = HaanfColors.TextSecondary) } },
             textStyle = body(17.sp, FontWeight.Medium),
             shape = Corner,
-            keyboardOptions = if (numeric) KeyboardOptions(keyboardType = KeyboardType.Number) else KeyboardOptions.Default,
+            keyboardOptions = when {
+                numeric -> KeyboardOptions(keyboardType = KeyboardType.Number)
+                password -> KeyboardOptions(keyboardType = KeyboardType.Password)
+                else -> KeyboardOptions.Default
+            },
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = HaanfColors.Card,
                 unfocusedContainerColor = HaanfColors.Card,
@@ -464,4 +499,71 @@ fun HTextField(
 fun ColumnScope.BottomActions(content: @Composable ColumnScope.() -> Unit) {
     Spacer(Modifier.weight(1f, fill = true))
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
+}
+
+/** A confirmation in the app's style. [onConfirm] runs before the dialog closes. */
+@Composable
+fun HDialog(
+    title: String,
+    text: String,
+    confirm: String,
+    onConfirm: () -> Unit,
+    dismiss: String,
+    onDismiss: () -> Unit,
+    onDismissRequest: () -> Unit = onDismiss,
+    extra: String? = null,
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismissRequest,
+        containerColor = HaanfColors.Card,
+        shape = Corner,
+        title = { Text(title, style = condensed(30.sp), color = HaanfColors.Text) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(text, style = body(16.sp), color = HaanfColors.Text)
+                if (extra != null) Text(extra, style = body(16.sp), color = HaanfColors.Text)
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+                Text(confirm, style = body(16.sp, FontWeight.Bold), color = HaanfColors.Primary)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, modifier = Modifier.defaultMinSize(minHeight = 48.dp)) {
+                Text(dismiss, style = body(16.sp, FontWeight.SemiBold), color = HaanfColors.Text)
+            }
+        },
+    )
+}
+
+/** A screen opened over the tabs: a back button, then the content. */
+@Composable
+fun SubScreen(
+    onBack: () -> Unit,
+    spacing: Dp = 16.dp,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    HScreen(spacing = spacing) {
+        Box(Modifier.offset(x = (-12).dp)) { BackButton(onBack) }
+        content()
+    }
+}
+
+/** Light status and navigation bar icons over a dark or coloured screen, while it is shown. */
+@Composable
+fun SystemBarIcons(darkBackground: Boolean) {
+    val view = androidx.compose.ui.platform.LocalView.current
+    androidx.compose.runtime.DisposableEffect(view, darkBackground) {
+        var context = view.context
+        while (context is android.content.ContextWrapper && context !is android.app.Activity) context = context.baseContext
+        val window = (context as? android.app.Activity)?.window
+        val controller = window?.let { androidx.core.view.WindowCompat.getInsetsController(it, view) }
+        controller?.isAppearanceLightStatusBars = !darkBackground
+        controller?.isAppearanceLightNavigationBars = !darkBackground
+        onDispose {
+            controller?.isAppearanceLightStatusBars = true
+            controller?.isAppearanceLightNavigationBars = true
+        }
+    }
 }

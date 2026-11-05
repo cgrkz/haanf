@@ -63,11 +63,13 @@ class AiOnDeviceTest {
     @Test
     fun aDamagedKeyFileIsIgnoredAndStillRemoved() {
         val store = AiSettingsStore(context)
+        // A phone or emulator may already hold a working key. A damaged file must leave it alone.
+        val before = store.settings.value
         val file = File(context.filesDir, AiSettingsStore.DEV_KEY_FILE)
         file.writeText("NOT_A_PROVIDER\n")
         store.importDevKey(file)
         assertFalse(file.exists())
-        assertNull(store.settings.value)
+        assertEquals(before, store.settings.value)
     }
 
     @Test
