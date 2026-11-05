@@ -26,6 +26,12 @@ adb -s emulator-5554 install -r -t app/build/outputs/apk/androidTest/debug/app-d
 adb -s emulator-5554 shell am instrument -w app.haanf.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
+Screenshots of each designed screen with sample data, for comparing with `docs/design/screens`. The steps to pull them are in `docs/design/README.md`:
+
+```bash
+adb -s emulator-5554 shell am instrument -w -e class app.haanf.DesignScreenshotsTest app.haanf.test/androidx.test.runner.AndroidJUnitRunner
+```
+
 Real AI calls with made-up data, using the development key in `.env`:
 
 ```bash
@@ -53,7 +59,7 @@ One Gradle module, `:app`, with packages under `app.haanf`:
 - `health`: read-only Health Connect report.
 - `data`: Room. `export`: CSV and the share sheet.
 - `tools/ble-sim`: simulated Bluetooth peripherals for the emulator. See its README.
-- `ui`: `HaanfRoot` chooses between tabs and a running workout. The Phase 0 tools live under the Lab tab.
+- `ui`: `HaanfRoot` chooses between first run, the three tabs (Program, Coach, Progress) and a running workout. `Nav.kt` is a small back stack for screens opened over the tabs. `ui/theme` and `Kit.kt` are the visual system. Settings opens from Progress, and the Phase 0 tools live there under Lab. See `docs/design/README.md`.
 - `AppContainer`: manual wiring. One instance per process. Screens read state from it directly.
 
 To add a wearable, implement `HeartRateSource` and return it from a `HeartRateSourceFactory`, keyed by `HeartRateDevice.sourceKind`. Do not change `session` or `talktest`.

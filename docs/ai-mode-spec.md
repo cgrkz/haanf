@@ -86,7 +86,7 @@ Every change must pass the rule check. Enforced in code, not only in the prompt:
 
 ## Talk test
 
-After a hard stretch the coach can ask whether you could talk comfortably. You answer by tap or by voice. No audio leaves the phone. The answer is saved with your heart rate, which builds the data for your talking threshold.
+When "Talk test checks" is on in Get ready, the coach can ask whether you could talk comfortably, never during a hard effort. You answer by voice or with one of three buttons, or skip. No audio leaves the phone. The answer is saved with your heart rate, which builds the data for your talking threshold.
 
 ## Chat that remembers
 
@@ -127,7 +127,7 @@ From the brief:
 
 ## Where it lives
 
-**Default:** a new Coach tab for AI workouts and chat, separate from the program on Today, because the brief keeps the two apart. AI workouts need a first benchmark, since the AI has no baseline without one.
+The Coach tab, separate from the Program tab, because the brief keeps the two apart. It opens on a check-in: time, feel and activity, with last night's recovery. "Find my workout" runs the planner, and the recommendation offers "Make it easier" and "Something else", which both go back through the planner and the rule check and never add work. Chat and "What the coach knows" are one screen, opened from the top of the Coach tab. Provider, key, model and tone are also in Settings. AI workouts need a first benchmark, since the AI has no baseline without one.
 
 ## Not in this version
 

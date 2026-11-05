@@ -28,7 +28,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ## Load a key for testing
 
-Friends type their own key into the Coach tab. To load the Hinoki key from `.env` onto a connected phone without building it into the APK, run this from the repo root. It writes a file into Haanf's private storage, and Haanf encrypts the key and deletes the file on its next launch.
+Friends type their own key into the Coach tab, or in Settings under Coach. To load the Hinoki key from `.env` onto a connected phone without building it into the APK, run this from the repo root. It writes a file into Haanf's private storage, and Haanf encrypts the key and deletes the file on its next launch.
 
 ```bash
 python3 -c "import re;k=[re.match(r'LLM_KEY=(.*)',l).group(1).strip().strip('\"\'') for l in open('.env') if l.startswith('LLM_KEY=')][0];print('HINOKI\nhinoki-offensive\n'+k)" | adb shell "run-as app.haanf sh -c 'cat > files/dev_ai_key'"

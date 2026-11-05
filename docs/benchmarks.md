@@ -6,7 +6,7 @@ A benchmark is a fixed, research-based fitness test. The AI will choose when and
 
 1. Setup asks for year of birth, weight and sex, which the test's formula needs.
 2. A two-statement health check follows. If either applies, Haanf advises seeing a doctor first, and the user can continue only by confirming their doctor has cleared them. Only the outcome is saved, never which statement applied.
-3. The benchmark is the first thing on Today. The program stays locked until it scores. Free workouts stay available.
+3. The benchmark is the last step of first run, and stays on the Program tab until it scores. The program stays locked until then. Free workouts stay available.
 4. A mile cannot be walked during setup, so "right after setup" means required next step, not the same minute.
 
 There are no accounts: setup is local to the phone.
@@ -84,6 +84,6 @@ The most reliable use is comparing a person with themselves over time, in the sa
 
 ## Not built yet
 
-- The AI choosing when to repeat a test. Today the user taps Repeat benchmark.
+- A schedule for repeats. The coach can say a benchmark is due, and the user can start one from Progress, under See benchmarks.
 - A harder test for fit users.
 - Any change to the program based on the score. It is recorded as a baseline only.
