@@ -153,4 +153,27 @@ class AiWorkoutRulesTest {
         assertTrue(AiWorkoutRules.checkChange(easy, intervals, increase = true, hardDay).isNotEmpty())
         assertTrue(AiWorkoutRules.checkChange(easy, intervals, increase = true, context).isEmpty())
     }
+
+    @Test
+    fun `make it easier must be easier, and never harder`() {
+        val shorter = intervals.copy(steps = intervals.steps.dropLast(1) + ProposedStep("Cool down", 3.0, Zone.EASY))
+        assertTrue(AiWorkoutRules.checkAlternative(intervals, shorter, easier = true).isEmpty())
+        val gentler = intervals.copy(steps = intervals.steps.map { if (it.isHard) it.copy(target = Zone.EASY) else it })
+        assertTrue(AiWorkoutRules.checkAlternative(intervals, gentler, easier = true).isEmpty())
+        assertTrue(AiWorkoutRules.checkAlternative(intervals, intervals, easier = true).isNotEmpty())
+        val harder = intervals.copy(steps = intervals.steps.map { if (it.isHard) it.copy(target = Zone.VERY_HARD) else it })
+        assertTrue(AiWorkoutRules.checkAlternative(intervals, harder, easier = true).isNotEmpty())
+        val longer = easy.copy(steps = listOf(ProposedStep("Easy", 40.0, Zone.EASY)))
+        assertTrue(AiWorkoutRules.checkAlternative(easy, longer, easier = true).isNotEmpty())
+    }
+
+    @Test
+    fun `something else may change shape but never add intensity`() {
+        val different = easy.copy(steps = listOf(ProposedStep("Easy", 20.0, Zone.EASY), ProposedStep("Recovery", 10.0, Zone.RECOVERY)))
+        assertTrue(AiWorkoutRules.checkAlternative(easy, different, easier = false).isEmpty())
+        assertTrue(AiWorkoutRules.checkAlternative(easy, easy, easier = false).isNotEmpty())
+        assertTrue(AiWorkoutRules.checkAlternative(easy, intervals, easier = false).isNotEmpty())
+        val moreHard = intervals.copy(steps = intervals.steps + ProposedStep("Hard", 4.0, Zone.HARD))
+        assertTrue(AiWorkoutRules.checkAlternative(intervals, moreHard, easier = false).isNotEmpty())
+    }
 }

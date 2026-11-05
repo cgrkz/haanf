@@ -23,11 +23,13 @@ import app.haanf.health.HealthConnectReader
 import app.haanf.heartrate.HeartRateSourceFactory
 import app.haanf.heartrate.ble.BleDiscovery
 import app.haanf.heartrate.ble.BleHeartRateSourceFactory
+import app.haanf.session.HeartRatePreview
 import app.haanf.session.LiveSessionController
 import app.haanf.program.ProgramTracker
 import app.haanf.talktest.TalkTestLibrary
 import app.haanf.talktest.TalkTestRecorder
 import app.haanf.training.TimedBpm
+import app.haanf.ui.OnboardingStore
 import app.haanf.workout.Announcer
 import app.haanf.workout.DistanceSource
 import app.haanf.workout.GpsDistanceSource
@@ -81,6 +83,8 @@ class AppContainer(
         currentSessionId = { live.live.value.sessionId },
     )
     val health = HealthConnectReader(appContext)
+    val preview = HeartRatePreview(CoroutineScope(SupervisorJob() + Dispatchers.Default), sourceFactory)
+    val onboarding = OnboardingStore(appContext)
     val programs = ProgramTracker(trainingDao, clock)
     val workouts = WorkoutController(
         scope = sessionScope,

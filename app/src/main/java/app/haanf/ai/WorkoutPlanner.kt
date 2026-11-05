@@ -11,6 +11,19 @@ data class CheckIn(
     val activity: TrainingActivity,
 )
 
+/** How the check-in asks "How do you feel?". Tired and sore count as low, so no hard work. */
+enum class Feel(val label: String, val score: Int) {
+    GREAT("Great", 5),
+    OK("OK", 4),
+    TIRED("Tired", 2),
+    SORE("Sore", 2),
+    UNWELL("Unwell", 1),
+    ;
+
+    /** Haanf does not plan a workout for someone who is unwell. */
+    val canTrain: Boolean get() = this != UNWELL
+}
+
 sealed interface PlanOutcome {
     data class Approved(val workout: ProposedWorkout) : PlanOutcome
 
@@ -26,7 +39,11 @@ class WorkoutPlanner(
     private val data: CoachDataSource,
     private val tone: () -> CoachTone,
 ) {
-    suspend fun plan(checkIn: CheckIn): PlanOutcome {
+    /**
+     * Plans today's workout. With [previous], plans a replacement that may not raise intensity:
+     * an easier one when [easier] is true, otherwise something different.
+     */
+    suspend fun plan(checkIn: CheckIn, previous: ProposedWorkout? = null, easier: Boolean = false): PlanOutcome {
         val client = llm.client() ?: return PlanOutcome.Failed("Add an API key first.")
         val snapshot = data.snapshot() ?: return PlanOutcome.Failed("Finish your profile first.")
         val rules = data.ruleContext(checkIn.minutes, checkIn.feeling)
@@ -35,7 +52,9 @@ class WorkoutPlanner(
 
         val request = LlmRequest(
             system = CoachPrompts.planner(tone()),
-            items = listOf(LlmItem.User(CoachContext.render(snapshot) + "\n\n" + checkInText(checkIn))),
+            items = listOf(
+                LlmItem.User(CoachContext.render(snapshot) + "\n\n" + checkInText(checkIn) + variationText(previous, easier)),
+            ),
             tools = listOf(CoachTools.PROPOSE_WORKOUT, CoachTools.SUGGEST_BENCHMARK),
             effort = LlmEffort.MEDIUM,
         )
@@ -44,8 +63,10 @@ class WorkoutPlanner(
                 when (call.name) {
                     CoachTools.PROPOSE_WORKOUT.name -> {
                         val workout = CoachTools.readWorkout(call.input)
-                        val problems = workout?.let { AiWorkoutRules.check(it, rules) }
-                            ?: listOf("The workout could not be read. Follow the schema.")
+                        val problems = workout?.let {
+                            AiWorkoutRules.check(it, rules) +
+                                previous?.let { before -> AiWorkoutRules.checkAlternative(before, it, easier) }.orEmpty()
+                        } ?: listOf("The workout could not be read. Follow the schema.")
                         if (problems.isEmpty()) outcome = PlanOutcome.Approved(requireNotNull(workout))
                         Log.i(TAG, "Proposal: ${workout?.title}, problems: $problems")
                         ToolOutcome(call.id, resultText(problems), isError = problems.isNotEmpty())
@@ -58,10 +79,31 @@ class WorkoutPlanner(
                     else -> ToolOutcome(call.id, "Unknown tool.", isError = true)
                 }
             }
-            outcome ?: PlanOutcome.Fallback(AiWorkoutRules.fallback(checkIn.minutes))
+            outcome ?: PlanOutcome.Fallback(fallback(checkIn, previous, easier))
         } catch (e: LlmException) {
             PlanOutcome.Failed(e.failure.userMessage)
         }
+    }
+
+    /** Haanf's own offer, which is never harder than what the athlete was already shown. */
+    private fun fallback(checkIn: CheckIn, previous: ProposedWorkout?, easier: Boolean): ProposedWorkout {
+        val limit = if (easier && previous != null) {
+            (previous.totalMinutes.toInt() - EASIER_FALLBACK_CUT_MINUTES).coerceAtLeast(MIN_FALLBACK_MINUTES)
+        } else {
+            checkIn.minutes
+        }
+        return AiWorkoutRules.fallback(minOf(limit, checkIn.minutes))
+    }
+
+    private fun variationText(previous: ProposedWorkout?, easier: Boolean): String {
+        if (previous == null) return ""
+        val shown = previous.steps.joinToString { "${it.label} ${it.minutes} min ${it.target.label.lowercase()}" }
+        val ask = if (easier) {
+            "They asked for something easier than this: shorter or gentler, never harder."
+        } else {
+            "They asked for something different from this, and no harder."
+        }
+        return "\n\nYou suggested: ${previous.title} ($shown). $ask"
     }
 
     private fun resultText(problems: List<String>): String =
@@ -76,5 +118,7 @@ class WorkoutPlanner(
     private companion object {
         const val TAG = "HaanfPlanner"
         const val MAX_ATTEMPTS = 3
+        const val EASIER_FALLBACK_CUT_MINUTES = 10
+        const val MIN_FALLBACK_MINUTES = 5
     }
 }

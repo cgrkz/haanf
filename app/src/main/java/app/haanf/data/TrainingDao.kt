@@ -42,6 +42,12 @@ interface TrainingDao {
     @Query("SELECT * FROM workout WHERE id = :id")
     suspend fun workout(id: Long): WorkoutEntity?
 
+    @Query("UPDATE workout SET effortRating = :rating WHERE id = :id")
+    suspend fun setEffortRating(id: Long, rating: Int)
+
+    @Query("SELECT * FROM workout WHERE id = :id")
+    fun observeWorkout(id: Long): Flow<WorkoutEntity?>
+
     @Query("UPDATE workout SET review = :review WHERE id = :id")
     suspend fun saveReview(id: Long, review: String)
 

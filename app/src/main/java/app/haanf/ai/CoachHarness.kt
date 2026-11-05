@@ -6,6 +6,7 @@ import app.haanf.ai.CoachTools.text
 import app.haanf.core.Clock
 import app.haanf.data.TalkAnswer
 import app.haanf.training.TimedBpm
+import app.haanf.training.Zone
 import app.haanf.workout.Announcer
 import app.haanf.workout.WorkoutController
 import app.haanf.workout.WorkoutState
@@ -119,6 +120,11 @@ class CoachHarness(
 
     fun userSaid(text: String) {
         if (session?.isActive == true && text.isNotBlank()) wakes.trySend(Wake.UserSaid(text))
+    }
+
+    /** The athlete chose not to answer this talk test. */
+    fun skipTalkTest() {
+        _status.update { it.copy(awaitingTalkAnswer = false) }
     }
 
     /** A tapped answer. A spoken one arrives through [userSaid] and the record tool instead. */
@@ -279,11 +285,19 @@ class CoachHarness(
                 spokenLog.addLast("${WorkoutText.clock(state()?.elapsedSeconds ?: 0)}: $message")
                 while (spokenLog.size > SPOKEN_LOG_LINES) spokenLog.removeFirst()
             }
-            val asked = input["ask_talk_test"]?.toString() == "true"
+            // Enforced here as well as in the prompt: only when switched on, never in a hard effort.
+            val running = state()
+            val allowed = running != null && running.request.talkChecks && !inHardEffort(running)
+            val asked = allowed && input["ask_talk_test"]?.toString() == "true"
             _status.update { it.copy(lastMessage = message, awaitingTalkAnswer = asked || it.awaitingTalkAnswer) }
             val minutes = (input.int("next_check_in_minutes") ?: DEFAULT_SLEEP_MINUTES)
                 .coerceIn(MIN_SLEEP_MINUTES, MAX_SLEEP_MINUTES)
             return minutes * 60_000L
+        }
+
+        private fun inHardEffort(running: WorkoutState.Running): Boolean {
+            val step = running.stepIndex?.let { running.request.plan?.steps?.get(it) } ?: return false
+            return step.target == Zone.HARD || step.target == Zone.VERY_HARD
         }
 
         private suspend fun overview(input: JsonObject): String {
@@ -346,6 +360,11 @@ class CoachHarness(
             }
             append("Heart rate now: ${link.bpm()?.let { "$it bpm" } ?: "no recent reading"}.\n")
             if (running.request.ai == null) append("This workout is fixed: you may not change it.\n")
+            when {
+                !running.request.talkChecks -> append("Talk test checks are off: do not ask for one.\n")
+                inHardEffort(running) -> append("This is a hard effort: do not ask for a talk test now.\n")
+                else -> append("Talk test checks are on: you may ask during easy steps, now and then.\n")
+            }
             if (spokenLog.isNotEmpty()) {
                 append("What you have said so far:\n")
                 spokenLog.forEach { append("$it\n") }

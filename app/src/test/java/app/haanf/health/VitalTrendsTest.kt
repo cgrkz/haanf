@@ -51,4 +51,10 @@ class VitalTrendsTest {
         assertEquals(listOf(day(1, 45.0), day(0, 30.0)), VitalTrends.daily(readings) { it.average() })
         assertEquals(listOf(day(1, 90.0), day(0, 30.0)), VitalTrends.daily(readings) { it.sum() })
     }
+
+    @Test
+    fun `keeps every day, oldest first, for the sparkline`() {
+        val trend = VitalTrends.trend(listOf(day(0, 60.0), day(10, 64.0), day(3, 61.0)), today)!!
+        assertEquals(listOf(64.0, 61.0, 60.0), trend.days.map { it.value })
+    }
 }

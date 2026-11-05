@@ -10,6 +10,8 @@ data class VitalTrend(
     val recentAverage: Double?,
     val previousAverage: Double?,
     val daysSinceLatest: Long,
+    /** Every day with a value, oldest first, for drawing the trend. */
+    val days: List<DayValue> = emptyList(),
 ) {
     /** Recovery data can stop for days, so anything using it must see how old it is. */
     val stale: Boolean get() = daysSinceLatest >= STALE_AFTER_DAYS
@@ -50,6 +52,7 @@ object VitalTrends {
                 ?.average()
         return VitalTrend(
             latest = latest,
+            days = days.sortedBy { it.date },
             recentAverage = average(0, WINDOW_DAYS - 1),
             previousAverage = average(WINDOW_DAYS, WINDOW_DAYS * 2 - 1),
             daysSinceLatest = ChronoUnit.DAYS.between(latest.date, today),

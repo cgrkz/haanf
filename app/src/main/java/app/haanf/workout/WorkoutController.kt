@@ -7,6 +7,7 @@ import app.haanf.heartrate.HeartRateDevice
 import app.haanf.talktest.TrainingActivity
 import app.haanf.training.BenchmarkInputs
 import app.haanf.training.DistanceTracker
+import app.haanf.training.HeartRateRecovery
 import app.haanf.training.HeartRateZones
 import app.haanf.training.LocationFix
 import app.haanf.training.OverMaxMonitor
@@ -53,6 +54,8 @@ data class WorkoutRequest(
     val ai: AiWorkoutContext? = null,
     val coached: Boolean = false,
     val plannedHard: Boolean = false,
+    val spokenCues: Boolean = true,
+    val talkChecks: Boolean = false,
 )
 
 sealed interface WorkoutState {
@@ -67,6 +70,8 @@ sealed interface WorkoutState {
         val stepRemainingSeconds: Int? = null,
         val planComplete: Boolean = false,
         val distanceMetres: Double = 0.0,
+        /** True for a while after heart rate has stayed above the maximum. */
+        val highHeartRate: Boolean = false,
     ) : WorkoutState
 
     data class Finished(
@@ -92,6 +97,8 @@ fun interface Announcer {
 }
 
 private val HALFWAY_METRES = RockportWalkTest.MILE_METRES / 2
+private const val ALERT_SHOWN_MS = 60_000L
+const val HIGH_HEART_RATE_ALERT = "Your heart rate is above your estimated maximum. Ease off."
 
 interface WorkoutStore {
     suspend fun open(workout: WorkoutEntity): Long
@@ -162,7 +169,7 @@ class WorkoutController(
             finishing = false
             _state.value = WorkoutState.Running(workout, request, clock.elapsedMs())
             starting = false
-            announcer.say(openingLine(request))
+            if (request.spokenCues) announcer.say(openingLine(request))
             ticker = launch { runTicks(request.zones) }
             if (usesGps) {
                 tracker = DistanceTracker()
@@ -184,12 +191,15 @@ class WorkoutController(
             val endedAt = clock.nowEpochMs()
             val elapsedSeconds = ((clock.elapsedMs() - running.startedElapsedMs) / 1000).toInt()
             link.end()
-            val finished = complete(running.workout, sessionId, endedAt, elapsedSeconds, reason)
+            val dropped = complete(running.workout, sessionId, endedAt, elapsedSeconds, reason)
+            val finished = withHeartRateDrop(dropped, running.request.plan, sessionId)
             val outcome = running.request.benchmark
                 ?.takeIf { mileCompleted }
                 ?.let { score(finished, it.inputs, sessionId, endedAt) }
             _state.value = WorkoutState.Finished(finished, outcome)
-            announcer.say(if (running.request.benchmark != null) "Benchmark complete." else "Workout saved.")
+            if (running.request.spokenCues) {
+                announcer.say(if (running.request.benchmark != null) "Benchmark complete." else "Workout saved.")
+            }
         }
     }
 
@@ -247,6 +257,17 @@ class WorkoutController(
         return finished
     }
 
+    /** Adds the one-minute heart rate drop after the last hard step, when samples cover it. */
+    private suspend fun withHeartRateDrop(workout: WorkoutEntity, plan: WorkoutPlan?, sessionId: Long?): WorkoutEntity {
+        val endSeconds = plan?.let(HeartRateRecovery::lastHardStepEndSeconds) ?: return workout
+        val hardEndMs = workout.startedAtMs + endSeconds * 1000L
+        val samples = sessionId?.let { store.samples(it) } ?: return workout
+        val drop = HeartRateRecovery.oneMinuteDrop(samples, hardEndMs) ?: return workout
+        val updated = workout.copy(hrDropBpm = drop)
+        store.close(updated)
+        return updated
+    }
+
     private suspend fun score(
         workout: WorkoutEntity,
         inputs: BenchmarkInputs,
@@ -276,7 +297,9 @@ class WorkoutController(
     private fun onFix(fix: LocationFix) {
         val running = _state.value as? WorkoutState.Running ?: return
         val total = tracker?.add(fix) ?: return
-        if (running.distanceMetres < HALFWAY_METRES && total >= HALFWAY_METRES) announcer.say("Halfway.")
+        if (running.distanceMetres < HALFWAY_METRES && total >= HALFWAY_METRES && running.request.spokenCues) {
+            announcer.say("Halfway.")
+        }
         _state.value = running.copy(distanceMetres = total)
         if (total >= RockportWalkTest.MILE_METRES) finish(reason = "mile_complete")
     }
@@ -303,6 +326,7 @@ class WorkoutController(
 
     private suspend fun runTicks(zones: HeartRateZones) {
         val monitor = OverMaxMonitor(zones.maxBpm)
+        var alertUntilMs = Long.MIN_VALUE
         var attachedSession = false
         var announcedStep = (_state.value as? WorkoutState.Running)?.request?.plan?.positionAt(0)?.index
         while (scope.isActive) {
@@ -317,17 +341,20 @@ class WorkoutController(
                     attachedSession = true
                 }
             }
+            val cues = running.request.spokenCues
             if (position != null && position.index != announcedStep) {
                 announcedStep = position.index
-                announcer.say(WorkoutText.stepLine(position.step))
+                if (cues) announcer.say(WorkoutText.stepLine(position.step))
             }
             val planComplete = plan != null && position == null
-            if (planComplete && !running.planComplete) {
+            if (planComplete && !running.planComplete && cues) {
                 announcer.say("Session complete. Finish when you are ready.")
             }
+            // A safety alert, so it is spoken even with cues switched off.
             val bpm = currentBpm()
             if (bpm != null && monitor.onBpm(bpm, clock.elapsedMs())) {
-                announcer.say("Your heart rate is above your estimated maximum. Ease off.")
+                alertUntilMs = clock.elapsedMs() + ALERT_SHOWN_MS
+                announcer.say(HIGH_HEART_RATE_ALERT)
             }
 
             _state.value = (_state.value as? WorkoutState.Running ?: return).copy(
@@ -335,6 +362,7 @@ class WorkoutController(
                 stepIndex = position?.index,
                 stepRemainingSeconds = position?.remainingSeconds,
                 planComplete = planComplete,
+                highHeartRate = clock.elapsedMs() < alertUntilMs,
             )
             delay(tickMs)
         }

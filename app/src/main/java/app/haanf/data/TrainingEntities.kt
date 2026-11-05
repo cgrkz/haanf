@@ -48,6 +48,8 @@ data class WorkoutEntity(
     @ColumnInfo(defaultValue = "0") val plannedHard: Boolean = false,
     @ColumnInfo(defaultValue = "0") val coached: Boolean = false,
     val review: String? = null,
+    val effortRating: Int? = null,
+    val hrDropBpm: Int? = null,
 )
 
 @Entity(tableName = "program_enrolment")

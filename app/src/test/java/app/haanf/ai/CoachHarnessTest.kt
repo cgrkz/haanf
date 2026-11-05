@@ -123,6 +123,7 @@ class CoachHarnessTest {
         plan = plan,
         ai = AiWorkoutContext(minutesAvailable = 40, feeling = 4),
         coached = true,
+        talkChecks = true,
     )
     private val programRequest = aiRequest.copy(ai = null, slot = ProgramSlot("foundation-8", 1, 0))
 
@@ -412,6 +413,34 @@ class CoachHarnessTest {
         val result = (llm.requests.first { it.items.size > 1 }.items.last() as LlmItem.ToolTurn).outcomes.single()
         assertTrue(result.content.contains("average 130"))
         assertTrue(result.content.length < 400)
+    }
+
+    @Test
+    fun `no talk test when talk test checks are off`() {
+        llm.then { FakeLlm.speak("Could you talk?", nextMinutes = 10, askTalkTest = true) }
+        start(aiRequest.copy(talkChecks = false))
+        assertFalse(harness.status.value.awaitingTalkAnswer)
+        assertTrue(userMessages().single().contains("Talk test checks are off"))
+    }
+
+    @Test
+    fun `never a talk test during a hard effort`() {
+        llm.then { FakeLlm.speak("Steady", nextMinutes = 10) }
+            .then { FakeLlm.speak("Could you talk?", nextMinutes = 10, askTalkTest = true) }
+        start()
+        run(605)
+        assertTrue(userMessages().last().contains("This is a hard effort"))
+        assertFalse(harness.status.value.awaitingTalkAnswer)
+    }
+
+    @Test
+    fun `a talk test can be skipped`() {
+        llm.then { FakeLlm.speak("Could you talk?", nextMinutes = 10, askTalkTest = true) }
+        start()
+        assertTrue(harness.status.value.awaitingTalkAnswer)
+        harness.skipTalkTest()
+        assertFalse(harness.status.value.awaitingTalkAnswer)
+        assertTrue(savedTalk.isEmpty())
     }
 
     private companion object {

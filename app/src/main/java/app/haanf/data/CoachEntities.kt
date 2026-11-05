@@ -96,6 +96,9 @@ interface CoachDao {
     @Insert
     suspend fun insertTalkCheck(check: TalkCheckEntity)
 
+    @Query("SELECT * FROM talk_check WHERE workoutId = :workoutId ORDER BY atMs")
+    fun observeTalkChecks(workoutId: Long): Flow<List<TalkCheckEntity>>
+
     @Query("SELECT * FROM talk_check ORDER BY atMs DESC LIMIT :limit")
     suspend fun recentTalkChecks(limit: Int): List<TalkCheckEntity>
 }

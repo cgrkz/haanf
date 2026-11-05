@@ -117,6 +117,27 @@ object AiWorkoutRules {
         return check(fullSteps, context)
     }
 
+    /**
+     * Checks a replacement asked for from the plan screen. Neither kind may raise intensity:
+     * no more hard minutes and no harder zone than before. "Make it easier" must also really be
+     * easier, and "something else" must differ.
+     */
+    fun checkAlternative(previous: ProposedWorkout, proposed: ProposedWorkout, easier: Boolean): List<String> = buildList {
+        if (hardMinutes(proposed) > hardMinutes(previous) + ROUNDING_MINUTES) add("It may not add hard minutes.")
+        if (topZone(proposed) > topZone(previous)) add("It may not use a harder zone than before.")
+        if (easier) {
+            val lessTime = proposed.totalMinutes < previous.totalMinutes - ROUNDING_MINUTES
+            val lessHard = hardMinutes(proposed) < hardMinutes(previous) - ROUNDING_MINUTES
+            val lowerZone = topZone(proposed) < topZone(previous)
+            if (proposed.totalMinutes > previous.totalMinutes + ROUNDING_MINUTES) add("Make it easier cannot add time.")
+            if (!lessTime && !lessHard && !lowerZone) add("It must be easier than before: shorter or gentler.")
+        } else if (proposed.steps == previous.steps) {
+            add("It must be a different workout.")
+        }
+    }
+
+    private fun topZone(workout: ProposedWorkout): Int = workout.steps.maxOfOrNull { it.target.ordinal } ?: 0
+
     private fun hardMinutes(workout: ProposedWorkout): Double =
         workout.steps.filter { it.isHard }.sumOf { it.minutes }
 

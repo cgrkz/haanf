@@ -120,4 +120,49 @@ class WorkoutPlannerTest {
         val noKey = WorkoutPlanner({ null }, data) { CoachTone.WARM }
         assertTrue(runBlocking { noKey.plan(checkIn) } is PlanOutcome.Failed)
     }
+
+    private val shown = ProposedWorkout(
+        "Easy run",
+        "Because",
+        listOf(ProposedStep("Easy", 30.0, app.haanf.training.Zone.EASY)),
+    )
+
+    @Test
+    fun `make it easier tells the AI what it suggested and wants shorter or gentler`() {
+        llm.then { propose(workout(20.0)) }
+        assertTrue(runBlocking { planner.plan(checkIn, shown, easier = true) } is PlanOutcome.Approved)
+        val text = (llm.requests.single().items.single() as LlmItem.User).text
+        assertTrue(text.contains("You suggested: Easy run"))
+        assertTrue(text.contains("something easier"))
+    }
+
+    @Test
+    fun `make it easier rejects a workout that is not easier`() {
+        llm.then { propose(workout(30.0)) }.then { propose(workout(20.0)) }
+        assertTrue(runBlocking { planner.plan(checkIn, shown, easier = true) } is PlanOutcome.Approved)
+        val retry = llm.requests[1].items.last() as LlmItem.ToolTurn
+        assertTrue(retry.outcomes.single().content.contains("must be easier"))
+    }
+
+    @Test
+    fun `something else rejects anything harder`() {
+        llm.then { propose(workout(25.0, "hard")) }
+        val outcome = runBlocking { planner.plan(checkIn, shown, easier = false) }
+        assertTrue(outcome is PlanOutcome.Fallback)
+    }
+
+    @Test
+    fun `the easier fallback is shorter than what was shown`() {
+        llm.then { FakeLlm.text("No.") }
+        val outcome = runBlocking { planner.plan(checkIn, shown, easier = true) } as PlanOutcome.Fallback
+        assertEquals(20.0, outcome.workout.totalMinutes, 0.0)
+    }
+
+    @Test
+    fun `the check-in feelings map so tired and sore rule out hard work`() {
+        assertEquals(2, Feel.TIRED.score)
+        assertEquals(2, Feel.SORE.score)
+        assertTrue(Feel.OK.score >= 3)
+        assertTrue(!Feel.UNWELL.canTrain)
+    }
 }

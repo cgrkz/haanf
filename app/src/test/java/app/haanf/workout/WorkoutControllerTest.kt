@@ -351,6 +351,52 @@ class WorkoutControllerTest {
         assertEquals(WorkoutState.Idle, controller.state.value)
     }
 
+    @Test
+    fun `with spoken cues off, steps are silent but the safety alert still speaks`() {
+        start(programRequest.copy(spokenCues = false))
+        run(130)
+        assertTrue(spoken.none { it.contains("Warm up") || it.contains("Hard 1") || it.contains("Session complete") })
+        bpm = 210
+        run(35)
+        assertTrue(spoken.contains(HIGH_HEART_RATE_ALERT))
+    }
+
+    @Test
+    fun `the screen is told while heart rate is too high, then not`() {
+        start(freeRequest)
+        bpm = 210
+        run(35)
+        assertTrue((controller.state.value as WorkoutState.Running).highHeartRate)
+        bpm = 150
+        run(65)
+        assertFalse((controller.state.value as WorkoutState.Running).highHeartRate)
+    }
+
+    @Test
+    fun `saves the heart rate drop in the minute after the last hard step`() {
+        sessionId = 9
+        store.samples = listOf(
+            TimedBpm(START_MS + 115_000, 172),
+            TimedBpm(START_MS + 120_000, 170),
+            TimedBpm(START_MS + 180_000, 140),
+        )
+        val withCoolDown = plan.copy(steps = plan.steps + WorkoutStep("Cool down", 120, Zone.EASY))
+        start(programRequest.copy(plan = withCoolDown))
+        run(200)
+        finish()
+        assertEquals(31, finished.hrDropBpm)
+    }
+
+    @Test
+    fun `leaves the drop empty when the minute after was not recorded`() {
+        sessionId = 9
+        store.samples = listOf(TimedBpm(START_MS + 120_000, 170))
+        start(programRequest)
+        run(125)
+        finish()
+        assertEquals(null, finished.hrDropBpm)
+    }
+
     private class FakeGps : DistanceSource {
         private var onFix: ((LocationFix) -> Unit)? = null
         private var latitude = 12.9
