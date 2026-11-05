@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Workout summary</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 1000px; box-sizing: border-box; padding: 24px; display: flex; flex-direction: column; gap: 16px; background: #F3F5F6; color: #101418; font-family: 'Barlow', sans-serif">
+  <div>
+    <h1 style="margin: 0 0 2px; font-family: 'Barlow Condensed', sans-serif; font-size: 44px; line-height: 1; font-weight: 700">Workout done</h1>
+    <p style="margin: 0 0 8px; font-size: 16px; color: #56616B">4 x 2 min hard, outdoor run</p>
+    <p style="margin: 0; display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#101418" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>
+      Counts toward Foundation 8
+    </p>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+    <div style="padding: 12px; border-radius: 8px; background: #FFFFFF">
+      <p style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-size: 32px; line-height: 1; font-weight: 700">32:10</p>
+      <p style="margin: 2px 0 0; font-size: 14px; color: #56616B">time</p>
+    </div>
+    <div style="padding: 12px; border-radius: 8px; background: #FFFFFF">
+      <p style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-size: 32px; line-height: 1; font-weight: 700">139</p>
+      <p style="margin: 2px 0 0; font-size: 14px; color: #56616B">average bpm</p>
+    </div>
+    <div style="padding: 12px; border-radius: 8px; background: #FFFFFF">
+      <p style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-size: 32px; line-height: 1; font-weight: 700">28</p>
+      <p style="margin: 2px 0 0; font-size: 14px; color: #56616B">bpm drop in 1 min</p>
+    </div>
+  </div>
+  <div style="padding: 16px; border-radius: 8px; background: #FFFFFF">
+    <h2 style="margin: 0 0 12px; font-size: 17px; font-weight: 700">Time in each zone</h2>
+    <div role="img" aria-label="Recovery 2 minutes, Easy 21 minutes, Hard 8 minutes, Very hard 1 minute" style="display: grid; grid-template-columns: 2fr 21fr 8fr 1fr; gap: 2px; margin-bottom: 12px">
+      <div style="height: 16px; border-radius: 4px; background: #009FB0"></div>
+      <div style="height: 16px; border-radius: 4px; background: #1F5BFF"></div>
+      <div style="height: 16px; border-radius: 4px; background: #E8850C"></div>
+      <div style="height: 16px; border-radius: 4px; background: #C93400"></div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; font-size: 15px">
+      <p style="margin: 0; display: flex; align-items: center; gap: 8px"><span aria-hidden="true" style="width: 12px; height: 12px; border-radius: 3px; background: #009FB0"></span>Recovery<span style="margin-left: auto; font-weight: 600">2 min</span></p>
+      <p style="margin: 0; display: flex; align-items: center; gap: 8px"><span aria-hidden="true" style="width: 12px; height: 12px; border-radius: 3px; background: #1F5BFF"></span>Easy<span style="margin-left: auto; font-weight: 600">21 min</span></p>
+      <p style="margin: 0; display: flex; align-items: center; gap: 8px"><span aria-hidden="true" style="width: 12px; height: 12px; border-radius: 3px; background: #E8850C"></span>Hard<span style="margin-left: auto; font-weight: 600">8 min</span></p>
+      <p style="margin: 0; display: flex; align-items: center; gap: 8px"><span aria-hidden="true" style="width: 12px; height: 12px; border-radius: 3px; background: #C93400"></span>Very hard<span style="margin-left: auto; font-weight: 600">1 min</span></p>
+    </div>
+  </div>
+  <div style="padding: 16px; border-radius: 8px; background: #FFFFFF">
+    <h2 style="margin: 0 0 4px; font-size: 17px; font-weight: 700">Talk test</h2>
+    <p style="margin: 0; font-size: 16px; line-height: 1.35">Comfortable at 126 bpm, during your warm-up.</p>
+  </div>
+  <div style="padding: 16px; border-radius: 8px; background: #E4ECFF">
+    <h2 style="margin: 0 0 4px; font-size: 17px; font-weight: 700">Coach note</h2>
+    <p style="margin: 0; font-size: 16px; line-height: 1.35">Good control today. You stayed in your target zone on all four efforts, and your heart rate settled quickly afterwards.</p>
+  </div>
+  <div>
+    <h2 style="margin: 0 0 8px; font-size: 17px; font-weight: 700">How hard was that?</h2>
+    <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px">
+      <sc-for list="{{efforts}}" as="o" hint-placeholder-count="5">
+        <button type="button" onClick="{{o.pick}}" aria-pressed="{{o.on}}" aria-label="{{o.name}}" style="height: 48px; padding: 0; border: 1px solid #101418; border-radius: 8px; background: {{o.bg}}; color: {{o.fg}}; font: inherit; font-size: 17px; font-weight: 700; cursor: pointer">{{o.label}}</button>
+      </sc-for>
+    </div>
+    <div style="display: flex; justify-content: space-between; margin-top: 4px; font-size: 14px; color: #56616B"><span>Very easy</span><span>All out</span></div>
+  </div>
+  <a href="ProgramHome.dc.html" style="margin-top: auto; display: flex; align-items: center; justify-content: center; flex-shrink: 0; height: 56px; border-radius: 8px; background: #1F5BFF; color: #FFFFFF; font-size: 17px; font-weight: 700; text-decoration: none">Done</a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const picked = (this.state && this.state.effort) || '3';
+    const names = { 1: 'Very easy', 2: 'Easy', 3: 'Moderate', 4: 'Hard', 5: 'All out' };
+    const efforts = ['1', '2', '3', '4', '5'].map((label) => ({
+      label,
+      name: names[label],
+      on: picked === label ? 'true' : 'false',
+      bg: picked === label ? '#101418' : '#FFFFFF',
+      fg: picked === label ? '#FFFFFF' : '#101418',
+      pick: () => this.setState({ effort: label }),
+    }));
+    return { efforts };
+  }
+}
+</script>
+</body>
+</html>

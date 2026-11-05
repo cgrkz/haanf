@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Progress tab</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 1240px; box-sizing: border-box; display: flex; flex-direction: column; background: #F3F5F6; color: #101418; font-family: 'Barlow', sans-serif">
+  <div style="flex-grow: 1; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <h1 style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-size: 44px; line-height: 1; font-weight: 700">Progress</h1>
+      <button type="button" aria-label="Settings and Lab" style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-right: -10px; border: 0; background: transparent; cursor: pointer">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#101418" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
+      </button>
+    </div>
+    <div style="padding: 20px; border-radius: 8px; background: #1F5BFF; color: #FFFFFF">
+      <h2 style="margin: 0; font-size: 16px; font-weight: 600">Talking gets hard at</h2>
+      <p style="margin: 4px 0; display: flex; align-items: baseline; gap: 6px; font-family: 'Barlow Condensed', sans-serif; font-size: 80px; line-height: 1; font-weight: 700">152<span style="font-size: 24px; font-weight: 600">bpm</span></p>
+      <p style="margin: 0; font-size: 16px; line-height: 1.35">Up from 146 bpm six weeks ago. You can now work harder and still breathe comfortably.</p>
+    </div>
+    <div style="padding: 16px; border-radius: 8px; background: #FFFFFF">
+      <div style="display: flex; align-items: baseline; justify-content: space-between">
+        <h2 style="margin: 0; font-size: 17px; font-weight: 700">Estimated VO2max</h2>
+        <p style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-size: 36px; line-height: 1; font-weight: 700">38.4</p>
+      </div>
+      <p style="margin: 4px 0 8px; font-size: 15px; line-height: 1.35">Up 1.6 since your first benchmark. Your next one is due in a week.</p>
+      <a href="FirstBenchmark.dc.html" style="font-size: 15px; font-weight: 600">See benchmarks</a>
+    </div>
+    <div style="padding: 8px 16px; border-radius: 8px; background: #FFFFFF">
+      <h2 style="margin: 8px 0 0; font-size: 17px; font-weight: 700">Vitals, last 6 weeks</h2>
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) 108px; align-items: center; gap: 12px; min-height: 72px; border-bottom: 1px solid #DDE2E6">
+        <div>
+          <p style="margin: 0; font-size: 15px; color: #56616B">Resting heart rate</p>
+          <p style="margin: 0; font-size: 18px; font-weight: 700">58 bpm, down 3</p>
+        </div>
+        <svg width="108" height="36" viewBox="0 0 108 36" role="img" aria-label="Resting heart rate falling over six weeks"><polyline points="0,6 14,8 28,7 42,12 56,14 70,13 84,20 100,24" fill="none" stroke="#1F5BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="100" cy="24" r="4" fill="#1F5BFF" stroke="#FFFFFF" stroke-width="2"/></svg>
+      </div>
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) 108px; align-items: center; gap: 12px; min-height: 72px; border-bottom: 1px solid #DDE2E6">
+        <div>
+          <p style="margin: 0; font-size: 15px; color: #56616B">HRV, 3 days old</p>
+          <p style="margin: 0; font-size: 18px; font-weight: 700">46 ms, up 5</p>
+        </div>
+        <svg width="108" height="36" viewBox="0 0 108 36" role="img" aria-label="HRV rising over six weeks"><polyline points="0,26 14,24 28,27 42,20 56,18 70,19 84,12 100,10" fill="none" stroke="#1F5BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="100" cy="10" r="4" fill="#1F5BFF" stroke="#FFFFFF" stroke-width="2"/></svg>
+      </div>
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) 108px; align-items: center; gap: 12px; min-height: 72px">
+        <div>
+          <p style="margin: 0; font-size: 15px; color: #56616B">Sleep</p>
+          <p style="margin: 0; font-size: 18px; font-weight: 700">7 h 05 min average</p>
+        </div>
+        <svg width="108" height="36" viewBox="0 0 108 36" role="img" aria-label="Sleep steady over six weeks"><polyline points="0,18 14,12 28,20 42,16 56,14 70,22 84,15 100,16" fill="none" stroke="#1F5BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="100" cy="16" r="4" fill="#1F5BFF" stroke="#FFFFFF" stroke-width="2"/></svg>
+      </div>
+    </div>
+    <div style="padding: 16px; border-radius: 8px; background: #FFFFFF">
+      <h2 style="margin: 0 0 10px; font-size: 17px; font-weight: 700">This week, 92 minutes</h2>
+      <div role="img" aria-label="Easy 78 minutes, Hard 12 minutes, Recovery 2 minutes" style="display: grid; grid-template-columns: 2fr 78fr 12fr; gap: 2px; margin-bottom: 8px">
+        <div style="height: 14px; border-radius: 4px; background: #009FB0"></div>
+        <div style="height: 14px; border-radius: 4px; background: #1F5BFF"></div>
+        <div style="height: 14px; border-radius: 4px; background: #E8850C"></div>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 15px">
+        <span style="display: flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 12px; height: 12px; border-radius: 3px; background: #009FB0"></span>Recovery 2</span>
+        <span style="display: flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 12px; height: 12px; border-radius: 3px; background: #1F5BFF"></span>Easy 78</span>
+        <span style="display: flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 12px; height: 12px; border-radius: 3px; background: #E8850C"></span>Hard 12</span>
+      </div>
+    </div>
+    <div>
+      <h2 style="margin: 0 0 4px; font-size: 17px; font-weight: 700">Recent workouts</h2>
+      <div style="display: flex; align-items: center; justify-content: space-between; min-height: 56px; border-bottom: 1px solid #DDE2E6">
+        <div><p style="margin: 0; font-size: 16px; font-weight: 600">4 x 2 min hard</p><p style="margin: 0; font-size: 14px; color: #56616B">Program, today</p></div>
+        <p style="margin: 0; font-size: 16px; font-weight: 600">32 min</p>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between; min-height: 56px; border-bottom: 1px solid #DDE2E6">
+        <div><p style="margin: 0; font-size: 16px; font-weight: 600">Easy run</p><p style="margin: 0; font-size: 14px; color: #56616B">Coach, Thursday</p></div>
+        <p style="margin: 0; font-size: 16px; font-weight: 600">30 min</p>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between; min-height: 56px">
+        <div><p style="margin: 0; font-size: 16px; font-weight: 600">Easy 30 min</p><p style="margin: 0; font-size: 14px; color: #56616B">Program, Tuesday</p></div>
+        <p style="margin: 0; font-size: 16px; font-weight: 600">30 min</p>
+      </div>
+      <a href="Summary.dc.html" style="display: block; margin-top: 4px; font-size: 16px; font-weight: 600">See all workouts</a>
+    </div>
+  </div>
+  <nav aria-label="Main" style="flex-shrink: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); height: 72px; background: #FFFFFF; border-top: 1px solid #DDE2E6">
+    <a href="ProgramHome.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #56616B; font-size: 13px; font-weight: 600; text-decoration: none">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Program</a>
+    <a href="CoachCheckIn.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #56616B; font-size: 13px; font-weight: 600; text-decoration: none">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>Coach</a>
+    <a href="Progress.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #1F5BFF; font-size: 13px; font-weight: 700; text-decoration: none">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18l5-6 4 3 7-9"/></svg>Progress</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

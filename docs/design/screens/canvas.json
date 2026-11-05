@@ -1,0 +1,47 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-02T13:00:00Z"},
+  "title": "Haanf app screens",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 390, "h": 844, "title": "Welcome", "is_interactive": true},
+    "AboutYou.dc.html": {"x": 470, "y": 0, "w": 390, "h": 844, "title": "About you and health check", "is_interactive": true},
+    "ConnectWatch.dc.html": {"x": 940, "y": 0, "w": 390, "h": 844, "title": "Connect your watch", "is_interactive": true},
+    "FirstBenchmark.dc.html": {"x": 1410, "y": 0, "w": 390, "h": 844, "title": "First benchmark", "is_interactive": true},
+    "ProgramDetail.dc.html": {"x": 0, "y": 1240, "w": 390, "h": 844, "title": "Program details", "is_interactive": true},
+    "ProgramHome.dc.html": {"x": 470, "y": 1240, "w": 390, "h": 844, "title": "Program tab", "is_interactive": true},
+    "CoachCheckIn.dc.html": {"x": 1000, "y": 1240, "w": 390, "h": 844, "title": "Coach check-in", "is_interactive": true},
+    "CoachPlan.dc.html": {"x": 1470, "y": 1240, "w": 390, "h": 844, "title": "Coach recommendation", "is_interactive": true},
+    "GetReady.dc.html": {"x": 0, "y": 2480, "w": 390, "h": 844, "title": "Get ready", "is_interactive": true},
+    "LiveSteady.dc.html": {"x": 470, "y": 2480, "w": 390, "h": 844, "title": "Live: steady step", "is_interactive": true},
+    "LiveInterval.dc.html": {"x": 940, "y": 2480, "w": 390, "h": 844, "title": "Live: hard interval", "is_interactive": true},
+    "TalkTest.dc.html": {"x": 1410, "y": 2480, "w": 390, "h": 844, "title": "Talk test", "is_interactive": true},
+    "Summary.dc.html": {"x": 1880, "y": 2480, "w": 390, "h": 1000, "title": "Workout summary", "is_interactive": true},
+    "Progress.dc.html": {"x": 0, "y": 3800, "w": 390, "h": 1240, "title": "Progress tab", "is_interactive": true}
+  },
+  "order": [
+    "Main.dc.html",
+    "AboutYou.dc.html",
+    "ConnectWatch.dc.html",
+    "FirstBenchmark.dc.html",
+    "ProgramDetail.dc.html",
+    "ProgramHome.dc.html",
+    "CoachCheckIn.dc.html",
+    "CoachPlan.dc.html",
+    "GetReady.dc.html",
+    "LiveSteady.dc.html",
+    "LiveInterval.dc.html",
+    "TalkTest.dc.html",
+    "Summary.dc.html",
+    "Progress.dc.html"
+  ],
+  "notes": {
+    "first-run": {"x": 0, "y": -300, "text": "First run", "kind": "title1", "maxW": 1800},
+    "program": {"x": 0, "y": 940, "text": "Program", "kind": "title1", "maxW": 860},
+    "coach": {"x": 1000, "y": 940, "text": "Coach", "kind": "title1", "maxW": 860},
+    "workout": {"x": 0, "y": 2180, "text": "Live workout", "kind": "title1", "maxW": 2270},
+    "progress": {"x": 0, "y": 3500, "text": "Progress", "kind": "title1", "maxW": 390}
+  },
+  "designSystems": []
+}

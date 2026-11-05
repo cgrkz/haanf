@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>About you</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}
+input{font:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 24px; display: flex; flex-direction: column; gap: 16px; background: #F3F5F6; color: #101418; font-family: 'Barlow', sans-serif">
+  <div>
+    <p style="margin: 0; font-size: 14px; font-weight: 600; color: #56616B">Step 1 of 3</p>
+    <h1 style="margin: 4px 0 4px; font-family: 'Barlow Condensed', sans-serif; font-size: 40px; line-height: 1.05; font-weight: 700">About you</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.35; color: #56616B">Used for your heart rate zones and benchmark. It stays on this phone.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+    <label style="display: flex; flex-direction: column; gap: 4px; font-size: 14px; font-weight: 600">Year of birth
+      <input inputMode="numeric" defaultValue="1996" style="height: 48px; box-sizing: border-box; padding: 0 12px; border: 1px solid #A9B3BC; border-radius: 8px; background: #FFFFFF; font-size: 17px; font-weight: 500; min-width: 0">
+    </label>
+    <label style="display: flex; flex-direction: column; gap: 4px; font-size: 14px; font-weight: 600">Weight in kg
+      <input inputMode="numeric" defaultValue="72" style="height: 48px; box-sizing: border-box; padding: 0 12px; border: 1px solid #A9B3BC; border-radius: 8px; background: #FFFFFF; font-size: 17px; font-weight: 500; min-width: 0">
+    </label>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 4px">
+    <p style="margin: 0; font-size: 14px; font-weight: 600">Sex, for the benchmark formula</p>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+      <sc-for list="{{sexes}}" as="o" hint-placeholder-count="2">
+        <button type="button" onClick="{{o.pick}}" aria-pressed="{{o.on}}" style="height: 48px; border: 1px solid #101418; border-radius: 8px; background: {{o.bg}}; color: {{o.fg}}; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer">{{o.label}}</button>
+      </sc-for>
+    </div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 8px; background: #FFFFFF">
+    <h2 style="margin: 0; font-size: 18px; font-weight: 700">Does either of these apply to you?</h2>
+    <p style="margin: 0; font-size: 15px; line-height: 1.35">A doctor has told me I have a heart, kidney or metabolic condition, such as diabetes.</p>
+    <p style="margin: 0; font-size: 15px; line-height: 1.35">I get chest pain, dizziness, fainting or unusual breathlessness when I am active.</p>
+  </div>
+  <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px">
+    <a href="ConnectWatch.dc.html" style="display: flex; align-items: center; justify-content: center; height: 56px; border-radius: 8px; background: #1F5BFF; color: #FFFFFF; font-size: 17px; font-weight: 700; text-decoration: none">Neither applies to me</a>
+    <button type="button" style="height: 52px; border: 1.5px solid #101418; border-radius: 8px; background: transparent; color: #101418; font: inherit; font-size: 17px; font-weight: 600; cursor: pointer">One or both apply to me</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const picked = (this.state && this.state.sex) || 'Female';
+    const sexes = ['Female', 'Male'].map((label) => ({
+      label,
+      on: picked === label ? 'true' : 'false',
+      bg: picked === label ? '#101418' : '#FFFFFF',
+      fg: picked === label ? '#FFFFFF' : '#101418',
+      pick: () => this.setState({ sex: label }),
+    }));
+    return { sexes };
+  }
+}
+</script>
+</body>
+</html>
