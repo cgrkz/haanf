@@ -160,7 +160,8 @@ fun CoachTab(container: AppContainer, nav: Navigator, state: CoachTabState, vita
 private fun CoachHeader(title: String, nav: Navigator) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
         ScreenTitle(title, modifier = Modifier.weight(1f))
-        Box(Modifier.padding(start = 8.dp)) {
+        Row(Modifier.padding(start = 8.dp)) {
+            HIconButton(HaanfIcons.Settings, "Coach settings", onClick = { nav.open(Dest.CoachSetup) })
             HIconButton(HaanfIcons.Coach, "Chat with your coach", onClick = { nav.open(Dest.Chat) })
         }
     }
@@ -591,6 +592,9 @@ fun CoachSetupScreen(
             }, enabled = !checking)
         }
         HTextField(key, { key = it }, "API key", placeholder = provider.keyHint, password = true, enabled = !checking)
+        existing?.let { saved ->
+            Hint("Your ${saved.provider.label} key is saved. Paste a key again to change the provider, model or tone.")
+        }
         HTextField(model, { model = it }, "Model", enabled = !checking)
         LabeledChoices("Coach tone") {
             Choices(CoachTone.entries, tone, { it.label }, { tone = it }, enabled = !checking, height = 56.dp)

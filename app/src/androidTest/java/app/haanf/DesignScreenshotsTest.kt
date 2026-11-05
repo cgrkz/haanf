@@ -478,6 +478,33 @@ class DesignScreenshotsTest {
         shot("16-coach-setup")
     }
 
+    /** Opened from the Coach tab's settings button, with a key already saved. */
+    @Test
+    fun coachSetupWithAKeySaved() {
+        build(onboarded = true)
+        TestSupport.seedProfile(container)
+        TestSupport.seedBenchmark(container)
+        // A made-up key, saved only if the emulator has none, and removed afterwards.
+        val madeUp = container.aiSettings.settings.value == null
+        if (madeUp) {
+            container.aiSettings.save(
+                app.haanf.ai.AiSettings(app.haanf.ai.AiProvider.HINOKI, app.haanf.ai.AiProvider.HINOKI.defaultModel, app.haanf.ai.CoachTone.WARM),
+                "made-up-key-for-a-screenshot-only",
+            )
+        }
+        try {
+            showRoot()
+            waitForText("Coach")
+            compose.onNodeWithText("Coach").performClick()
+            waitForText("Let's find today's workout")
+            compose.onNodeWithContentDescription("Coach settings").performClick()
+            waitForText("key is saved", substring = true)
+            shot("16-coach-setup-saved")
+        } finally {
+            if (madeUp) container.aiSettings.clear()
+        }
+    }
+
     private fun startLive(bpm: Int) {
         container.live.start(source.device, watchWorkoutRunning = false)
         compose.waitUntil(timeoutMillis = 5_000) { source.readingsFlow.subscriptionCount.value > 0 }

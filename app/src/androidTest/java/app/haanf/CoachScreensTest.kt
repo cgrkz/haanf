@@ -153,6 +153,18 @@ class CoachScreensTest {
     }
 
     @Test
+    fun withAKeyTheCoachTabStillOpensTheKeyScreen() {
+        launch()
+        openCoach()
+        waitForText("Let's find today's workout")
+        compose.onNodeWithContentDescription("Coach settings").performClick()
+        waitForText("Set up your coach")
+        compose.onNodeWithText("Agree and connect").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("Back").performScrollTo().performClick()
+        waitForText("Let's find today's workout")
+    }
+
+    @Test
     fun theWholeLoopFromPlanToCoachToReview() {
         launch()
         openCoach()
