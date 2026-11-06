@@ -108,7 +108,14 @@ SensorManager on the same watch, the same day, worn and awake, in `wearprobe/res
 - **Heart rate arrives about every 2 seconds,** on change, slower than the Bluetooth broadcast. A Google "extended" heart rate sensor is readable, but it repeats the same bpm with one status value, and its other 14 values were zero at rest.
 - **Step cadence and step detection are readable.** They were not tested walking.
 
+The probe was also built for API 35 so it could hold the old `BODY_SENSORS` permission. With that granted as well, the same sensors still refused. A University of Toronto study read PPG and ECG through SensorManager on a Pixel Watch in mid-2025, so access appears to have been closed since. Google offers no SDK or partner programme for these sensors, unlike Samsung's Health Sensor SDK for Galaxy watches. Rooting the watch or modified system software would get around the lock, which `CLAUDE.md` rules out.
+
 So SensorManager adds nothing that changes the decision above. HRV stays what Health Connect reports overnight.
+
+The legitimate routes to this data, as of 7 November 2026:
+- **A chest strap for live beat intervals.** Straps such as the Polar H10 send beat intervals over the standard heart rate profile, which Haanf already reads. This is the only route to HRV during a workout.
+- **Health Connect.** It has a skin temperature record type. Whether the Fitbit app writes it from the Pixel Watch 2 is untested.
+- **The Google Health API,** which replaced the Fitbit Web API in 2026. It offers HRV samples, ECG recordings with their waveform, and nightly skin temperature changes for the Pixel Watch 2, after the watch syncs, but not EDA. It needs a Google sign-in and a new network host, which Haanf's rules exclude for now. Unverified apps are limited to 100 users.
 
 ## Testing limits
 

@@ -13,6 +13,8 @@ Three more modes look at the watch's raw sensors through SensorManager. Start th
 - `--es mode listen` listens for 30 seconds to heart rate, heart beat, off-body detection, steps, the barometer and every Google-specific sensor. It reports which ones an ordinary app may use, and how often they report. The watch must be worn with its screen awake, because Android gives background apps no sensor data and allows heart rate only while the app is in use.
 - `--es mode detail` logs every event in full for 30 seconds from heart rate, Google's extended heart rate, step cadence and the step detector.
 
+To check the old permission model, build with `./gradlew :wearprobe:assembleDebug -PprobeTargetSdk=35`. That version asks for `BODY_SENSORS` instead of the newer heart rate permission. Uninstall the probe first, because the two versions handle permissions differently.
+
 Each mode saves to its own file, such as `files/listen.txt`. The listen report includes the barometer's absolute pressure, which gives height above sea level, so leave it out of anything saved in this repository.
 
 **What it reads:** by default, capability lists only. It never starts a workout or reads location. The sensor modes above read heart rate, steps and pressure for 30 seconds.

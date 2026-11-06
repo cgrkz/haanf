@@ -206,3 +206,39 @@ Accuracy reports: 3
 25.8 s HeartRate [3]: 61.00
 27.8 s HeartRate-Extended [3]: 62.00, 0.00, 3.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
 27.8 s HeartRate [3]: 62.00
+
+Again with the probe built for API 35, with BODY_SENSORS, READ_HEART_RATE and ACTIVITY_RECOGNITION all granted, worn and awake. Registration only:
+registered. Events: 200, about 6.7 a second. => -- android.sensor.pressure: Pressure Sensor (wake-up) --
+registered. Events: 200, about 6.7 a second. => -- android.sensor.step_detector: Step Detector --
+registered. Events: 0, about - a second. => -- android.sensor.step_detector: Step Detector (wake-up) --
+registered. Events: 0, about - a second. => -- android.sensor.heart_rate: HeartRate --
+registered. Events: 17, about 0.5 a second. => -- android.sensor.heart_rate: HeartRate (wake-up) --
+registered. Events: 17, about 0.5 a second. => -- android.sensor.low_latency_offbody_detect: Low latency off body detect --
+registered. Events: 1, about - a second. => -- android.sensor.low_latency_offbody_detect: Low latency off body detect (wake-up) --
+registered. Events: 1, about - a second. => -- com.google.sensor.gyro_temperature: Imu Temperature --
+refused. Events: 0, about - a second. => -- com.google.sensor.gyro_temperature: Imu Temperature (wake-up) --
+refused. Events: 0, about - a second. => -- com.google.sensor.pressure_temp: Pressure Temperature Sensor --
+refused. Events: 0, about - a second. => -- com.google.sensor.pressure_temp: Pressure Temperature Sensor (wake-up) --
+refused. Events: 0, about - a second. => -- com.google.sensor.magnetometer_temp: Magnetometer Temperature Sensor --
+refused. Events: 0, about - a second. => -- com.google.sensor.magnetometer_temp: Magnetometer Temperature Sensor (wake-up) --
+refused. Events: 0, about - a second. => -- com.google.sensor.fake_accel: Accelerometer --
+refused. Events: 0, about - a second. => -- com.google.sensor.fake_accel: Accelerometer (wake-up) --
+refused. Events: 0, about - a second. => -- com.google.sensor.ppg_controller: PPG Controller --
+refused. Events: 0, about - a second. => -- com.google.sensor.ppg_controller: PPG Controller (wake-up) --
+refused. Events: 0, about - a second. => -- com.google.sensor.ecg: ECG Sensor --
+refused. Events: 0, about - a second. => -- com.google.sensor.ecg: ECG Sensor (wake-up) --
+refused. Events: 0, about - a second. => -- com.google.sensor.ecg_lead_detector: ECG Lead Detector --
+refused. Events: 0, about - a second. => -- com.google.sensor.ecg_lead_detector: ECG Lead Detector (wake-up) --
+refused. Events: 0, about - a second. => -- com.google.sensor.gaze_gesture: GazeSensor --
+refused. Events: 0, about - a second. => -- com.google.sensor.gaze_gesture: GazeSensor (wake-up) --
+refused. Events: 0, about - a second. => -- com.google.sensor.gsr: Galvanic Skin Response --
+refused. Events: 0, about - a second. => -- com.google.sensor.gsr: Galvanic Skin Response (wake-up) --
+refused. Events: 0, about - a second. => -- com.google.sensor.skin_temperature: Skin temperature sensor --
+refused. Events: 0, about - a second. => -- com.google.sensor.skin_temperature: Skin temperature sensor (wake-up) --
+refused. Events: 0, about - a second. => -- com.google.wear.sensor.ppg: PPG Sensor --
+refused. Events: 0, about - a second. => -- com.google.wear.sensor.ppg: PPG Sensor (wake-up) --
+refused. Events: 0, about - a second. => -- com.google.sensor.heart_rate_extended: HeartRate-Extended --
+registered. Events: 17, about 0.5 a second. => -- com.google.sensor.heart_rate_extended: HeartRate-Extended (wake-up) --
+registered. Events: 17, about 0.5 a second. => -- com.google.sensor.step_cadence: Step Cadence --
+registered. Events: 1, about - a second. => -- com.google.sensor.step_cadence: Step Cadence (wake-up) --
+registered. Events: 1, about - a second. => 

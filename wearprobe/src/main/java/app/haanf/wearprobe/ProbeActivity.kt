@@ -32,7 +32,8 @@ class ProbeActivity : Activity() {
 
     private val permissions: List<String>
         get() = buildList {
-            add(if (Build.VERSION.SDK_INT >= 36) HEART_RATE_PERMISSION else android.Manifest.permission.BODY_SENSORS)
+            val granular = Build.VERSION.SDK_INT >= 36 && applicationInfo.targetSdkVersion >= 36
+            add(if (granular) HEART_RATE_PERMISSION else android.Manifest.permission.BODY_SENSORS)
             add(android.Manifest.permission.ACTIVITY_RECOGNITION)
         }
 
@@ -62,6 +63,7 @@ class ProbeActivity : Activity() {
             }
             "listen" -> {
                 window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                line("Probe targets API ${applicationInfo.targetSdkVersion} on Wear OS API ${Build.VERSION.SDK_INT}.")
                 scope.launch {
                     sensors.listen(LISTEN_SECONDS)
                     save("listen.txt")
@@ -98,7 +100,7 @@ class ProbeActivity : Activity() {
 
     private suspend fun dump(heading: String) {
         line("== $heading ==")
-        line("Wear OS API ${Build.VERSION.SDK_INT}, Health Services app ${healthServicesVersion()}")
+        line("Wear OS API ${Build.VERSION.SDK_INT}, probe targets API ${applicationInfo.targetSdkVersion}, Health Services app ${healthServicesVersion()}")
         permissions.forEach { line("$it: ${if (checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED) "granted" else "not granted"}") }
         val client = HealthServices.getClient(this)
 
