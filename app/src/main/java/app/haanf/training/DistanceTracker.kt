@@ -6,11 +6,14 @@ import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.sqrt
 
+/** One GPS reading. It is used and dropped: nothing stores it. */
 data class LocationFix(
     val latitude: Double,
     val longitude: Double,
     val accuracyMetres: Float,
     val elapsedMs: Long,
+    /** The receiver's own speed reading, from the Doppler shift, when it has one. */
+    val speedMps: Float? = null,
 )
 
 /**
