@@ -52,6 +52,7 @@ class CoachScreensTest {
         override suspend fun send(request: LlmRequest): LlmReply {
             val tools = request.tools.map { it.name }
             return when {
+                request.system.contains("Review the workout") -> LlmReply("Solid session. Your heart rate stayed controlled.", emptyList())
                 "propose_workout" in tools -> call("propose_workout", workout())
                 "speak" in tools -> call(
                     "speak",

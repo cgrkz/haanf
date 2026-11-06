@@ -5,6 +5,7 @@ import app.haanf.data.HrSampleEntity
 import app.haanf.data.TalkTestEntity
 import app.haanf.data.WorkoutEntity
 import java.time.Instant
+import java.util.Locale
 
 object Csv {
     private fun iso(epochMs: Long): String = Instant.ofEpochMilli(epochMs).toString()
@@ -49,13 +50,18 @@ object Csv {
         listOf(
             "started_utc", "ended_utc", "title", "activity", "origin", "program", "program_week",
             "counted_for_program", "avg_bpm", "max_bpm", "recovery_s", "easy_s", "hard_s", "very_hard_s",
-            "no_reading_s", "hr_drop_1min_bpm", "effort_rating",
+            "no_reading_s", "hr_drop_1min_bpm", "effort_rating", "distance_m", "moving_s", "max_speed_kmh",
+            "climb_m", "descent_m", "avg_watts_estimated", "grade_adjusted_pace_s_per_km", "bike",
         ),
         rows.map {
             listOf(
                 iso(it.startedAtMs), it.endedAtMs?.let(::iso), it.title, it.activity, it.origin, it.programId,
                 it.programWeek, it.countedForProgram, it.avgBpm, it.maxBpm, it.recoverySeconds, it.easySeconds,
                 it.hardSeconds, it.veryHardSeconds, it.noReadingSeconds, it.hrDropBpm, it.effortRating,
+                it.distanceMetres?.let { metres -> "%.0f".format(Locale.ROOT, metres) }, it.movingSeconds,
+                it.maxSpeedMps?.let { speed -> "%.1f".format(Locale.ROOT, speed * 3.6) },
+                it.climbMetres?.let { metres -> "%.0f".format(Locale.ROOT, metres) }, it.descentMetres?.let { metres -> "%.0f".format(Locale.ROOT, metres) },
+                it.avgWatts, it.gapSecondsPerKm, it.bikeType,
             )
         },
     )

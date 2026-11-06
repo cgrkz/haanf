@@ -57,11 +57,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.haanf.AppContainer
 import app.haanf.ai.ReviewState
 import app.haanf.data.BenchmarkEntity
+import app.haanf.data.SplitEntity
 import app.haanf.data.TalkAnswer
 import app.haanf.data.WorkoutEntity
 import app.haanf.program.Programs
 import app.haanf.talktest.TrainingActivity
 import app.haanf.training.BenchmarkInputs
+import app.haanf.training.BikeType
+import app.haanf.training.MotionNow
 import app.haanf.training.FitnessNorms
 import app.haanf.training.HeartRateZones
 import app.haanf.training.SafetyRules
@@ -78,11 +81,15 @@ import app.haanf.ui.theme.condensed
 import app.haanf.ui.theme.onColor
 import app.haanf.workout.BenchmarkRequest
 import app.haanf.workout.HIGH_HEART_RATE_ALERT
+import app.haanf.workout.TimelineEntry
+import app.haanf.workout.TimelineKind
 import app.haanf.workout.WorkoutOrigin
 import app.haanf.workout.WorkoutRequest
 import app.haanf.workout.WorkoutState
 import app.haanf.workout.WorkoutText
+import app.haanf.workout.inHardEffort
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 private val QUICK_REPLIES = listOf("Too easy", "OK", "Too hard")
 
@@ -126,9 +133,16 @@ fun GetReadyScreen(container: AppContainer, nav: Navigator, pending: PendingWork
     if (current === LOADING) return
 
     val today = container.programs.today()
-    val walksOutdoors = pending.benchmark && activity != TrainingActivity.TREADMILL
-    val gpsOff = walksOutdoors && context.getSystemService(LocationManager::class.java)
+    val outdoors = activity != TrainingActivity.TREADMILL
+    val walksOutdoors = pending.benchmark && outdoors
+    val gpsProviderOff = outdoors && context.getSystemService(LocationManager::class.java)
         ?.isProviderEnabled(LocationManager.GPS_PROVIDER) != true
+    val gpsOff = walksOutdoors && gpsProviderOff
+    // Outside a benchmark, GPS is welcome but never required: without it, heart rate still works.
+    val measures = outdoors && !locationMissing && !gpsProviderOff
+    val scope = rememberCoroutineScope()
+    val bike = current?.bikeType?.let { name -> BikeType.entries.firstOrNull { it.name == name } }
+    val rides = activity == TrainingActivity.CYCLING && !pending.benchmark
     val benchmarkInputs = current?.benchmarkInputs(today)
     val canStart = device != null && current != null && bluetoothMissing.isEmpty() && !labRunning &&
         !gpsOff && !(walksOutdoors && locationMissing) && !(pending.benchmark && benchmarkInputs == null)
@@ -149,6 +163,14 @@ fun GetReadyScreen(container: AppContainer, nav: Navigator, pending: PendingWork
             BenchmarkInstructions(walksOutdoors)
         } else {
             Choices(TrainingActivity.entries, activity, { it.label }, { activity = it })
+        }
+        if (rides && current != null) {
+            LabeledChoices("Your bike") {
+                Choices(BikeType.entries, bike, { it.label }, { chosen ->
+                    scope.launch { container.trainingDao.saveProfile(current.copy(bikeType = chosen.name)) }
+                })
+                Hint(if (bike == null) "For estimating your watts. You can change it in Settings." else "Watts are an estimate, least accurate in wind.")
+            }
         }
 
         when {
@@ -201,6 +223,20 @@ fun GetReadyScreen(container: AppContainer, nav: Navigator, pending: PendingWork
             Notice("Haanf uses GPS only to measure the mile. It keeps the distance, never your route.", kind = NoticeKind.INFO, icon = HaanfIcons.Info)
             SecondaryButton("Allow location", onClick = { permissionLauncher.launch(AppPermissions.location.toTypedArray()) })
         }
+        if (outdoors && !pending.benchmark) {
+            when {
+                locationMissing -> {
+                    Notice(
+                        "Allow location to measure distance, speed and climbs. Haanf keeps the totals, never your route.",
+                        kind = NoticeKind.INFO,
+                        icon = HaanfIcons.Info,
+                    )
+                    SecondaryButton("Allow location", onClick = { permissionLauncher.launch(AppPermissions.location.toTypedArray()) })
+                }
+                gpsProviderOff -> Notice("Location is off on this phone, so distance and speed won't be measured.", kind = NoticeKind.INFO, icon = HaanfIcons.Info)
+                else -> Hint("GPS measures distance and speed. Haanf keeps the totals, never your route.")
+            }
+        }
 
         BottomActions {
             PrimaryButton(
@@ -225,6 +261,9 @@ fun GetReadyScreen(container: AppContainer, nav: Navigator, pending: PendingWork
                             plannedHard = pending.hard,
                             spokenCues = cues,
                             talkChecks = withCoach && talkChecks,
+                            usesGps = if (pending.benchmark) walksOutdoors else measures,
+                            riderKg = current.weightKg,
+                            bike = bike,
                             benchmark = if (pending.benchmark) {
                                 benchmarkInputs?.let { BenchmarkRequest(it, usesGps = walksOutdoors) }
                             } else {
@@ -273,7 +312,7 @@ fun LiveWorkoutScreen(container: AppContainer, running: WorkoutState.Running) {
     val plan = request.plan
     val step = running.stepIndex?.let { plan?.steps?.getOrNull(it) }
     val bpm = if (live.inDropout) null else live.bpm
-    val inHardEffort = step?.target?.isHard() == true
+    val inHardEffort = running.inHardEffort(bpm)
 
     val look = when {
         live.inDropout || request.benchmark != null -> LiveLook(HaanfColors.Dark, HaanfColors.White)
@@ -297,7 +336,7 @@ fun LiveWorkoutScreen(container: AppContainer, running: WorkoutState.Running) {
             LiveBanners(live.inDropout, running.highHeartRate, coach.offline, live.device?.name)
             when {
                 request.benchmark != null -> BenchmarkLive(running, bpm, look.content)
-                step != null && inHardEffort -> IntervalLive(running, step, bpm, zones, look.content)
+                step != null && step.target.isHard() -> IntervalLive(running, step, bpm, zones, look.content)
                 else -> SteadyLive(running, step, bpm, zones, look.content)
             }
             if (request.benchmark == null) {
@@ -426,16 +465,29 @@ private fun ColumnScope.SteadyLive(
             color = content,
             modifier = Modifier.padding(top = 8.dp).testTag("workout-zone"),
         )
+        running.motion?.let { ClimbLine(it, content) }
     }
     ZoneStrip(current, content)
+    val motion = running.motion?.takeIf { it.hasGps }
     Row(Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        val size = if (motion != null) 40 else 52
         val remaining = running.stepRemainingSeconds
         if (step != null && remaining != null) {
-            LiveStat(WorkoutText.clock(remaining), "left in this step", content, Modifier.weight(1f))
+            LiveStat(WorkoutText.clock(remaining), "left in step", content, Modifier.weight(1f), size)
         } else {
-            LiveStat(WorkoutText.clock(running.elapsedSeconds), "so far", content, Modifier.weight(1f).testTag("workout-clock"))
+            LiveStat(WorkoutText.clock(running.elapsedSeconds), "so far", content, Modifier.weight(1f).testTag("workout-clock"), size)
         }
-        if (running.distanceMetres > 0) {
+        if (motion != null) {
+            LiveStat(WorkoutText.kmShort(motion.distanceMetres), "km", content, Modifier.weight(1f).testTag("workout-distance"), size)
+            val ride = running.request.activity == TrainingActivity.CYCLING
+            val speed = motion.speedMps
+            val value = when {
+                speed == null -> "- -"
+                ride -> WorkoutText.kmh(speed)
+                else -> WorkoutText.paceOf(speed) ?: "- -"
+            }
+            LiveStat(value, if (ride) "km/h" else "per km", content, Modifier.weight(1f).testTag("workout-speed"), size)
+        } else if (running.distanceMetres > 0) {
             LiveStat("%.1f".format(running.distanceMetres / 1000), "km so far", content, Modifier.weight(1f))
         } else if (step != null) {
             LiveStat(WorkoutText.clock(running.elapsedSeconds), "so far", content, Modifier.weight(1f).testTag("workout-clock"))
@@ -443,6 +495,20 @@ private fun ColumnScope.SteadyLive(
             Spacer(Modifier.weight(1f))
         }
     }
+}
+
+/** Shown while climbing, so the athlete knows why heart rate is rising. */
+@Composable
+private fun ClimbLine(motion: MotionNow, content: Color) {
+    if (!motion.climbing) return
+    val grade = motion.gradePercent?.roundToInt()?.let { "$it%" } ?: ""
+    val gain = motion.climbSoFarMetres?.roundToInt()?.let { ", $it m up" }.orEmpty()
+    Text(
+        "Climbing $grade$gain",
+        style = body(18.sp, FontWeight.SemiBold),
+        color = content,
+        modifier = Modifier.padding(top = 6.dp).testTag("workout-climb"),
+    )
 }
 
 private fun zoneSentence(current: Zone?, target: Zone?, zones: HeartRateZones): String {
@@ -494,9 +560,9 @@ private fun ZoneStrip(current: Zone?, content: Color) {
 }
 
 @Composable
-private fun LiveStat(value: String, label: String, content: Color, modifier: Modifier = Modifier) {
+private fun LiveStat(value: String, label: String, content: Color, modifier: Modifier = Modifier, size: Int = 52) {
     Column(modifier) {
-        Text(value, style = condensed(52.sp), color = content)
+        Text(value, style = condensed(size.sp), color = content, maxLines = 1)
         Text(label, style = body(15.sp), color = content)
     }
 }
@@ -536,6 +602,7 @@ private fun ColumnScope.IntervalLive(
     Column(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.Center) {
         HugeText(WorkoutText.clock(running.stepRemainingSeconds ?: 0), 216, content, Modifier.testTag("workout-clock"))
         Text("left in this effort", style = body(22.sp, FontWeight.Bold), color = content, modifier = Modifier.padding(top = 8.dp))
+        running.motion?.let { ClimbLine(it, content) }
     }
     val range = zones.rangeFor(step.target)
     val current = bpm?.let(zones::zoneFor)
@@ -793,6 +860,9 @@ fun ColumnScope.WorkoutSummaryBody(
     val scope = rememberCoroutineScope()
     val enrolment by remember { container.programs.enrolment }.collectAsStateWithLifecycle(null)
     val talkChecks by remember(workout.id) { container.coachDao.observeTalkChecks(workout.id) }.collectAsStateWithLifecycle(emptyList())
+    val splits by remember(workout.id) { container.trainingDao.observeSplits(workout.id) }.collectAsStateWithLifecycle(emptyList())
+    val events by remember(workout.id) { container.trainingDao.observeEvents(workout.id) }.collectAsStateWithLifecycle(emptyList())
+    val said = events.mapNotNull(TimelineEntry::from).filter { it.kind.isSaid }
 
     if (!live) {
         Column {
@@ -811,8 +881,12 @@ fun ColumnScope.WorkoutSummaryBody(
         ).toTypedArray(),
         size = 32,
     )
+    MotionStats(workout)
     ZoneCard(workout)
-    if (talkChecks.isNotEmpty()) {
+    if (splits.isNotEmpty()) SplitsCard(splits, workout.activity == TrainingActivity.CYCLING.name)
+    if (said.isNotEmpty()) {
+        ConversationCard(said)
+    } else if (talkChecks.isNotEmpty()) {
         HCard(spacing = 4.dp) {
             Text("Talk test", style = body(17.sp, FontWeight.Bold), color = HaanfColors.Text)
             talkChecks.forEach { check ->
@@ -834,6 +908,86 @@ fun ColumnScope.WorkoutSummaryBody(
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(EFFORT_ENDS.first, style = body(14.sp), color = HaanfColors.TextSecondary)
             Text(EFFORT_ENDS.second, style = body(14.sp), color = HaanfColors.TextSecondary)
+        }
+    }
+}
+
+/** Distance, speed or pace, climb and effort, when the phone measured them. */
+@Composable
+private fun MotionStats(workout: WorkoutEntity) {
+    val ride = workout.activity == TrainingActivity.CYCLING.name
+    val metres = workout.distanceMetres
+    val climb = workout.climbMetres
+    if (metres == null && climb == null) return
+    val speed = metres?.let { distance -> workout.movingSeconds?.takeIf { it > 0 }?.let { distance / it } }
+    StatRow(
+        *listOfNotNull(
+            metres?.let { WorkoutText.kmShort(it) to "km" },
+            speed?.let { if (ride) WorkoutText.kmh(it) to "km/h moving" else (WorkoutText.paceOf(it) ?: "--") to "per km" },
+            climb?.let { "${it.roundToInt()}" to "m climbed" },
+        ).toTypedArray(),
+        size = 32,
+    )
+    val facts = buildList {
+        workout.avgWatts?.let { watts ->
+            val bike = workout.bikeType?.let { name -> BikeType.entries.firstOrNull { it.name == name }?.label?.lowercase() }
+            add("About $watts W on average" + (bike?.let { ", estimated for a $it" } ?: ", estimated"))
+        }
+        workout.gapSecondsPerKm?.let { add("Grade-adjusted pace ${WorkoutText.pace(it)} per km") }
+        workout.maxSpeedMps?.takeIf { ride }?.let { add("Top speed ${WorkoutText.kmh(it)} km/h") }
+        workout.descentMetres?.takeIf { it >= 1 }?.let { add("${it.roundToInt()} m descended") }
+    }
+    if (facts.isNotEmpty()) Hint(facts.joinToString(". ") + ".")
+}
+
+@Composable
+private fun SplitsCard(splits: List<SplitEntity>, ride: Boolean) {
+    HCard(spacing = 6.dp) {
+        Text("Each kilometre", style = body(17.sp, FontWeight.Bold), color = HaanfColors.Text)
+        splits.forEach { split ->
+            val label = if (split.metres >= 999) "${split.number}" else "${WorkoutText.kmShort(split.metres)} km"
+            val pace = when {
+                split.seconds <= 0 -> "--"
+                ride -> "${WorkoutText.kmh(split.metres / split.seconds)} km/h"
+                else -> "${WorkoutText.pace((split.seconds / (split.metres / 1000)).roundToInt())} /km"
+            }
+            val height = listOfNotNull(
+                split.climbMetres.roundToInt().takeIf { it >= 1 }?.let { "+$it m" },
+                split.descentMetres.roundToInt().takeIf { it >= 1 }?.let { "\u2212$it m" },
+            ).joinToString(" ").ifEmpty { "flat" }
+            val parts = listOfNotNull(
+                WorkoutText.clock(split.seconds),
+                pace,
+                height,
+                split.avgBpm?.let { "$it bpm" },
+            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(label, style = body(15.sp, FontWeight.Bold), color = HaanfColors.Text, modifier = Modifier.size(width = 56.dp, height = 22.dp))
+                Text(parts.joinToString("   "), style = body(15.sp), color = HaanfColors.Text)
+            }
+        }
+    }
+}
+
+/** What the coach and the athlete said, with the time into the workout. */
+@Composable
+private fun ConversationCard(said: List<TimelineEntry>) {
+    HCard(spacing = 10.dp) {
+        Text("What you and the coach said", style = body(17.sp, FontWeight.Bold), color = HaanfColors.Text)
+        said.forEach { entry ->
+            val who = when (entry.kind) {
+                TimelineKind.COACH -> "Coach"
+                TimelineKind.ATHLETE -> "You"
+                TimelineKind.TALK_TEST -> "Talk test"
+                else -> "Plan"
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(WorkoutText.clock(entry.elapsedSeconds), style = body(14.sp), color = HaanfColors.TextSecondary, modifier = Modifier.size(width = 44.dp, height = 20.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(who, style = body(14.sp, FontWeight.Bold), color = HaanfColors.Text)
+                    Text(entry.text, style = body(15.sp), color = HaanfColors.Text)
+                }
+            }
         }
     }
 }

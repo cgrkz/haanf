@@ -28,6 +28,7 @@ import app.haanf.AppContainer
 import app.haanf.data.ProfileEntity
 import app.haanf.export.Csv
 import app.haanf.export.ShareFiles
+import app.haanf.training.BikeType
 import app.haanf.training.Sex
 import app.haanf.training.Zone
 import app.haanf.ui.theme.HaanfColors
@@ -88,6 +89,16 @@ fun SettingsScreen(container: AppContainer, nav: Navigator) {
         SettingsSection("Your watch") {
             BodyText(current?.deviceName ?: current?.deviceId?.let { "Unnamed device" } ?: "No watch connected")
             LinkButton(if (current?.deviceId == null) "Connect a watch" else "Change device", onClick = { nav.open(Dest.Devices) })
+        }
+
+        current?.let { saved ->
+            SettingsSection("Your bike") {
+                val bike = saved.bikeType?.let { name -> BikeType.entries.firstOrNull { it.name == name } }
+                Choices(BikeType.entries, bike, { it.label }, { chosen ->
+                    scope.launch { container.trainingDao.saveProfile(saved.copy(bikeType = chosen.name)) }
+                })
+                Hint("Used to estimate watts on rides: a heavier, more upright bike takes more power at the same speed.")
+            }
         }
 
         SettingsSection("Coach") {

@@ -23,6 +23,9 @@ object WorkoutText {
 
     fun km(metres: Double): String = "%.2f".format(metres / 1000)
 
+    /** Kilometres to one decimal, for the screen. */
+    fun kmShort(metres: Double): String = "%.1f".format(metres / 1000)
+
     /** Pace as minutes per kilometre, such as 5:40. */
     fun pace(secondsPerKm: Int): String = clock(secondsPerKm)
 

@@ -26,7 +26,9 @@ import app.haanf.data.EnrolmentEntity
 import app.haanf.data.FactStatus
 import app.haanf.data.HaanfDatabase
 import app.haanf.data.TalkAnswer
+import app.haanf.data.SplitEntity
 import app.haanf.data.TalkCheckEntity
+import app.haanf.data.WorkoutEventEntity
 import app.haanf.data.WorkoutEntity
 import app.haanf.health.DayValue
 import app.haanf.health.VitalTrends
@@ -37,6 +39,8 @@ import app.haanf.heartrate.SourceState
 import app.haanf.program.Programs
 import app.haanf.talktest.TrainingActivity
 import app.haanf.training.BenchmarkInputs
+import app.haanf.training.BikeType
+import app.haanf.training.LocationFix
 import app.haanf.training.HeartRateZones
 import app.haanf.training.Sex
 import app.haanf.training.WalkOutcome
@@ -48,6 +52,9 @@ import app.haanf.ui.VitalsHolder
 import app.haanf.ui.VitalsStatus
 import app.haanf.ui.theme.HaanfTheme
 import app.haanf.workout.BenchmarkRequest
+import app.haanf.workout.DistanceSource
+import app.haanf.workout.PressureSource
+import app.haanf.workout.TimelineKind
 import app.haanf.workout.LiveLink
 import app.haanf.workout.WorkoutOrigin
 import app.haanf.workout.WorkoutRequest
@@ -63,6 +70,7 @@ import org.junit.runner.RunWith
 import java.io.File
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlin.math.pow
 
 /**
  * Renders each designed screen with sample data and saves it, for comparing with the designs
@@ -267,6 +275,10 @@ class DesignScreenshotsTest {
         source.readingsFlow.tryEmit(HeartRateReading(78, System.currentTimeMillis(), container.clock.elapsedMs()))
         waitForText("78")
         shot("09-get-ready")
+        compose.onNodeWithText("Cycling").performClick()
+        waitForText("Your bike")
+        shot("09-get-ready-ride")
+        compose.onNodeWithText("Outdoor run").performClick()
 
         compose.onNodeWithText("Start workout").performScrollTo().performClick()
         compose.waitUntil(timeoutMillis = 5_000) { container.live.live.value.sessionId != null }
@@ -503,6 +515,121 @@ class DesignScreenshotsTest {
         } finally {
             if (madeUp) container.aiSettings.clear()
         }
+    }
+
+    /** A GPS the test moves by hand. Fixes are pushed, never stored. */
+    private class PushGps : DistanceSource {
+        private var onFix: ((LocationFix) -> Unit)? = null
+        private var metres = 0.0
+        private var elapsedMs = 0L
+
+        override fun start(onFix: (LocationFix) -> Unit) {
+            this.onFix = onFix
+        }
+
+        override fun stop() {
+            onFix = null
+        }
+
+        fun ride(totalMetres: Double, speedMps: Float) {
+            while (metres < totalMetres) {
+                metres += 5
+                elapsedMs += (5_000 / speedMps).toLong()
+                onFix?.invoke(LocationFix(12.9 + metres / 111_195.0, 77.6, 5f, elapsedMs, speedMps))
+            }
+        }
+    }
+
+    private class PushPressure : PressureSource {
+        override val available = true
+        private var onHpa: ((Double) -> Unit)? = null
+
+        override fun start(onHpa: (Double) -> Unit) {
+            this.onHpa = onHpa
+        }
+
+        override fun stop() {
+            onHpa = null
+        }
+
+        fun height(metres: Double) {
+            onHpa?.invoke(1_000.0 * (1 - metres / 44_330.0).pow(1 / 0.1903))
+        }
+    }
+
+    @Test
+    fun liveRideOnAClimb() {
+        TestSupport.resetOnboarding(context, done = true)
+        val gps = PushGps()
+        val air = PushPressure()
+        val database = Room.inMemoryDatabaseBuilder(context, HaanfDatabase::class.java).build()
+        container = AppContainer(context, { source }, database, link, {}, gps, { null }, pressure = air)
+        TestSupport.seedProfile(container)
+        showRoot()
+        container.workouts.start(
+            WorkoutRequest(
+                title = "Free workout", activity = TrainingActivity.CYCLING, device = source.device,
+                zones = HeartRateZones(193), usesGps = true, riderKg = 61.0, bike = BikeType.HYBRID, spokenCues = false,
+            ),
+        )
+        compose.waitUntil(timeoutMillis = 5_000) { container.workouts.state.value is WorkoutState.Running }
+        compose.waitUntil(timeoutMillis = 5_000) { source.readingsFlow.subscriptionCount.value > 0 }
+        source.stateFlow.value = SourceState.Streaming
+        air.height(0.0)
+        gps.ride(2_000.0, 6f)
+        Thread.sleep(2_500)
+        repeat(8) {
+            air.height(8.0)
+            gps.ride(2_000.0 + (it + 1) * 15.0, 2.3f)
+            source.readingsFlow.tryEmit(HeartRateReading(172, System.currentTimeMillis(), container.clock.elapsedMs()))
+            Thread.sleep(1_000)
+        }
+        waitForText("Climbing", substring = true)
+        shot("22-live-ride-climb")
+        container.workouts.finish()
+    }
+
+    @Test
+    fun rideSummary() {
+        build(onboarded = true)
+        val workout = runBlocking {
+            TestSupport.seedProfile(container)
+            val started = System.currentTimeMillis() - 1_400_000L
+            val entity = WorkoutEntity(
+                startedAtMs = started, endedAtMs = started + 1_400_000L, title = "Free workout", activity = "CYCLING",
+                origin = "FREE", avgBpm = 149, maxBpm = 185, recoverySeconds = 5, easySeconds = 447, hardSeconds = 421,
+                veryHardSeconds = 525, coached = true, effortRating = 3, distanceMetres = 4_230.0, movingSeconds = 1_310,
+                maxSpeedMps = 8.4, climbMetres = 91.0, descentMetres = 88.0, avgWatts = 118, bikeType = BikeType.HYBRID.name,
+                review = "A strong climb: heart rate rose with the 7% gradient and peaked at 185 near the top, then dropped " +
+                    "52 bpm on the descent. Next time, shift down early on the climb to keep it under 165.",
+            )
+            val id = container.trainingDao.insertWorkout(entity)
+            listOf(
+                SplitEntity(workoutId = id, number = 1, metres = 1_000.0, seconds = 372, endElapsedSeconds = 372, avgBpm = 141, climbMetres = 32.0, descentMetres = 0.0, avgWatts = 158, gapSecondsPerKm = null),
+                SplitEntity(workoutId = id, number = 2, metres = 1_000.0, seconds = 431, endElapsedSeconds = 803, avgBpm = 168, climbMetres = 41.0, descentMetres = 2.0, avgWatts = 171, gapSecondsPerKm = null),
+                SplitEntity(workoutId = id, number = 3, metres = 1_000.0, seconds = 214, endElapsedSeconds = 1_017, avgBpm = 174, climbMetres = 18.0, descentMetres = 21.0, avgWatts = 96, gapSecondsPerKm = null),
+                SplitEntity(workoutId = id, number = 4, metres = 1_000.0, seconds = 128, endElapsedSeconds = 1_145, avgBpm = 142, climbMetres = 0.0, descentMetres = 58.0, avgWatts = 12, gapSecondsPerKm = null),
+                SplitEntity(workoutId = id, number = 5, metres = 230.0, seconds = 255, endElapsedSeconds = 1_400, avgBpm = 121, climbMetres = 0.0, descentMetres = 7.0, avgWatts = 40, gapSecondsPerKm = null),
+            ).forEach { container.trainingDao.insertSplit(it) }
+            listOf(
+                Triple(0, TimelineKind.COACH, "Nice start. Keep it easy for the first few minutes.") to 117,
+                Triple(250, TimelineKind.ATHLETE, "Big hill coming up.") to 147,
+                Triple(262, TimelineKind.COACH, "Shift down early and let your speed drop on the climb.") to 148,
+                Triple(720, TimelineKind.COACH, "You're very hard now. Ease off if you want this steady.") to 172,
+                Triple(1_025, TimelineKind.ATHLETE, "Knee feels a bit tight on the descent.") to 157,
+                Triple(1_260, TimelineKind.TALK_TEST, "Could talk comfortably.") to 121,
+            ).forEach { (line, bpm) ->
+                container.trainingDao.insertEvent(
+                    WorkoutEventEntity(workoutId = id, atMs = started + line.first * 1000L, elapsedSeconds = line.first, kind = line.second.name, text = line.third, bpm = bpm),
+                )
+            }
+            entity.copy(id = id)
+        }
+        compose.setContent { HaanfTheme { FinishedSummary(container, WorkoutState.Finished(workout)) {} } }
+        waitForText("Workout done")
+        shot("23-ride-summary")
+        compose.onNodeWithText("Done").performScrollTo()
+        shot("23-ride-summary-bottom")
     }
 
     private fun startLive(bpm: Int) {

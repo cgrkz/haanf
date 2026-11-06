@@ -6,7 +6,18 @@ Slice 1 is the first of three. Slice 2 tracks fitness between benchmarks: effici
 
 ## Status
 
-Not built yet.
+Built on 6 November 2026, on the emulator. Nothing in it has been tried on the real Pixel 6 yet.
+
+| Area | Result | Evidence |
+| --- | --- | --- |
+| Maths for terrain and effort | Pass | Unit tests for height from pressure, climb detection, speed, splits, watts and grade-adjusted pace |
+| Rides and runs in the workout engine | Pass (simulated) | Unit tests drive fake GPS and pressure through a 2 km ride with a 36 m climb, and a run with spoken kilometres |
+| Live coach conversation and timeline | Pass (simulated) | Unit tests: one growing conversation, timed check-ins, events since the last one, no talk test at a hard heart rate |
+| Review | Pass (simulated) | Unit tests: the timeline word for word, kilometres, no duplicate workout, proposing a fact |
+| Caching for Claude | Pass (request shape only) | The request asks for a one-hour cache. Not tried against the real API |
+| Database version 6 | Pass | `MigrationTest` carries version 5 data over, and deleting a workout removes its splits and timeline |
+| Screens | Pass (emulator) | Screenshots in `docs/design/build-screenshots`, 09-get-ready-ride, 22 and 23 |
+| GPS, barometer and watts on the road | Not tested | Needs a ride on the Pixel 6 |
 
 ## Decisions from the user, 6 November 2026
 

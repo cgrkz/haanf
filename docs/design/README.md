@@ -63,6 +63,11 @@ These follow the same visual system and stay plain.
 - **Benchmark results.** The summary with a blue card on top: estimated VO2max, the level for age and sex, the typical value, mile time and heart rate near the end. "Your program is unlocked" shows only after the first scored benchmark. A walk with no score says why.
 - **Dropout.** The live screen turns #101418, heart rate reads "- -", and a warning banner says Haanf is reconnecting and the workout is still recording.
 - **Benchmark walk.** #101418, with distance as the big number for an outdoor walk, or elapsed time on a treadmill, then the stop rule and Finish.
+- **Outdoor runs and rides, from slice 1.** These were added after the designs:
+  - **Get ready:** a line saying GPS measures distance and speed and keeps totals, never the route. If location isn't allowed, a notice and "Allow location" replace the line, and the workout still starts without GPS. A ride also asks "Your bike", which is saved for later rides.
+  - **Live screen:** the stats row becomes time, km, and km/h for a ride or pace per km for a run. "Climbing 5%, 8 m up" appears under the zone sentence while climbing.
+  - **Summary:** a second row of tiles shows km, speed or pace, and metres climbed, with a line for estimated watts, top speed and descent. "Each kilometre" lists time, speed or pace, climb and descent, and heart rate for each kilometre. "What you and the coach said" lists the coach's lines, what you said and talk test answers, with times.
+  - **Settings:** gains "Your bike".
 
 ## Built against the designs
 
@@ -120,6 +125,9 @@ adb -s emulator-5554 pull /sdcard/Android/data/app.haanf/files/design-screens do
 | 19-live-benchmark | No design |
 | 20-benchmark-result | No design |
 | 21-chat | No design |
+| 09-get-ready-ride | Get ready, for a ride, from slice 1 |
+| 22-live-ride-climb | Live ride on a climb, from slice 1 |
+| 23-ride-summary, -bottom | Ride summary with kilometres and the conversation, from slice 1 |
 
 In the screenshots, a grey box sometimes marks the tab just tapped. That is the test harness running outside touch mode. A real tap on the emulator shows no box.
 
@@ -133,6 +141,12 @@ The emulator checks builds and screens only.
 - "Talk to coach" and spoken talk test answers, with on-device speech.
 - The heart rate drop after the last hard step, which needs real readings.
 - GPS distance on the benchmark screen.
+- Slice 1 on a real ride and run:
+  - distance, speed and pace from GPS;
+  - climb from the barometer with the phone in a pocket and the screen off;
+  - estimated watts against how the ride felt;
+  - the coach waking as a climb starts;
+  - spoken kilometres.
 - "Last night" and the vitals sparklines with real Health Connect data.
 - Fonts and light status bar icons on the dark and coloured screens.
 - The new screens on the phone itself. The upgrade in place was done on 5 November 2026: the database moved to version 5, and both heart rate sessions, all 222 samples, the talk test, the workout and the profile survived. The phone was locked, so nothing was seen on screen. Its profile has no weight, sex or benchmark, so it should open on About you, then Connect your watch unless a watch is already saved, then the first benchmark.

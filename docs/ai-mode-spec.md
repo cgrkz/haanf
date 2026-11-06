@@ -41,9 +41,17 @@ Built on 2 November 2026.
 
 ## What the AI receives
 
-Your profile, injuries and health conditions, past workouts and their metrics, benchmarks, resting heart rate, HRV and sleep from Health Connect, your chat facts, and today's check-in. During a workout it also gets current heart rate, and it can request an overview of the heart rate stream.
+The AI receives:
+- your profile, injuries and health conditions, and your chat facts;
+- benchmarks, and resting heart rate, HRV and sleep from Health Connect;
+- past workouts with their metrics: distance, speed, climb, estimated effort and your effort rating;
+- today's check-in.
 
-Never sent: location, device identifiers, or audio. **Default:** setup shows this list and asks for agreement before the first AI call.
+During a workout it also gets current heart rate, speed or pace, gradient and climb, and it can ask for a timed overview of the recent minutes.
+
+Workouts under two minutes are left out of the list, because a start that lasted seconds says nothing about fitness. Abandoned ones are marked, and benchmark walks are called walks.
+
+Never sent: location, height above sea level, device identifiers, or audio. **Default:** setup shows this list and asks for agreement before the first AI call.
 
 This ends Haanf's "no internet" promise. It becomes: data leaves the phone only through your export, or to the AI provider you chose with your own key.
 
@@ -53,15 +61,31 @@ The harness runs while a workout runs, in the foreground service, so it works wi
 
 1. The workout starts. The coach speaks and chooses when to check in next.
 2. It sleeps while heart rate records.
-3. When it wakes, it tells the AI how the workout is going and the current heart rate. The AI can call a tool to get an overview of the heart rate stream.
+3. When it wakes, it tells the AI:
+   - the time into the workout;
+   - heart rate, and speed or pace, gradient and climb;
+   - everything that happened since the last check-in, each with its time.
+
+   The AI can call a tool for the recent minutes in timed steps.
 4. The AI replies. The reply is spoken aloud with the phone's offline voice.
 5. It sleeps again.
 
-**Timing:** the AI picks each sleep, within 2 to 10 minutes. These events wake it early: a step change, a heart rate spike, a dropout, or you speaking.
+**Timing:** the AI picks each sleep, within 2 to 10 minutes. These events wake it early: a step change, a heart rate spike, a dropout, the start of a climb, or you speaking.
 
 **Limits (default):** at most 15 calls per workout, and at least 60 seconds between calls. When you speak, it always answers, even past the limit.
 
-**Each wake-up is a fresh request (default)** with a short log of what the coach has said. A long conversation would cost more with every call, and it can't be trimmed once a model's thinking is involved.
+**One conversation per workout,** since slice 1.
+- "About you" and the plan go at the top, once. Each check-in is added below, so the coach remembers what you told it.
+- Earlier turns are sent back unchanged, which a model's thinking requires.
+- With the Claude provider, the conversation is cached for an hour, so rereading it costs about 5% of the normal price.
+- A workout is at most 15 calls, so the conversation stays small.
+
+**The workout timeline.** Each workout keeps a saved, timed record. It holds:
+- what the coach said, what you said, and talk test answers;
+- plan changes;
+- steps, heart rate alerts, dropouts, kilometres and climbs.
+
+Events between check-ins are delivered at the next one, with their times. The same record appears on the summary as "What you and the coach said", and the review reads it.
 
 **What it speaks:** only the message the AI passes to a `speak` tool, so a model's private reasoning can never be read aloud.
 
@@ -86,7 +110,7 @@ Every change must pass the rule check. Enforced in code, not only in the prompt:
 
 ## Talk test
 
-When "Talk test checks" is on in Get ready, the coach can ask whether you could talk comfortably, never during a hard effort. You answer by voice or with one of three buttons, or skip. No audio leaves the phone. The answer is saved with your heart rate, which builds the data for your talking threshold.
+When "Talk test checks" is on in Get ready, the coach can ask whether you could talk comfortably, never during a hard effort. With planned steps, the step decides what is hard. Without them, heart rate does: Hard or Very hard means no talk test. You answer by voice or with one of three buttons, or skip. No audio leaves the phone. The answer is saved with your heart rate, which builds the data for your talking threshold.
 
 ## Chat that remembers
 
@@ -124,6 +148,15 @@ From the brief:
 ## Reviews
 
 **Default:** a review runs automatically after each workout if a key is set, and appears on the summary and in History. If it fails, a Retry button appears. Benchmarks are reviewed too.
+
+**What the review reads:**
+- the workout's totals;
+- each kilometre, or heart rate in five-minute steps without GPS;
+- the timeline, word for word.
+
+The workout under review is not also in the workout list. The review is asked for under 90 words, explains heart rate with the terrain, and does not repeat the coach's cues.
+
+**Remembering from a review.** If you mentioned pain or an injury during the workout, the review may propose remembering it. You confirm it in chat, as with any fact.
 
 ## Where it lives
 
