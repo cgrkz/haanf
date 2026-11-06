@@ -88,6 +88,12 @@ The Bluetooth diagnostic export contains the names and addresses of nearby devic
 
 Read permissions for five data types and no write permissions. Each type is read separately, so one failure or refusal does not hide the others. Records are paged at 1,000 and only counts, sources, device names and timestamps are kept; the health values themselves are not stored.
 
+## Watch apps
+
+Live heart rate stays on the standard Bluetooth heart rate profile. Health Services on Wear OS batches readings while the screen is off, takes over any workout the watch is recording, and would need the Wearable Data Layer to reach the phone. A watch app would add running dynamics, which the phone cannot measure.
+
+`wearprobe` is a separate module and app (`app.haanf.wearprobe`) that only lists what Health Services offers on a watch. It adds `androidx.health:health-services-client` 1.1.0 to that module only, at the user's request on 6 November 2026. It has no internet permission. The phone app is unchanged. Whether to build a real watch app waits for its results on the Pixel Watch 2.
+
 ## Testing limits
 
 - `tools/ble-sim` runs simulated Bluetooth devices on the emulator. It found two real bugs that unit tests could not, both in pairing. It tests Haanf's code, not any watch.

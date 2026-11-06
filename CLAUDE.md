@@ -46,7 +46,7 @@ adb logcat HaanfBle:I HaanfScan:I HaanfSession:I HaanfService:I '*:S'
 
 ## Architecture
 
-One Gradle module, `:app`, with packages under `app.haanf`:
+Two Gradle modules. `:wearprobe` is a throwaway watch app that only lists what Health Services offers on a watch; see `wearprobe/README.md`. Everything else is `:app`, with packages under `app.haanf`:
 
 - `ai`: the coach. `LlmClient` is the provider boundary. `CoachHarness` is the background loop during workouts, `WorkoutPlanner` creates workouts, `AiWorkoutRules` is the rule check, and `CoachContext` decides what the AI sees. See `docs/ai-mode-spec.md`.
 - `heartrate`: the device boundary. `HeartRateSource` is the only thing workout logic knows about a wearable.

@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Haanf"
 include(":app")
+include(":wearprobe")
