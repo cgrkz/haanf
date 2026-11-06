@@ -92,7 +92,15 @@ Read permissions for five data types and no write permissions. Each type is read
 
 Live heart rate stays on the standard Bluetooth heart rate profile. Health Services on Wear OS batches readings while the screen is off, takes over any workout the watch is recording, and would need the Wearable Data Layer to reach the phone. A watch app would add running dynamics, which the phone cannot measure.
 
-`wearprobe` is a separate module and app (`app.haanf.wearprobe`) that only lists what Health Services offers on a watch. It adds `androidx.health:health-services-client` 1.1.0 to that module only, at the user's request on 6 November 2026. It has no internet permission. The phone app is unchanged. Whether to build a real watch app waits for its results on the Pixel Watch 2.
+`wearprobe` is a separate module and app (`app.haanf.wearprobe`) that only lists what Health Services offers on a watch. It adds `androidx.health:health-services-client` 1.1.0 to that module only, at the user's request on 6 November 2026. It has no internet permission. The phone app is unchanged.
+
+Results on the Pixel Watch 2, 7 November 2026 (Wear OS on API 37, Health Services 0.99.6), in `wearprobe/results-pixel-watch-2.txt`:
+- **No running dynamics.** Runs offer heart rate, speed, pace, distance, steps, steps per minute, elevation, floors, calories and location. There is no stride length, ground contact time or vertical oscillation.
+- **Heart rate every 5 seconds with the screen off is supported.** That removes the long delays as an obstacle, though Bluetooth still delivers about one reading a second.
+- **Stationary rides offer only heart rate and calories.**
+- **Permissions change nothing** in what is reported.
+
+So a watch app would add only cadence, which the phone's own step sensor could also measure. Live heart rate stays on Bluetooth, and no watch app is planned.
 
 ## Testing limits
 

@@ -22,6 +22,13 @@ It lists capabilities twice: once before asking for permissions, and once after.
    adb connect <address>:<port>
    ```
 
+   If the watch never answers on its IPv4 address, use its link-local IPv6 address instead, from the same Wireless debugging screen, with the Mac's network interface after `%`. The Pixel Watch 2 needed this on 7 November 2026:
+
+   ```bash
+   adb pair "[fe80::…%en0]:<pairing port>" <code>
+   adb connect "[fe80::…%en0]:<port>"
+   ```
+
 4. Build, install and launch. Use the watch's serial from `adb devices` and nothing else, because other devices may be attached:
 
    ```bash
@@ -43,3 +50,7 @@ It lists capabilities twice: once before asking for permissions, and once after.
    ```
 
 The probe has its own app id, so it never touches the phone app's data.
+
+## Results
+
+The Pixel Watch 2's report is in `results-pixel-watch-2.txt`, and what it means for Haanf is under "Watch apps" in `docs/decisions.md`. Each data type appears twice in the lists, because Health Services gives a reading and its summary, such as a running total or a minimum, maximum and average, the same name.
