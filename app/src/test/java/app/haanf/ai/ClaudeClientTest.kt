@@ -108,4 +108,34 @@ class ClaudeClientTest {
             assertEquals(LlmFailure.BAD_KEY, error.failure)
         }
     }
+
+    @Test
+    fun `a cacheable request keeps the conversation for an hour`() = runBlocking {
+        LocalServer(replies = listOf(textReply, textReply)).use { server ->
+            client(server).send(LlmRequest("s", listOf(LlmItem.User("u")), cacheable = true))
+            client(server).send(LlmRequest("s", listOf(LlmItem.User("u"))))
+            val cache = body(server.received[0]).getValue("cache_control").jsonObject
+            assertEquals("ephemeral", cache["type"]?.jsonPrimitive?.content)
+            assertEquals("1h", cache["ttl"]?.jsonPrimitive?.content)
+            assertNull(body(server.received[1])["cache_control"])
+        }
+    }
+
+    @Test
+    fun `a continuing conversation keeps turns alternating, with tool results and the next check-in together`() = runBlocking {
+        LocalServer(replies = listOf(toolReply, textReply)).use { server ->
+            val first = runToolConversation(client(server), LlmRequest("s", listOf(LlmItem.User("check-in 1")), listOf(tool)), isDone = { true }) {
+                ToolOutcome(it.id, "Spoken at 0:00.")
+            }
+            client(server).send(LlmRequest("s", first.items + LlmItem.User("check-in 2"), listOf(tool)))
+            val messages = body(server.received[1]).getValue("messages").jsonArray.map { it.jsonObject }
+            assertEquals(listOf("user", "assistant", "user"), messages.map { it["role"]?.jsonPrimitive?.content })
+            val last = messages.last().getValue("content").jsonArray.map { it.jsonObject }
+            assertEquals(listOf("tool_result", "text"), last.map { it["type"]?.jsonPrimitive?.content })
+            assertEquals("check-in 2", last[1]["text"]?.jsonPrimitive?.content)
+            // The thinking that came with the tool call goes back unchanged.
+            val assistant = messages[1].getValue("content").jsonArray.map { it.jsonObject }
+            assertEquals("sig123", assistant[0]["signature"]?.jsonPrimitive?.content)
+        }
+    }
 }

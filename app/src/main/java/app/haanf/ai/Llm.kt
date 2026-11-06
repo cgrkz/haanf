@@ -24,6 +24,9 @@ sealed interface LlmItem {
 
     /** A reply that called tools, and their results. [reply] goes back unchanged. */
     data class ToolTurn(val reply: LlmReply, val outcomes: List<ToolOutcome>) : LlmItem
+
+    /** A reply with no tool calls, sent back unchanged in a conversation that continues. */
+    data class Reply(val reply: LlmReply) : LlmItem
 }
 
 enum class LlmEffort { LOW, MEDIUM }
@@ -34,6 +37,8 @@ data class LlmRequest(
     val tools: List<ToolSpec> = emptyList(),
     val effort: LlmEffort = LlmEffort.LOW,
     val maxTokens: Long = DEFAULT_MAX_TOKENS,
+    /** Asks the provider to keep the conversation so far for an hour, where it can. */
+    val cacheable: Boolean = false,
 ) {
     companion object {
         const val DEFAULT_MAX_TOKENS = 4_000L
@@ -81,16 +86,31 @@ suspend fun runToolLoop(
     maxRounds: Int = 4,
     isDone: () -> Boolean = { false },
     handle: suspend (ToolCall) -> ToolOutcome,
-): LlmReply {
+): LlmReply = runToolConversation(client, request, maxRounds, isDone, handle).reply
+
+/** The last reply, and the whole conversation including it, ready to continue. */
+data class ToolConversation(val reply: LlmReply, val items: List<LlmItem>)
+
+/**
+ * As [runToolLoop], but also returns every item, ending with the last reply and the results
+ * of its tool calls, so a conversation can carry on later without changing what came before.
+ */
+suspend fun runToolConversation(
+    client: LlmClient,
+    request: LlmRequest,
+    maxRounds: Int = 4,
+    isDone: () -> Boolean = { false },
+    handle: suspend (ToolCall) -> ToolOutcome,
+): ToolConversation {
     var items = request.items
     var reply = client.send(request)
     var round = 1
     while (reply.toolCalls.isNotEmpty() && !reply.refused) {
         val outcomes = reply.toolCalls.map { handle(it) }
-        if (isDone() || round >= maxRounds) return reply
         items = items + LlmItem.ToolTurn(reply, outcomes)
+        if (isDone() || round >= maxRounds) return ToolConversation(reply, items)
         reply = client.send(request.copy(items = items))
         round++
     }
-    return reply
+    return ToolConversation(reply, items + LlmItem.Reply(reply))
 }

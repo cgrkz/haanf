@@ -60,6 +60,7 @@ class OpenAiCompatibleClient(
                 when (item) {
                     is LlmItem.User -> add(message("user", item.text))
                     is LlmItem.Assistant -> add(message("assistant", item.text))
+                    is LlmItem.Reply -> add(message("assistant", item.reply.text.orEmpty()))
                     is LlmItem.ToolTurn -> {
                         add(assistantToolMessage(item.reply))
                         item.outcomes.forEach { add(toolMessage(it)) }

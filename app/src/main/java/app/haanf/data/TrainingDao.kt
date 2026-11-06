@@ -71,4 +71,22 @@ interface TrainingDao {
 
     @Upsert
     suspend fun saveEnrolment(enrolment: EnrolmentEntity)
+
+    @Insert
+    suspend fun insertSplit(split: SplitEntity)
+
+    @Query("SELECT * FROM workout_split WHERE workoutId = :workoutId ORDER BY number")
+    suspend fun splits(workoutId: Long): List<SplitEntity>
+
+    @Query("SELECT * FROM workout_split WHERE workoutId = :workoutId ORDER BY number")
+    fun observeSplits(workoutId: Long): Flow<List<SplitEntity>>
+
+    @Insert
+    suspend fun insertEvent(event: WorkoutEventEntity)
+
+    @Query("SELECT * FROM workout_event WHERE workoutId = :workoutId ORDER BY elapsedSeconds, id")
+    suspend fun events(workoutId: Long): List<WorkoutEventEntity>
+
+    @Query("SELECT * FROM workout_event WHERE workoutId = :workoutId ORDER BY elapsedSeconds, id")
+    fun observeEvents(workoutId: Long): Flow<List<WorkoutEventEntity>>
 }

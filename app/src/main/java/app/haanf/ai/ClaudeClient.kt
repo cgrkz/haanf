@@ -9,10 +9,12 @@ import com.anthropic.errors.AnthropicServiceException
 import com.anthropic.errors.PermissionDeniedException
 import com.anthropic.errors.RateLimitException
 import com.anthropic.errors.UnauthorizedException
+import com.anthropic.models.beta.messages.BetaCacheControlEphemeral
 import com.anthropic.models.beta.messages.BetaContentBlockParam
 import com.anthropic.models.beta.messages.BetaMessage
 import com.anthropic.models.beta.messages.BetaOutputConfig
 import com.anthropic.models.beta.messages.BetaStopReason
+import com.anthropic.models.beta.messages.BetaTextBlockParam
 import com.anthropic.models.beta.messages.BetaTool
 import com.anthropic.models.beta.messages.BetaToolResultBlockParam
 import com.anthropic.models.beta.messages.MessageCreateParams
@@ -65,20 +67,43 @@ class ClaudeClient(
             builder.addBeta(FALLBACK_BETA)
             builder.putAdditionalBodyProperty("fallbacks", JsonValue.from("default"))
         }
+        // Keeps the conversation so far for an hour, so a workout's later check-ins reread it cheaply.
+        if (request.cacheable) {
+            builder.cacheControl(BetaCacheControlEphemeral.builder().ttl(BetaCacheControlEphemeral.Ttl.TTL_1H).build())
+        }
         request.tools.forEach { builder.addTool(tool(it)) }
+        // Tool results and the user text after them share one user turn, so turns always alternate.
+        var pending = mutableListOf<BetaContentBlockParam>()
+        fun flush() {
+            if (pending.isNotEmpty()) builder.addUserMessageOfContentBlockParams(pending)
+            pending = mutableListOf()
+        }
         request.items.forEach { item ->
             when (item) {
-                is LlmItem.User -> builder.addUserMessage(item.text)
-                is LlmItem.Assistant -> builder.addAssistantMessage(item.text)
+                is LlmItem.User -> pending += text(item.text)
+                is LlmItem.Assistant -> {
+                    flush()
+                    builder.addAssistantMessage(item.text)
+                }
                 is LlmItem.ToolTurn -> {
+                    flush()
                     // Sent back whole: a tool turn's thinking must return unchanged.
                     builder.addMessage(item.reply.native as BetaMessage)
-                    builder.addUserMessageOfContentBlockParams(item.outcomes.map(::toolResult))
+                    pending += item.outcomes.map(::toolResult)
+                }
+                is LlmItem.Reply -> {
+                    flush()
+                    val native = item.reply.native as? BetaMessage
+                    if (native != null) builder.addMessage(native) else builder.addAssistantMessage(item.reply.text.orEmpty())
                 }
             }
         }
+        flush()
         return builder.build()
     }
+
+    private fun text(text: String): BetaContentBlockParam =
+        BetaContentBlockParam.ofText(BetaTextBlockParam.builder().text(text).build())
 
     private fun effort(effort: LlmEffort): BetaOutputConfig.Effort = when (effort) {
         LlmEffort.LOW -> BetaOutputConfig.Effort.LOW

@@ -18,6 +18,8 @@ data class ProfileEntity(
     val deviceId: String? = null,
     val deviceName: String? = null,
     val deviceSourceKind: String? = null,
+    /** A [app.haanf.training.BikeType] name, for estimating watts. */
+    val bikeType: String? = null,
 )
 
 /** One workout from any mode. Only program workouts ever touch the program clock. */
@@ -50,6 +52,15 @@ data class WorkoutEntity(
     val review: String? = null,
     val effortRating: Int? = null,
     val hrDropBpm: Int? = null,
+    /** Totals from the phone's GPS and barometer. Never a position or a height above sea level. */
+    val distanceMetres: Double? = null,
+    val movingSeconds: Int? = null,
+    val maxSpeedMps: Double? = null,
+    val climbMetres: Double? = null,
+    val descentMetres: Double? = null,
+    val avgWatts: Int? = null,
+    val gapSecondsPerKm: Int? = null,
+    val bikeType: String? = null,
 )
 
 @Entity(tableName = "program_enrolment")
@@ -89,4 +100,57 @@ data class BenchmarkEntity(
     val sex: String,
     val weightKg: Double,
     val vo2Max: Double,
+)
+
+/** One kilometre of a workout, or its shorter last part. Totals only, never where it was. */
+@Entity(
+    tableName = "workout_split",
+    foreignKeys = [
+        ForeignKey(
+            entity = WorkoutEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["workoutId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("workoutId")],
+)
+data class SplitEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val workoutId: Long,
+    val number: Int,
+    val metres: Double,
+    val seconds: Int,
+    val endElapsedSeconds: Int,
+    val avgBpm: Int?,
+    val climbMetres: Double,
+    val descentMetres: Double,
+    val avgWatts: Int?,
+    val gapSecondsPerKm: Int?,
+)
+
+/**
+ * One line of a workout's timeline: what the coach or athlete said, or what happened.
+ * Each carries the time into the workout, so the coach and the review can follow the order.
+ */
+@Entity(
+    tableName = "workout_event",
+    foreignKeys = [
+        ForeignKey(
+            entity = WorkoutEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["workoutId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("workoutId")],
+)
+data class WorkoutEventEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val workoutId: Long,
+    val atMs: Long,
+    val elapsedSeconds: Int,
+    val kind: String,
+    val text: String,
+    val bpm: Int?,
 )

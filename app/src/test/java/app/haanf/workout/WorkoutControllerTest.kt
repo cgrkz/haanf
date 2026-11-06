@@ -2,6 +2,10 @@ package app.haanf.workout
 
 import app.haanf.core.Clock
 import app.haanf.data.BenchmarkEntity
+import app.haanf.data.SplitEntity
+import app.haanf.data.WorkoutEventEntity
+import app.haanf.training.BikeType
+import kotlin.math.pow
 import app.haanf.data.WorkoutEntity
 import app.haanf.heartrate.HeartRateDevice
 import app.haanf.talktest.TrainingActivity
@@ -40,6 +44,7 @@ class WorkoutControllerTest {
     private val link = FakeLink()
     private val spoken = mutableListOf<String>()
     private val gps = FakeGps()
+    private val pressure = FakePressure()
     private var sessionId: Long? = null
     private var bpm: Int? = null
     private val controller = WorkoutController(
@@ -51,6 +56,7 @@ class WorkoutControllerTest {
         distance = gps,
         currentSessionId = { sessionId },
         currentBpm = { bpm },
+        pressure = pressure,
     )
 
     private val device = HeartRateDevice("id", "Watch", "fake")
@@ -397,6 +403,101 @@ class WorkoutControllerTest {
         assertEquals(null, finished.hrDropBpm)
     }
 
+    /** Moves [metresEvery2s] every two seconds, at a height set by [heightAt] from the distance so far. */
+    private fun travel(metresEvery2s: Int, seconds: Int, heightAt: (Double) -> Double = { 0.0 }) {
+        var metres = 0.0
+        repeat(seconds / 2) {
+            gps.moveBy(metresEvery2s)
+            metres += metresEvery2s
+            pressure.atHeight(heightAt(metres))
+            run(1)
+            pressure.atHeight(heightAt(metres))
+            run(1)
+        }
+    }
+
+    @Test
+    fun `an outdoor ride measures distance, climb and watts, and saves each kilometre`() {
+        val ride = freeRequest.copy(activity = TrainingActivity.CYCLING, usesGps = true, riderKg = 61.0, bike = BikeType.HYBRID)
+        start(ride)
+        assertEquals(1, gps.starts)
+        assertEquals(1, pressure.starts)
+        var sawClimbing = false
+        var metres = 0.0
+        repeat(180) {
+            gps.moveBy(12)
+            metres += 12
+            pressure.atHeight(minOf(metres, 600.0) * 0.06)
+            run(1)
+            pressure.atHeight(minOf(metres, 600.0) * 0.06)
+            run(1)
+            if ((controller.state.value as WorkoutState.Running).motion?.climbing == true) sawClimbing = true
+        }
+        assertTrue(sawClimbing)
+        finish()
+        val saved = store.closed.last()
+        assertEquals(2_160.0, saved.distanceMetres!!, 40.0)
+        assertEquals(36.0, saved.climbMetres!!, 3.0)
+        assertTrue(saved.avgWatts!! > 0)
+        assertEquals("HYBRID", saved.bikeType)
+        assertEquals(listOf(1, 2, 3), store.splits.map { it.number })
+        assertTrue(store.splits[0].climbMetres > store.splits[1].climbMetres)
+        val kinds = store.events.map { it.kind }
+        assertTrue(kinds.contains(TimelineKind.CLIMB.name))
+        assertTrue(kinds.contains(TimelineKind.SPLIT.name))
+        assertEquals(1, gps.stops)
+        assertEquals(1, pressure.stops)
+    }
+
+    @Test
+    fun `a run speaks each kilometre with its pace`() {
+        start(freeRequest.copy(activity = TrainingActivity.OUTDOOR_RUN, usesGps = true))
+        travel(6, 360)
+        assertTrue(spoken.toString(), spoken.any { it.startsWith("1 kilometre.") && it.endsWith("per kilometre.") })
+    }
+
+    @Test
+    fun `a treadmill workout uses neither GPS nor the barometer`() {
+        start(freeRequest)
+        run(30)
+        finish()
+        assertEquals(0, gps.starts)
+        assertEquals(0, pressure.starts)
+        assertNull(store.closed.last().distanceMetres)
+        assertTrue(store.splits.isEmpty())
+    }
+
+    @Test
+    fun `the timeline records each step with its time`() {
+        start(programRequest)
+        run(65)
+        val lines = controller.timeline.map { it.line() }
+        assertTrue(lines.toString(), lines.first().startsWith("[0:00] Step: Warm up"))
+        assertTrue(lines.toString(), lines.any { it.startsWith("[1:00] Step: Hard 1 of 1, 1:00, hard") })
+        assertEquals(lines.size, store.events.size)
+    }
+
+    private class FakePressure : PressureSource {
+        override val available = true
+        var starts = 0
+        var stops = 0
+        var onHpa: ((Double) -> Unit)? = null
+
+        override fun start(onHpa: (Double) -> Unit) {
+            starts++
+            this.onHpa = onHpa
+        }
+
+        override fun stop() {
+            stops++
+            onHpa = null
+        }
+
+        fun atHeight(metres: Double) {
+            onHpa?.invoke(1_000.0 * (1 - metres / 44_330.0).pow(1 / 0.1903))
+        }
+    }
+
     private class FakeGps : DistanceSource {
         private var onFix: ((LocationFix) -> Unit)? = null
         private var latitude = 12.9
@@ -445,6 +546,16 @@ class WorkoutControllerTest {
         val credited = mutableListOf<String>()
         val attached = mutableListOf<Pair<Long, Long>>()
         val benchmarks = mutableListOf<BenchmarkEntity>()
+        val splits = mutableListOf<SplitEntity>()
+        val events = mutableListOf<WorkoutEventEntity>()
+
+        override suspend fun addSplit(split: SplitEntity) {
+            splits += split
+        }
+
+        override suspend fun addEvent(event: WorkoutEventEntity) {
+            events += event
+        }
 
         override suspend fun open(workout: WorkoutEntity): Long = nextId++
 

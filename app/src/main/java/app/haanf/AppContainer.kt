@@ -31,12 +31,15 @@ import app.haanf.talktest.TalkTestRecorder
 import app.haanf.training.TimedBpm
 import app.haanf.ui.OnboardingStore
 import app.haanf.workout.Announcer
+import app.haanf.workout.BarometerSource
 import app.haanf.workout.DistanceSource
 import app.haanf.workout.GpsDistanceSource
 import app.haanf.workout.LiveLink
+import app.haanf.workout.PressureSource
 import app.haanf.workout.RoomWorkoutStore
 import app.haanf.workout.ServiceLiveLink
 import app.haanf.workout.SpeechAnnouncer
+import app.haanf.workout.TimelineEntry
 import app.haanf.workout.WorkoutController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -54,6 +57,7 @@ class AppContainer(
     announcer: Announcer = SpeechAnnouncer(context.applicationContext),
     distance: DistanceSource = GpsDistanceSource(context.applicationContext),
     llmOverride: LlmProvider? = null,
+    pressure: PressureSource = BarometerSource(context.applicationContext),
 ) {
     private val appContext = context.applicationContext
     private val sessionScope = CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1))
@@ -95,6 +99,8 @@ class AppContainer(
         distance = distance,
         currentSessionId = { live.live.value.sessionId },
         currentBpm = { live.freshBpm() },
+        pressure = pressure,
+        inDropout = { live.live.value.inDropout },
     )
 
     val aiSettings = AiSettingsStore(appContext)
@@ -108,7 +114,15 @@ class AppContainer(
         scope = sessionScope,
         workouts = workouts,
         training = trainingDao,
-        reviewer = WorkoutReviewer(llm, coachData, tone) { samples(it) },
+        reviewer = WorkoutReviewer(
+            llm = llm,
+            data = coachData,
+            tone = tone,
+            samples = { samples(it) },
+            timeline = { id -> trainingDao.events(id).mapNotNull(TimelineEntry::from) },
+            splits = { id -> trainingDao.splits(id) },
+            proposeFact = { kind, text -> coachData.proposeFact(kind, text) },
+        ),
     )
     val coach = CoachHarness(
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1)),

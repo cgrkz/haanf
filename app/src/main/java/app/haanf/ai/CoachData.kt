@@ -62,7 +62,7 @@ class CoachData(
             maxIsMeasured = profile.measuredMaxBpm != null,
             facts = coach.activeFacts(),
             benchmarks = training.benchmarks(),
-            workouts = training.recentWorkouts(RECENT_WORKOUTS),
+            workouts = training.recentWorkouts(WORKOUTS_TO_FILTER),
             talkChecks = coach.recentTalkChecks(RECENT_TALK_CHECKS),
             vitals = freshVitals(),
             program = programLine(today),
@@ -133,6 +133,7 @@ class CoachData(
     private companion object {
         const val TAG = "HaanfCoach"
         const val RECENT_WORKOUTS = 14
+        const val WORKOUTS_TO_FILTER = 40
         const val RECENT_TALK_CHECKS = 10
     }
 }

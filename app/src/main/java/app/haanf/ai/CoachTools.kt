@@ -16,6 +16,17 @@ import kotlinx.serialization.json.putJsonObject
 
 /** Schemas shared by the AI features, and tolerant reads of what comes back. */
 object CoachTools {
+    val REMEMBER_FACT by lazy {
+        ToolSpec(
+            name = "remember_fact",
+            description = "Propose saving something lasting about the athlete. They confirm it first.",
+            properties = buildJsonObject {
+                put("kind", choice("What sort of fact.", app.haanf.data.FactKind.entries.map { it.name }))
+                put("fact", string("A short statement, such as Left knee sore since October."))
+            },
+        )
+    }
+
     val TARGETS = mapOf(
         "recovery" to Zone.RECOVERY,
         "easy" to Zone.EASY,

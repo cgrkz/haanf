@@ -115,6 +115,51 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun version5DataSurvivesTheMoveToVersion6() {
+        helper.createDatabase(DB, 5).use { db ->
+            db.execSQL("INSERT INTO profile (id, birthYear, sex, weightKg) VALUES (1, 2004, 'MALE', 61.0)")
+            db.execSQL(
+                "INSERT INTO workout (id, startedAtMs, endedAtMs, title, activity, origin, avgBpm, maxBpm, recoverySeconds, " +
+                    "easySeconds, hardSeconds, veryHardSeconds, noReadingSeconds, countedForProgram, plannedHard, " +
+                    "coached, review, effortRating) " +
+                    "VALUES (5, 1000, 1401000, 'Free workout', 'CYCLING', 'FREE', 149, 185, 5, 447, 421, 525, 0, 0, 0, 1, " +
+                    "'A hard surge', 3)",
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB, 6, true).use { db ->
+            db.query("SELECT avgBpm, review, effortRating, distanceMetres, climbMetres, bikeType FROM workout WHERE id = 5").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(149, cursor.getInt(0))
+                assertEquals("A hard surge", cursor.getString(1))
+                assertEquals(3, cursor.getInt(2))
+                assertEquals(true, cursor.isNull(3))
+                assertEquals(true, cursor.isNull(4))
+                assertEquals(true, cursor.isNull(5))
+            }
+            db.query("SELECT weightKg, bikeType FROM profile WHERE id = 1").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(61.0, cursor.getDouble(0), 0.0)
+                assertEquals(true, cursor.isNull(1))
+            }
+            db.execSQL(
+                "INSERT INTO workout_split (workoutId, number, metres, seconds, endElapsedSeconds, climbMetres, descentMetres) " +
+                    "VALUES (5, 1, 1000.0, 372, 372, 32.0, 0.0)",
+            )
+            db.execSQL(
+                "INSERT INTO workout_event (workoutId, atMs, elapsedSeconds, kind, text, bpm) " +
+                    "VALUES (5, 251000, 250, 'ATHLETE', 'Big hill coming up.', 147)",
+            )
+            db.execSQL("PRAGMA foreign_keys = ON")
+            db.execSQL("DELETE FROM workout WHERE id = 5")
+            db.query("SELECT (SELECT COUNT(*) FROM workout_split) + (SELECT COUNT(*) FROM workout_event)").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+        }
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

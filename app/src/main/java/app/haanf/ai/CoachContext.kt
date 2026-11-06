@@ -16,6 +16,7 @@ import app.haanf.workout.WorkoutText
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlin.math.roundToInt
 
 /** Everything the AI may know. Location, device identifiers and audio have no place here. */
 data class CoachSnapshot(
@@ -62,9 +63,11 @@ object CoachContext {
             append("at ${benchmark.heartRateBpm} bpm.\n")
         }
 
+        // Starts that lasted seconds say nothing about fitness, and would mislead.
+        val workouts = snapshot.workouts.filter { it.durationSeconds() >= MIN_WORKOUT_SECONDS }.take(MAX_WORKOUTS)
         append("\nRecent workouts, newest first:\n")
-        if (snapshot.workouts.isEmpty()) append("None yet.\n")
-        snapshot.workouts.forEach { append("- ${describe(it, day(it.startedAtMs))}\n") }
+        if (workouts.isEmpty()) append("None yet.\n")
+        workouts.forEach { append("- ${describe(it, day(it.startedAtMs))}\n") }
 
         snapshot.program?.let { append("\nProgram: $it\n") }
 
@@ -82,13 +85,50 @@ object CoachContext {
         }
     }
 
+    private fun WorkoutEntity.durationSeconds(): Int = (((endedAtMs ?: startedAtMs) - startedAtMs) / 1000).toInt()
+
     private fun describe(workout: WorkoutEntity, day: LocalDate): String {
-        val seconds = ((workout.endedAtMs ?: workout.startedAtMs) - workout.startedAtMs) / 1000
-        val activity = TrainingActivity.entries.firstOrNull { it.name == workout.activity }?.label ?: workout.activity
-        val heartRate = workout.avgBpm?.let { "average $it, highest ${workout.maxBpm} bpm" } ?: "no heart rate"
+        val seconds = workout.durationSeconds()
+        val benchmark = workout.origin == "BENCHMARK"
+        val activity = when (workout.activity) {
+            TrainingActivity.CYCLING.name -> "ride"
+            TrainingActivity.TREADMILL.name -> if (benchmark) "treadmill walk" else "treadmill"
+            else -> if (benchmark) "outdoor walk" else "outdoor run"
+        }
+        val kind = when (workout.origin) {
+            "PROGRAM" -> "program" + (workout.programWeek?.let { ", week $it" } ?: "")
+            "AI" -> "coach-planned"
+            "BENCHMARK" -> "benchmark"
+            else -> "free"
+        }
+        val heartRate = workout.avgBpm?.let { "Heart rate average $it, highest ${workout.maxBpm} bpm" } ?: "No heart rate"
         val zones = "easy ${workout.easySeconds / 60} min, hard ${workout.hardSeconds / 60} min, " +
             "very hard ${workout.veryHardSeconds / 60} min"
-        return "$day: ${workout.title}, ${activity.lowercase()}, ${WorkoutText.clock(seconds.toInt())}, $heartRate, $zones."
+        return buildString {
+            append("$day: ${workout.title} ($kind), $activity, ${WorkoutText.clock(seconds)}. $heartRate; $zones.")
+            motion(workout, activity == "ride")?.let { append(" $it") }
+            workout.hrDropBpm?.let { append(" Heart rate fell $it bpm in the minute after the last hard step.") }
+            workout.effortRating?.let { append(" Rated effort $it of 5.") }
+            if (workout.endReason == "abandoned") append(" Stopped early.")
+        }
+    }
+
+    private fun motion(workout: WorkoutEntity, ride: Boolean): String? {
+        val parts = mutableListOf<String>()
+        val metres = workout.distanceMetres
+        val moving = workout.movingSeconds
+        if (metres != null && metres > 0) {
+            val speed = if (moving != null && moving > 0) metres / moving else null
+            parts += when {
+                speed == null -> "${WorkoutText.km(metres)} km"
+                ride -> "${WorkoutText.km(metres)} km at ${WorkoutText.kmh(speed)} km/h moving"
+                else -> "${WorkoutText.km(metres)} km at ${WorkoutText.paceOf(speed)} /km"
+            }
+        }
+        workout.climbMetres?.takeIf { it >= 1 }?.let { parts += "climbed ${it.roundToInt()} m" }
+        workout.avgWatts?.let { parts += "about $it W" }
+        workout.gapSecondsPerKm?.let { parts += "grade-adjusted ${WorkoutText.pace(it)} /km" }
+        return parts.takeIf { it.isNotEmpty() }?.joinToString(", ", postfix = ".")?.replaceFirstChar { it.uppercase() }
     }
 
     private fun vitalLine(name: String, unit: String, trend: VitalTrend?): String {
@@ -103,4 +143,6 @@ object CoachContext {
     }
 
     private const val MAX_BENCHMARKS = 5
+    private const val MAX_WORKOUTS = 14
+    private const val MIN_WORKOUT_SECONDS = 120
 }

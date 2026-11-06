@@ -76,4 +76,44 @@ class CoachContextTest {
         val fields = CoachSnapshot::class.java.declaredFields.map { it.name.lowercase() }
         assertTrue(fields.none { it.contains("location") || it.contains("latitude") || it.contains("audio") })
     }
+
+    private fun workout(id: Long, seconds: Int, origin: String = "FREE", activity: String = "CYCLING", endReason: String? = null) = WorkoutEntity(
+        id = id, startedAtMs = id * 10_000_000, endedAtMs = id * 10_000_000 + seconds * 1000L, title = "W$id",
+        activity = activity, origin = origin, avgBpm = 140, maxBpm = 160, endReason = endReason,
+    )
+
+    @Test
+    fun `starts lasting seconds are left out, and abandoned workouts are marked`() {
+        val text = CoachContext.render(
+            snapshot.copy(
+                workouts = listOf(
+                    workout(1, 5, origin = "BENCHMARK", activity = "OUTDOOR_RUN", endReason = "abandoned"),
+                    workout(2, 600, origin = "BENCHMARK", activity = "OUTDOOR_RUN", endReason = "abandoned"),
+                    workout(3, 67),
+                ),
+            ),
+            ZoneOffset.UTC,
+        )
+        assertFalse(text.contains("W1"))
+        assertFalse(text.contains("W3"))
+        assertTrue(text, text.contains("W2 (benchmark), outdoor walk, 10:00."))
+        assertTrue(text.contains("Stopped early."))
+    }
+
+    @Test
+    fun `workouts say what kind they were, how they felt and what the phone measured`() {
+        val ride = workout(4, 1_400).copy(
+            effortRating = 3, distanceMetres = 4_230.0, movingSeconds = 1_300, climbMetres = 91.0, avgWatts = 120,
+        )
+        val run = workout(5, 1_800, origin = "AI", activity = "OUTDOOR_RUN").copy(
+            distanceMetres = 5_000.0, movingSeconds = 1_700, gapSecondsPerKm = 320, hrDropBpm = 28,
+        )
+        val text = CoachContext.render(snapshot.copy(workouts = listOf(ride, run)), ZoneOffset.UTC)
+        assertTrue(text, text.contains("W4 (free), ride, 23:20."))
+        assertTrue(text, text.contains("4.23 km at 11.7 km/h moving, climbed 91 m, about 120 W."))
+        assertTrue(text, text.contains("Rated effort 3 of 5."))
+        assertTrue(text, text.contains("W5 (coach-planned), outdoor run"))
+        assertTrue(text, text.contains("5.00 km at 5:40 /km, grade-adjusted 5:20 /km."))
+        assertTrue(text, text.contains("Heart rate fell 28 bpm"))
+    }
 }

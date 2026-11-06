@@ -3,8 +3,10 @@ package app.haanf.workout
 import android.content.Context
 import app.haanf.data.BenchmarkEntity
 import app.haanf.data.HrDao
+import app.haanf.data.SplitEntity
 import app.haanf.data.TrainingDao
 import app.haanf.data.WorkoutEntity
+import app.haanf.data.WorkoutEventEntity
 import app.haanf.heartrate.HeartRateDevice
 import app.haanf.program.ProgramTracker
 import app.haanf.session.HeartRateForegroundService
@@ -43,4 +45,8 @@ class RoomWorkoutStore(
     override suspend fun creditProgram(programId: String) = programs.credit(programId)
 
     override suspend fun saveBenchmark(benchmark: BenchmarkEntity) = training.insertBenchmark(benchmark)
+
+    override suspend fun addSplit(split: SplitEntity) = training.insertSplit(split)
+
+    override suspend fun addEvent(event: WorkoutEventEntity) = training.insertEvent(event)
 }

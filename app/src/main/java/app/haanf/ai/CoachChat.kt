@@ -95,14 +95,7 @@ class CoachChat(
     private companion object {
         const val HISTORY_MESSAGES = 20
 
-        val REMEMBER_FACT = ToolSpec(
-            name = "remember_fact",
-            description = "Propose saving something lasting about the athlete. They confirm it first.",
-            properties = buildJsonObject {
-                put("kind", CoachTools.choice("What sort of fact.", FactKind.entries.map { it.name }))
-                put("fact", CoachTools.string("A short statement, such as Left knee sore since October."))
-            },
-        )
+        val REMEMBER_FACT get() = CoachTools.REMEMBER_FACT
 
         val RESOLVE_FACT = ToolSpec(
             name = "resolve_fact",

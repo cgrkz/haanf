@@ -72,6 +72,7 @@ class CoachHarnessTest {
         },
         currentSessionId = { 1L },
         currentBpm = { bpm },
+        inDropout = { dropout },
     )
 
     private val data = object : CoachDataSource {
@@ -140,7 +141,8 @@ class CoachHarnessTest {
         scheduler.runCurrent()
     }
 
-    private fun userMessages() = llm.requests.map { (it.items.first() as LlmItem.User).text }
+    /** The newest check-in in each request: the conversation grows, and each adds one below. */
+    private fun userMessages() = llm.requests.map { request -> request.items.filterIsInstance<LlmItem.User>().last().text }
 
     private val runningPlan get() = (workouts.state.value as WorkoutState.Running).request.plan!!
 
@@ -192,7 +194,8 @@ class CoachHarnessTest {
         val message = userMessages().last()
         assertTrue(message.contains("Heart rate now: 130 bpm"))
         assertTrue(message.contains("Current step: Warm up"))
-        assertTrue(message.contains("0:00: One"))
+        val said = llm.requests.last().items.filterIsInstance<LlmItem.ToolTurn>().single()
+        assertEquals("Spoken at 0:00.", said.outcomes.single().content)
     }
 
     @Test
@@ -445,5 +448,84 @@ class CoachHarnessTest {
 
     private companion object {
         const val START_MS = 1_700_000_000_000
+    }
+
+    @Test
+    fun `the coach keeps one conversation, so it remembers what the athlete said`() {
+        llm.then { FakeLlm.speak("One", nextMinutes = 10) }
+            .then { FakeLlm.speak("Noted", nextMinutes = 2) }
+            .then { FakeLlm.speak("Later", nextMinutes = 2) }
+        start()
+        run(30)
+        harness.userSaid("my knee hurts")
+        scheduler.runCurrent()
+        run(125)
+        val later = llm.requests.last().items
+        val users = later.filterIsInstance<LlmItem.User>().map { it.text }
+        assertTrue(users.first().contains("Athlete:") || users.first().contains("years old"))
+        assertTrue(users.any { it.contains("The athlete just said: \"my knee hurts\"") })
+        assertTrue(users.last().contains("Your timer ran out"))
+        // Earlier turns are sent back unchanged, in order.
+        assertEquals(llm.requests[1].items, later.take(llm.requests[1].items.size))
+    }
+
+    @Test
+    fun `about you and the plan are sent once, at the top`() {
+        llm.then { FakeLlm.speak("One", nextMinutes = 2) }
+        start()
+        run(125)
+        val users = llm.requests.last().items.filterIsInstance<LlmItem.User>()
+        assertTrue(users.first().text.contains("The plan:"))
+        assertTrue(users.first().text.contains("[10:00] Hard"))
+        assertFalse(users.last().text.contains("The plan:"))
+        assertTrue(llm.requests.all { it.cacheable })
+    }
+
+    @Test
+    fun `each check-in is timed and lists what happened since the last one`() {
+        llm.then { FakeLlm.speak("One", nextMinutes = 2) }
+        start()
+        run(70)
+        dropout = true
+        run(6)
+        assertTrue(userMessages().last(), userMessages().last().contains("Heart rate readings stopped."))
+        dropout = false
+        run(10)
+        run(120)
+        val message = userMessages().last()
+        assertTrue(message, message.startsWith("[3:"))
+        assertTrue(message, message.contains("Since your last check-in at 1:"))
+        assertTrue(message, message.contains("Heart rate readings are back."))
+        assertFalse(message, message.contains("readings stopped."))
+    }
+
+    @Test
+    fun `what the coach says and hears goes on the workout timeline`() {
+        llm.then { FakeLlm.speak("Easy does it", nextMinutes = 10) }
+        start()
+        harness.userSaid("feeling good")
+        scheduler.runCurrent()
+        val kinds = workouts.timeline.map { it.kind }
+        assertTrue(kinds.contains(app.haanf.workout.TimelineKind.COACH))
+        assertTrue(kinds.contains(app.haanf.workout.TimelineKind.ATHLETE))
+        assertTrue(workouts.timeline.first { it.kind == app.haanf.workout.TimelineKind.COACH }.line().startsWith("[0:00] Coach: Easy does it"))
+    }
+
+    @Test
+    fun `in a free workout, heart rate decides what counts as a hard effort`() {
+        llm.then { FakeLlm.speak("Steady", nextMinutes = 2) }
+            .then { FakeLlm.speak("Could you talk?", nextMinutes = 10, askTalkTest = true) }
+        start(aiRequest.copy(plan = null, ai = null))
+        bpm = 175
+        run(125)
+        assertTrue(userMessages().last().contains("This is a hard effort"))
+        assertFalse(harness.status.value.awaitingTalkAnswer)
+    }
+
+    @Test
+    fun `a treadmill workout tells the coach the phone cannot measure it`() {
+        llm.then { FakeLlm.speak("One") }
+        start()
+        assertTrue(userMessages().single().contains("cannot measure speed, distance or incline"))
     }
 }

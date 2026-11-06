@@ -8,7 +8,10 @@ import android.location.LocationManager
 import android.os.Looper
 import app.haanf.training.LocationFix
 
-/** Uses the phone's GPS directly, so no Google services are needed. Callers hold the permission. */
+/**
+ * Uses the phone's GPS directly, so no Google services are needed. Fixes are passed on and
+ * dropped: nothing here keeps a position.
+ */
 @SuppressLint("MissingPermission")
 class GpsDistanceSource(context: Context) : DistanceSource {
     private val manager = context.getSystemService(LocationManager::class.java)
@@ -18,13 +21,21 @@ class GpsDistanceSource(context: Context) : DistanceSource {
         stop()
         val forward = LocationListener { location -> onFix(location.toFix()) }
         listener = forward
-        manager.requestLocationUpdates(
-            LocationManager.GPS_PROVIDER,
-            UPDATE_MS,
-            0f,
-            forward,
-            Looper.getMainLooper(),
-        )
+        try {
+            manager.requestLocationUpdates(
+                LocationManager.GPS_PROVIDER,
+                UPDATE_MS,
+                0f,
+                forward,
+                Looper.getMainLooper(),
+            )
+        } catch (e: SecurityException) {
+            // Location was refused or withdrawn. The workout carries on without distance.
+            listener = null
+        } catch (e: IllegalArgumentException) {
+            // This phone has no GPS provider.
+            listener = null
+        }
     }
 
     override fun stop() {
@@ -37,6 +48,7 @@ class GpsDistanceSource(context: Context) : DistanceSource {
         longitude = longitude,
         accuracyMetres = if (hasAccuracy()) accuracy else Float.MAX_VALUE,
         elapsedMs = elapsedRealtimeNanos / 1_000_000,
+        speedMps = if (hasSpeed()) speed else null,
     )
 
     private companion object {
