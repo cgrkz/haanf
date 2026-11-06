@@ -36,7 +36,8 @@ data class CoachSnapshot(
 
 /** Turns a snapshot into the plain text every AI feature starts from. */
 object CoachContext {
-    fun render(snapshot: CoachSnapshot, zone: ZoneId = ZoneId.systemDefault()): String = buildString {
+    /** With [withIds], each workout starts with its id, for features that can open one. */
+    fun render(snapshot: CoachSnapshot, zone: ZoneId = ZoneId.systemDefault(), withIds: Boolean = false): String = buildString {
         fun day(epochMs: Long): LocalDate = Instant.ofEpochMilli(epochMs).atZone(zone).toLocalDate()
 
         append("Today is ${snapshot.today}.\n")
@@ -63,11 +64,10 @@ object CoachContext {
             append("at ${benchmark.heartRateBpm} bpm.\n")
         }
 
-        // Starts that lasted seconds say nothing about fitness, and would mislead.
-        val workouts = snapshot.workouts.filter { it.durationSeconds() >= MIN_WORKOUT_SECONDS }.take(MAX_WORKOUTS)
+        val workouts = snapshot.workouts.filter { it.counts() }.take(MAX_WORKOUTS)
         append("\nRecent workouts, newest first:\n")
         if (workouts.isEmpty()) append("None yet.\n")
-        workouts.forEach { append("- ${describe(it, day(it.startedAtMs))}\n") }
+        workouts.forEach { append("- ${if (withIds) line(it, zone) else describe(it, day(it.startedAtMs))}\n") }
 
         snapshot.program?.let { append("\nProgram: $it\n") }
 
@@ -87,20 +87,33 @@ object CoachContext {
 
     private fun WorkoutEntity.durationSeconds(): Int = (((endedAtMs ?: startedAtMs) - startedAtMs) / 1000).toInt()
 
-    private fun describe(workout: WorkoutEntity, day: LocalDate): String {
-        val seconds = workout.durationSeconds()
+    /** Starts that lasted seconds say nothing about fitness, so lists leave them out. */
+    fun WorkoutEntity.counts(): Boolean = durationSeconds() >= MIN_WORKOUT_SECONDS
+
+    fun activityName(workout: WorkoutEntity): String {
         val benchmark = workout.origin == "BENCHMARK"
-        val activity = when (workout.activity) {
+        return when (workout.activity) {
             TrainingActivity.CYCLING.name -> "ride"
             TrainingActivity.TREADMILL.name -> if (benchmark) "treadmill walk" else "treadmill"
             else -> if (benchmark) "outdoor walk" else "outdoor run"
         }
-        val kind = when (workout.origin) {
-            "PROGRAM" -> "program" + (workout.programWeek?.let { ", week $it" } ?: "")
-            "AI" -> "coach-planned"
-            "BENCHMARK" -> "benchmark"
-            else -> "free"
-        }
+    }
+
+    fun kindName(workout: WorkoutEntity): String = when (workout.origin) {
+        "PROGRAM" -> "program" + (workout.programWeek?.let { ", week $it" } ?: "")
+        "AI" -> "coach-planned"
+        "BENCHMARK" -> "benchmark"
+        else -> "free"
+    }
+
+    /** One line for a workout, starting with its id, as chat lists them. */
+    fun line(workout: WorkoutEntity, zone: ZoneId = ZoneId.systemDefault()): String =
+        "#${workout.id} " + describe(workout, Instant.ofEpochMilli(workout.startedAtMs).atZone(zone).toLocalDate())
+
+    private fun describe(workout: WorkoutEntity, day: LocalDate): String {
+        val seconds = workout.durationSeconds()
+        val activity = activityName(workout)
+        val kind = kindName(workout)
         val heartRate = workout.avgBpm?.let { "Heart rate average $it, highest ${workout.maxBpm} bpm" } ?: "No heart rate"
         val zones = "easy ${workout.easySeconds / 60} min, hard ${workout.hardSeconds / 60} min, " +
             "very hard ${workout.veryHardSeconds / 60} min"

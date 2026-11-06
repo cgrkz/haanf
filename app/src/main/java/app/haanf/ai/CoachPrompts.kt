@@ -44,5 +44,9 @@ object CoachPrompts {
             "briefly and helpfully, using what you know about them. When they tell you something lasting " +
             "that should shape future training, such as an injury, a condition or a goal, call " +
             "remember_fact to propose saving it. They will confirm it. When an active fact is no longer " +
-            "true, call resolve_fact. Reply in plain text."
+            "true, call resolve_fact. Reply in plain text.\n\nRecent workouts are listed in summary, each " +
+            "with its id. When a question needs more than the summary, such as a workout's kilometres, its " +
+            "climbs, its heart rate through the session, or what was said during it, call open_workouts. " +
+            "Open two together to compare them. To find older workouts, or workouts of one kind, call " +
+            "find_workouts. Only quote numbers you have been given."
 }

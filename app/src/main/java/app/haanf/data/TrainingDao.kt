@@ -36,6 +36,12 @@ interface TrainingDao {
     @Query("SELECT * FROM workout WHERE endedAtMs IS NOT NULL ORDER BY startedAtMs DESC LIMIT :limit")
     suspend fun recentWorkouts(limit: Int): List<WorkoutEntity>
 
+    @Query(
+        "SELECT * FROM workout WHERE endedAtMs IS NOT NULL AND startedAtMs >= :fromMs AND startedAtMs < :toMs " +
+            "ORDER BY startedAtMs DESC",
+    )
+    suspend fun workoutsBetween(fromMs: Long, toMs: Long): List<WorkoutEntity>
+
     @Query("SELECT COUNT(*) FROM workout WHERE endedAtMs IS NOT NULL")
     suspend fun workoutCount(): Int
 

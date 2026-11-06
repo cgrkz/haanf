@@ -119,7 +119,7 @@ Version 5 data carries over unchanged. `MigrationTest` checks it.
 
 - Fitness trends between benchmarks, which is slice 2.
 - The talking threshold and personal zones, which is slice 3.
-- Chat opening one workout's detail.
+- Chat opening one workout's detail. Added after slice 1, on 6 November 2026: see "Looking up workouts" in `docs/ai-mode-spec.md`.
 - Workouts recorded only on the watch.
 - Saving the recovery numbers each request used.
 - Caching through OpenRouter or Hinoki.

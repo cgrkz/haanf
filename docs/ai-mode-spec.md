@@ -119,6 +119,12 @@ When "Talk test checks" is on in Get ready, the coach can ask whether you could 
 - Facts can be marked resolved, and you can edit them.
 - Injuries and conditions can also be entered at setup. **Default:** one optional free-text field.
 
+**Looking up workouts.** Each message carries the recent workouts in summary, each with its id. When a question needs more, chat uses two tools instead of receiving every detail with every message:
+- `find_workouts` lists saved workouts by activity, kind and dates, newest first, 20 at most, with their ids. Workouts under two minutes are never listed.
+- `open_workouts` opens up to three workouts in full: the same totals, kilometres or five-minute heart rate, and timeline the review reads, plus your effort rating and the review written afterwards. Opening two together is how chat compares them, such as two rides up the same climb.
+
+These tools only read. What they return reaches the AI provider like the rest of the chat, and holds nothing about where you were. Opened workouts are not kept in the chat history, so a later question opens them again.
+
 ## Coach tone
 
 Chosen while configuring the coach: warm and encouraging, calm and factual, or tough and pushy.

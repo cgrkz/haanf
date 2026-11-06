@@ -11,13 +11,17 @@ import app.haanf.data.FactStatus
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-/** The ongoing chat. The AI can only propose what to remember: the user confirms it. */
+/**
+ * The ongoing chat. The AI can only propose what to remember: the user confirms it. With
+ * [lookup], it can also find and open saved workouts when a question needs their detail.
+ */
 class CoachChat(
     private val llm: LlmProvider,
     private val dao: CoachDao,
     private val data: CoachDataSource,
     private val clock: Clock,
     private val tone: () -> CoachTone,
+    private val lookup: WorkoutLookup? = null,
 ) {
     /** Saves the message and the reply. Returns an error to show, or null if all went well. */
     suspend fun send(text: String): String? {
@@ -26,7 +30,7 @@ class CoachChat(
         dao.insertMessage(CoachMessageEntity(atMs = clock.nowEpochMs(), fromCoach = false, text = text))
         val snapshot = data.snapshot()
         val facts = dao.activeFacts()
-        val background = snapshot?.let { CoachContext.render(it) }.orEmpty()
+        val background = snapshot?.let { CoachContext.render(it, withIds = lookup != null) }.orEmpty()
         val factIds = facts.joinToString("\n") { "${it.id}: ${it.text}" }
         val items = buildList {
             history.forEach {
@@ -37,15 +41,24 @@ class CoachChat(
         val request = LlmRequest(
             system = CoachPrompts.chat(tone()),
             items = mergeUserRuns(items),
-            tools = listOf(REMEMBER_FACT, RESOLVE_FACT),
+            tools = buildList {
+                add(REMEMBER_FACT)
+                add(RESOLVE_FACT)
+                if (lookup != null) {
+                    add(WorkoutLookup.FIND_WORKOUTS)
+                    add(WorkoutLookup.OPEN_WORKOUTS)
+                }
+            },
             effort = LlmEffort.LOW,
         )
         return try {
-            val reply = runToolLoop(client, request) { call ->
+            val reply = runToolLoop(client, request, maxRounds = MAX_ROUNDS) { call ->
                 when (call.name) {
                     REMEMBER_FACT.name -> remember(call)
                     RESOLVE_FACT.name -> resolve(call)
-                    else -> ToolOutcome(call.id, "Unknown tool.", isError = true)
+                    WorkoutLookup.FIND_WORKOUTS.name -> lookup?.find(call) ?: unknown(call)
+                    WorkoutLookup.OPEN_WORKOUTS.name -> lookup?.open(call) ?: unknown(call)
+                    else -> unknown(call)
                 }
             }
             val answer = reply.text?.trim().orEmpty().ifEmpty { "Noted." }
@@ -69,6 +82,8 @@ class CoachChat(
         }
         return merged.dropWhile { it !is LlmItem.User }
     }
+
+    private fun unknown(call: ToolCall) = ToolOutcome(call.id, "Unknown tool.", isError = true)
 
     private suspend fun remember(call: ToolCall): ToolOutcome {
         val kind = FactKind.entries.firstOrNull { it.name == call.input.text("kind") } ?: FactKind.NOTE
@@ -94,6 +109,9 @@ class CoachChat(
 
     private companion object {
         const val HISTORY_MESSAGES = 20
+
+        /** Room to find workouts, open some, propose a fact, and still answer. */
+        const val MAX_ROUNDS = 6
 
         val REMEMBER_FACT get() = CoachTools.REMEMBER_FACT
 

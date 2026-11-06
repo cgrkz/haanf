@@ -12,6 +12,8 @@ import app.haanf.ai.LlmProvider
 import app.haanf.ai.OnDeviceSpeech
 import app.haanf.ai.ReviewRunner
 import app.haanf.ai.WorkoutPlanner
+import app.haanf.ai.WorkoutDetail
+import app.haanf.ai.WorkoutLookup
 import app.haanf.ai.WorkoutReviewer
 import app.haanf.core.Clock
 import app.haanf.core.SystemTimeClock
@@ -109,7 +111,20 @@ class AppContainer(
     val speech = OnDeviceSpeech(appContext)
     val coachData = CoachData(trainingDao, coachDao, programs, { health.vitals(Instant.now()) }, clock)
     val planner = WorkoutPlanner(llm, coachData, tone)
-    val chat = CoachChat(llm, coachDao, coachData, clock, tone)
+    private val workoutDetail = WorkoutDetail(
+        samples = { samples(it) },
+        timeline = { id -> trainingDao.events(id).mapNotNull(TimelineEntry::from) },
+        splits = { id -> trainingDao.splits(id) },
+    )
+    val chat = CoachChat(
+        llm, coachDao, coachData, clock, tone,
+        lookup = WorkoutLookup(
+            between = { from, to -> trainingDao.workoutsBetween(from, to) },
+            workout = { id -> trainingDao.workout(id) },
+            benchmarks = { trainingDao.benchmarks() },
+            detail = workoutDetail,
+        ),
+    )
     val reviews = ReviewRunner(
         scope = sessionScope,
         workouts = workouts,
