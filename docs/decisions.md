@@ -102,6 +102,14 @@ Results on the Pixel Watch 2, 7 November 2026 (Wear OS on API 37, Health Service
 
 So a watch app would add only cadence, which the phone's own step sensor could also measure. Live heart rate stays on Bluetooth, and no watch app is planned.
 
+SensorManager on the same watch, the same day, worn and awake, in `wearprobe/results-pixel-watch-2-sensors.txt`:
+- **Google's own sensors are locked.** The raw optical heart signal (PPG), ECG, skin conductance (EDA) and skin temperature all refused an ordinary app, even with the heart rate permission granted while heart rate itself worked. So beat-to-beat intervals, and HRV during a workout, are out of reach on this watch.
+- **There is no standard heart beat sensor,** which is the other route to beat intervals.
+- **Heart rate arrives about every 2 seconds,** on change, slower than the Bluetooth broadcast. A Google "extended" heart rate sensor is readable, but it repeats the same bpm with one status value, and its other 14 values were zero at rest.
+- **Step cadence and step detection are readable.** They were not tested walking.
+
+So SensorManager adds nothing that changes the decision above. HRV stays what Health Connect reports overnight.
+
 ## Testing limits
 
 - `tools/ble-sim` runs simulated Bluetooth devices on the emulator. It found two real bugs that unit tests could not, both in pairing. It tests Haanf's code, not any watch.

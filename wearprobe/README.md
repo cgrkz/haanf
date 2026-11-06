@@ -1,15 +1,23 @@
 # Watch probe
 
-A throwaway Wear OS app. It asks Health Services on the watch what it supports, and nothing else. It answers two questions before anyone builds a real watch app for Haanf:
+A throwaway Wear OS app. By default it asks Health Services on the watch what it supports. It answers two questions before anyone builds a real watch app for Haanf:
 
 - Does the Pixel Watch 2 offer running dynamics, such as stride length and ground contact time? Look in the `RUNNING` data list.
 - Can heart rate arrive every 5 seconds with the screen off? Look for `HEART_RATE_5_SECONDS` under batching overrides. Without it, Health Services can hold readings back for minutes, which is too late for the live coach and the high heart rate alert.
 
 It lists capabilities twice: once before asking for permissions, and once after. That shows whether permissions change what Health Services reports.
 
-**What it reads:** capability lists only. It never starts a workout or reads a heart rate, steps or location.
+Three more modes look at the watch's raw sensors through SensorManager. Start them with an extra:
 
-**Where results go:** the watch screen, the log under the tag `HaanfProbe`, and `files/probe.txt` in the probe's private storage. It has no internet permission, so nothing leaves the watch.
+- `--es mode sensors` lists every sensor, with its rate and batching. It reads nothing.
+- `--es mode listen` listens for 30 seconds to heart rate, heart beat, off-body detection, steps, the barometer and every Google-specific sensor. It reports which ones an ordinary app may use, and how often they report. The watch must be worn with its screen awake, because Android gives background apps no sensor data and allows heart rate only while the app is in use.
+- `--es mode detail` logs every event in full for 30 seconds from heart rate, Google's extended heart rate, step cadence and the step detector.
+
+Each mode saves to its own file, such as `files/listen.txt`. The listen report includes the barometer's absolute pressure, which gives height above sea level, so leave it out of anything saved in this repository.
+
+**What it reads:** by default, capability lists only. It never starts a workout or reads location. The sensor modes above read heart rate, steps and pressure for 30 seconds.
+
+**Where results go:** the watch screen, the log under the tag `HaanfProbe`, and a file in the probe's private storage, `files/probe.txt` by default. It has no internet permission, so nothing leaves the watch.
 
 ## Run it on the watch
 
@@ -34,7 +42,7 @@ It lists capabilities twice: once before asking for permissions, and once after.
    ```bash
    ./gradlew :wearprobe:assembleDebug
    adb -s <watch> install -r wearprobe/build/outputs/apk/debug/wearprobe-debug.apk
-   adb -s <watch> shell am start -n app.haanf.wearprobe/.ProbeActivity
+   adb -s <watch> shell am start -S -n app.haanf.wearprobe/.ProbeActivity
    ```
 
 5. Tap Allow on the watch, then read the results:
@@ -53,4 +61,4 @@ The probe has its own app id, so it never touches the phone app's data.
 
 ## Results
 
-The Pixel Watch 2's report is in `results-pixel-watch-2.txt`, and what it means for Haanf is under "Watch apps" in `docs/decisions.md`. Each data type appears twice in the lists, because Health Services gives a reading and its summary, such as a running total or a minimum, maximum and average, the same name.
+The Pixel Watch 2's reports are in `results-pixel-watch-2.txt` for Health Services and `results-pixel-watch-2-sensors.txt` for SensorManager, and what it means for Haanf is under "Watch apps" in `docs/decisions.md`. Each data type appears twice in the lists, because Health Services gives a reading and its summary, such as a running total or a minimum, maximum and average, the same name.

@@ -1,0 +1,208 @@
+SensorManager on the Pixel Watch 2, 7 November 2026, Wear OS on API 37.
+Listening ran with the watch worn and its screen awake, sitting still, at SENSOR_DELAY_NORMAL.
+
+== All sensors (68) ==
+android.sensor.accelerometer (type 1): Accelerometer, TDK; up to 200 Hz, continuous; batches up to 3000 events; range 313.98016, 0.001 mA
+android.sensor.accelerometer (type 1): Accelerometer (wake-up), TDK; up to 200 Hz, continuous, wake-up; batches up to 3000 events; range 313.98016, 0.001 mA
+android.sensor.magnetic_field (type 2): Magnetometer Sensor, STMicro; up to 100 Hz, continuous; batches up to 3000 events; range 4915.2, 0.001 mA
+android.sensor.magnetic_field (type 2): Magnetometer Sensor (wake-up), STMicro; up to 100 Hz, continuous, wake-up; batches up to 3000 events; range 4915.2, 0.001 mA
+android.sensor.orientation (type 3): Orientation Sensor, Google; up to 100 Hz, continuous; batches up to 3000 events; range 360.0, 0.001 mA
+android.sensor.orientation (type 3): Orientation Sensor (wake-up), Google; up to 100 Hz, continuous, wake-up; batches up to 3000 events; range 360.0, 0.001 mA
+android.sensor.gyroscope (type 4): Gyroscope, TDK; up to 200 Hz, continuous; batches up to 3000 events; range 34.906586, 0.001 mA
+android.sensor.gyroscope (type 4): Gyroscope (wake-up), TDK; up to 200 Hz, continuous, wake-up; batches up to 3000 events; range 34.906586, 0.001 mA
+android.sensor.light (type 5): Ambient Light Sensor, AMS; on change, on change; batches up to 50 events; range 1000000.0, 0.001 mA
+android.sensor.light (type 5): Ambient Light Sensor (wake-up), AMS; on change, on change, wake-up; batches up to 50 events; range 1000000.0, 0.001 mA
+android.sensor.pressure (type 6): Pressure Sensor, Goermicro; up to 64 Hz, continuous; batches up to 3000 events; range 1099.998, 0.001 mA
+android.sensor.pressure (type 6): Pressure Sensor (wake-up), Goermicro; up to 64 Hz, continuous, wake-up; batches up to 3000 events; range 1099.998, 0.001 mA
+android.sensor.gravity (type 9): Gravity Sensor, Google; up to 100 Hz, continuous; batches up to 3000 events; range 9.81, 0.001 mA
+android.sensor.gravity (type 9): Gravity Sensor (wake-up), Google; up to 100 Hz, continuous, wake-up; batches up to 3000 events; range 9.81, 0.001 mA
+android.sensor.linear_acceleration (type 10): Linear Acceleration Sensor, Google; up to 50 Hz, continuous; batches up to 3000 events; range 156.96, 0.001 mA
+android.sensor.linear_acceleration (type 10): Linear Acceleration Sensor (wake-up), Google; up to 50 Hz, continuous, wake-up; batches up to 3000 events; range 156.96, 0.001 mA
+android.sensor.rotation_vector (type 11): Rotation Vector Sensor, Google; up to 100 Hz, continuous; batches up to 100 events; range 1.0, 0.001 mA
+android.sensor.rotation_vector (type 11): Rotation Vector Sensor (wake-up), Google; up to 100 Hz, continuous, wake-up; batches up to 100 events; range 1.0, 0.001 mA
+android.sensor.magnetic_field_uncalibrated (type 14): Magnetometer Sensor-Uncalibrated, STMicro; up to 100 Hz, continuous; batches up to 3000 events; range 4915.2, 0.001 mA
+android.sensor.magnetic_field_uncalibrated (type 14): Magnetometer Sensor-Uncalibrated (wake-up), STMicro; up to 100 Hz, continuous, wake-up; batches up to 3000 events; range 4915.2, 0.001 mA
+android.sensor.game_rotation_vector (type 15): Game Rotation Vector Sensor, Google; up to 100 Hz, continuous; batches up to 100 events; range 1.0, 0.001 mA
+android.sensor.game_rotation_vector (type 15): Game Rotation Vector Sensor (wake-up), Google; up to 100 Hz, continuous, wake-up; batches up to 100 events; range 1.0, 0.001 mA
+android.sensor.gyroscope_uncalibrated (type 16): Gyroscope-Uncalibrated, TDK; up to 200 Hz, continuous; batches up to 3000 events; range 34.906586, 0.001 mA
+android.sensor.gyroscope_uncalibrated (type 16): Gyroscope-Uncalibrated (wake-up), TDK; up to 200 Hz, continuous, wake-up; batches up to 3000 events; range 34.906586, 0.001 mA
+android.sensor.step_detector (type 18): Step Detector, Google; on change, special; batches up to 3000 events; range 1.0, 0.001 mA
+android.sensor.step_detector (type 18): Step Detector (wake-up), Google; on change, special, wake-up; batches up to 3000 events; range 1.0, 0.001 mA
+android.sensor.step_counter (type 19): Step Counter, Google; on change, on change; batches up to 3000 events; range 3.4028235E38, 0.001 mA
+android.sensor.step_counter (type 19): Step Counter (wake-up), Google; on change, on change, wake-up; batches up to 3000 events; range 3.4028235E38, 0.001 mA
+android.sensor.geomagnetic_rotation_vector (type 20): Geomagnetic Rotation Vector Sensor, Google; up to 100 Hz, continuous; batches up to 100 events; range 1.0, 0.001 mA
+android.sensor.geomagnetic_rotation_vector (type 20): Geomagnetic Rotation Vector Sensor (wake-up), Google; up to 100 Hz, continuous, wake-up; batches up to 100 events; range 1.0, 0.001 mA
+android.sensor.heart_rate (type 21): HeartRate, Google; on change, on change; batches up to 3000 events; range 255.0, 0.001 mA
+android.sensor.heart_rate (type 21): HeartRate (wake-up), Google; on change, on change, wake-up; batches up to 3000 events; range 255.0, 0.001 mA
+android.sensor.wrist_tilt_gesture (type 26): TiltToWake, Google; on change, special; batches up to 3000 events; range 3.0, 0.001 mA
+android.sensor.wrist_tilt_gesture (type 26): TiltToWake (wake-up), Google; on change, special, wake-up; batches up to 3000 events; range 3.0, 0.001 mA
+android.sensor.stationary_detect (type 29): Stationary Sensor, TDK; one-shot, one shot; batches up to 0 events; range 1.0, 0.001 mA
+android.sensor.stationary_detect (type 29): Stationary Sensor (wake-up), TDK; one-shot, one shot, wake-up; batches up to 0 events; range 1.0, 0.001 mA
+android.sensor.motion_detect (type 30): Instant Motion Sensor, TDK; one-shot, one shot; batches up to 0 events; range 1.0, 0.001 mA
+android.sensor.motion_detect (type 30): Instant Motion Sensor (wake-up), TDK; one-shot, one shot, wake-up; batches up to 0 events; range 1.0, 0.001 mA
+android.sensor.low_latency_offbody_detect (type 34): Low latency off body detect, Google; on change, on change; batches up to 3000 events; range 1.0, 0.001 mA
+android.sensor.low_latency_offbody_detect (type 34): Low latency off body detect (wake-up), Google; on change, on change, wake-up; batches up to 3000 events; range 1.0, 0.001 mA
+android.sensor.accelerometer_uncalibrated (type 35): Accelerometer-Uncalibrated, TDK; up to 200 Hz, continuous; batches up to 3000 events; range 313.98016, 0.001 mA
+android.sensor.accelerometer_uncalibrated (type 35): Accelerometer-Uncalibrated (wake-up), TDK; up to 200 Hz, continuous, wake-up; batches up to 3000 events; range 313.98016, 0.001 mA
+com.google.sensor.gyro_temperature (type 65538): Imu Temperature, TDK; up to 10 Hz, continuous; batches up to 3000 events; range 85.0, 0.001 mA
+com.google.sensor.gyro_temperature (type 65538): Imu Temperature (wake-up), TDK; up to 10 Hz, continuous, wake-up; batches up to 3000 events; range 85.0, 0.001 mA
+com.google.sensor.pressure_temp (type 65539): Pressure Temperature Sensor, Goermicro; up to 64 Hz, continuous; batches up to 3000 events; range 85.0, 0.001 mA
+com.google.sensor.pressure_temp (type 65539): Pressure Temperature Sensor (wake-up), Goermicro; up to 64 Hz, continuous, wake-up; batches up to 3000 events; range 85.0, 0.001 mA
+com.google.sensor.magnetometer_temp (type 65540): Magnetometer Temperature Sensor, STMicro; up to 100 Hz, continuous; batches up to 3000 events; range 85.0, 0.001 mA
+com.google.sensor.magnetometer_temp (type 65540): Magnetometer Temperature Sensor (wake-up), STMicro; up to 100 Hz, continuous, wake-up; batches up to 3000 events; range 85.0, 0.001 mA
+com.google.sensor.fake_accel (type 65547): Accelerometer, TDK; up to 200 Hz, continuous; batches up to 3000 events; range 313.98016, 0.001 mA
+com.google.sensor.fake_accel (type 65547): Accelerometer (wake-up), TDK; up to 200 Hz, continuous, wake-up; batches up to 3000 events; range 313.98016, 0.001 mA
+com.google.sensor.ppg_controller (type 65549): PPG Controller, Google; on change, on change; batches up to 100 events; range 3.4028235E38, 0.001 mA
+com.google.sensor.ppg_controller (type 65549): PPG Controller (wake-up), Google; on change, on change, wake-up; batches up to 100 events; range 3.4028235E38, 0.001 mA
+com.google.sensor.ecg (type 65550): ECG Sensor, TI; up to 500 Hz, continuous; batches up to 3000 events; range 2097151.0, 0.001 mA
+com.google.sensor.ecg (type 65550): ECG Sensor (wake-up), TI; up to 500 Hz, continuous, wake-up; batches up to 3000 events; range 2097151.0, 0.001 mA
+com.google.sensor.ecg_lead_detector (type 65551): ECG Lead Detector, TI; on change, on change; batches up to 3000 events; range 1.0, 0.001 mA
+com.google.sensor.ecg_lead_detector (type 65551): ECG Lead Detector (wake-up), TI; on change, on change, wake-up; batches up to 3000 events; range 1.0, 0.001 mA
+com.google.sensor.gaze_gesture (type 65553): GazeSensor, Google; on change, special; batches up to 3000 events; range 3.0, 0.001 mA
+com.google.sensor.gaze_gesture (type 65553): GazeSensor (wake-up), Google; on change, special, wake-up; batches up to 3000 events; range 3.0, 0.001 mA
+com.google.sensor.gsr (type 65554): Galvanic Skin Response, TI; up to 500 Hz, continuous; batches up to 100 events; range 2097151.0, 0.001 mA
+com.google.sensor.gsr (type 65554): Galvanic Skin Response (wake-up), TI; up to 500 Hz, continuous, wake-up; batches up to 100 events; range 2097151.0, 0.001 mA
+com.google.sensor.skin_temperature (type 65555): Skin temperature sensor, AMS; on change, on change; batches up to 3000 events; range 125.0, 0.001 mA
+com.google.sensor.skin_temperature (type 65555): Skin temperature sensor (wake-up), AMS; on change, on change, wake-up; batches up to 3000 events; range 125.0, 0.001 mA
+com.google.wear.sensor.ppg (type 65572): PPG Sensor, TI; up to 100 Hz, continuous; batches up to 100 events; range 3.4028235E38, 0.001 mA
+com.google.wear.sensor.ppg (type 65572): PPG Sensor (wake-up), TI; up to 100 Hz, continuous, wake-up; batches up to 100 events; range 3.4028235E38, 0.001 mA
+com.google.sensor.heart_rate_extended (type 131086): HeartRate-Extended, Google; on change, on change; batches up to 3000 events; range 255.0, 0.001 mA
+com.google.sensor.heart_rate_extended (type 131086): HeartRate-Extended (wake-up), Google; on change, on change, wake-up; batches up to 3000 events; range 255.0, 0.001 mA
+com.google.sensor.step_cadence (type 131087): Step Cadence, Google; on change, on change; batches up to 3000 events; range 3.4028235E38, 0.001 mA
+com.google.sensor.step_cadence (type 131087): Step Cadence (wake-up), Google; on change, on change, wake-up; batches up to 3000 events; range 3.4028235E38, 0.001 mA
+Dynamic sensors: none
+
+== Listening to 34 sensors for 30 s ==
+-- android.sensor.pressure: Pressure Sensor --
+Registration: registered. Events: 201, about 6.7 a second.
+Values left out: absolute pressure gives height above sea level.
+Accuracy reports: 3
+-- android.sensor.pressure: Pressure Sensor (wake-up) --
+Registration: registered. Events: 200, about 6.7 a second.
+Values left out: absolute pressure gives height above sea level.
+Accuracy reports: 3
+-- android.sensor.step_detector: Step Detector --
+Registration: registered. Events: 0, about - a second.
+-- android.sensor.step_detector: Step Detector (wake-up) --
+Registration: registered. Events: 0, about - a second.
+-- android.sensor.heart_rate: HeartRate --
+Registration: registered. Events: 17, about 0.5 a second.
+First event: 1 values, 70.00
+First value ranged 61.00 to 71.00.
+Accuracy reports: 2, 3
+-- android.sensor.heart_rate: HeartRate (wake-up) --
+Registration: registered. Events: 17, about 0.5 a second.
+First event: 1 values, 70.00
+First value ranged 61.00 to 71.00.
+Accuracy reports: 2, 3
+-- android.sensor.low_latency_offbody_detect: Low latency off body detect --
+Registration: registered. Events: 1, about - a second.
+First event: 1 values, 1.00
+First value ranged 1.00 to 1.00.
+Accuracy reports: 3
+-- android.sensor.low_latency_offbody_detect: Low latency off body detect (wake-up) --
+Registration: registered. Events: 1, about - a second.
+First event: 1 values, 1.00
+First value ranged 1.00 to 1.00.
+Accuracy reports: 3
+-- com.google.sensor.gyro_temperature: Imu Temperature --
+Registration: refused. Events: 0, about - a second.
+-- com.google.sensor.gyro_temperature: Imu Temperature (wake-up) --
+Registration: refused. Events: 0, about - a second.
+-- com.google.sensor.pressure_temp: Pressure Temperature Sensor --
+Registration: refused. Events: 0, about - a second.
+-- com.google.sensor.pressure_temp: Pressure Temperature Sensor (wake-up) --
+Registration: refused. Events: 0, about - a second.
+-- com.google.sensor.magnetometer_temp: Magnetometer Temperature Sensor --
+Registration: refused. Events: 0, about - a second.
+-- com.google.sensor.magnetometer_temp: Magnetometer Temperature Sensor (wake-up) --
+Registration: refused. Events: 0, about - a second.
+-- com.google.sensor.fake_accel: Accelerometer --
+Registration: refused. Events: 0, about - a second.
+-- com.google.sensor.fake_accel: Accelerometer (wake-up) --
+Registration: refused. Events: 0, about - a second.
+-- com.google.sensor.ppg_controller: PPG Controller --
+Registration: refused. Events: 0, about - a second.
+-- com.google.sensor.ppg_controller: PPG Controller (wake-up) --
+Registration: refused. Events: 0, about - a second.
+-- com.google.sensor.ecg: ECG Sensor --
+Registration: refused. Events: 0, about - a second.
+-- com.google.sensor.ecg: ECG Sensor (wake-up) --
+Registration: refused. Events: 0, about - a second.
+-- com.google.sensor.ecg_lead_detector: ECG Lead Detector --
+Registration: refused. Events: 0, about - a second.
+-- com.google.sensor.ecg_lead_detector: ECG Lead Detector (wake-up) --
+Registration: refused. Events: 0, about - a second.
+-- com.google.sensor.gaze_gesture: GazeSensor --
+Registration: refused. Events: 0, about - a second.
+-- com.google.sensor.gaze_gesture: GazeSensor (wake-up) --
+Registration: refused. Events: 0, about - a second.
+-- com.google.sensor.gsr: Galvanic Skin Response --
+Registration: refused. Events: 0, about - a second.
+-- com.google.sensor.gsr: Galvanic Skin Response (wake-up) --
+Registration: refused. Events: 0, about - a second.
+-- com.google.sensor.skin_temperature: Skin temperature sensor --
+Registration: refused. Events: 0, about - a second.
+-- com.google.sensor.skin_temperature: Skin temperature sensor (wake-up) --
+Registration: refused. Events: 0, about - a second.
+-- com.google.wear.sensor.ppg: PPG Sensor --
+Registration: refused. Events: 0, about - a second.
+-- com.google.wear.sensor.ppg: PPG Sensor (wake-up) --
+Registration: refused. Events: 0, about - a second.
+-- com.google.sensor.heart_rate_extended: HeartRate-Extended --
+Registration: registered. Events: 17, about 0.5 a second.
+First event: 16 values, 70.00, 0.00, 2.00, 0.00, 0.00, 0.00
+First value ranged 61.00 to 71.00.
+Accuracy reports: 3
+-- com.google.sensor.heart_rate_extended: HeartRate-Extended (wake-up) --
+Registration: registered. Events: 17, about 0.5 a second.
+First event: 16 values, 70.00, 0.00, 2.00, 0.00, 0.00, 0.00
+First value ranged 61.00 to 71.00.
+Accuracy reports: 3
+-- com.google.sensor.step_cadence: Step Cadence --
+Registration: registered. Events: 1, about - a second.
+First event: 16 values, -1.00, 0.00, 0.00, 0.00, 0.00, 0.00
+First value ranged -1.00 to -1.00.
+Accuracy reports: 3
+-- com.google.sensor.step_cadence: Step Cadence (wake-up) --
+Registration: registered. Events: 1, about - a second.
+First event: 16 values, -1.00, 0.00, 0.00, 0.00, 0.00, 0.00
+First value ranged -1.00 to -1.00.
+Accuracy reports: 3
+
+== Every event from 4 sensors for 30 s ==
+-3.0 s HeartRate [3]: 67.00
+-3.0 s HeartRate-Extended [3]: 67.00, 0.00, 3.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
+0.0 s Step Cadence [3]: -1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
+-1.0 s HeartRate-Extended [3]: 65.00, 0.00, 3.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
+-1.0 s HeartRate [3]: 65.00
+0.9 s HeartRate-Extended [3]: 66.00, 0.00, 3.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
+0.9 s HeartRate [3]: 66.00
+2.8 s HeartRate-Extended [3]: 65.00, 0.00, 3.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
+2.8 s HeartRate [3]: 65.00
+4.7 s HeartRate-Extended [3]: 66.00, 0.00, 3.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
+4.7 s HeartRate [3]: 66.00
+6.6 s HeartRate-Extended [3]: 64.00, 0.00, 3.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
+6.6 s HeartRate [3]: 64.00
+8.6 s HeartRate-Extended [3]: 62.00, 0.00, 3.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
+8.6 s HeartRate [3]: 62.00
+10.5 s HeartRate-Extended [3]: 62.00, 0.00, 3.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
+10.5 s HeartRate [3]: 62.00
+12.4 s HeartRate-Extended [3]: 63.00, 0.00, 3.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
+12.4 s HeartRate [3]: 63.00
+14.3 s HeartRate-Extended [3]: 62.00, 0.00, 3.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
+14.3 s HeartRate [3]: 62.00
+16.2 s HeartRate-Extended [3]: 62.00, 0.00, 3.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
+16.2 s HeartRate [3]: 62.00
+18.2 s HeartRate-Extended [3]: 62.00, 0.00, 3.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
+18.2 s HeartRate [3]: 62.00
+20.1 s HeartRate-Extended [3]: 61.00, 0.00, 3.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
+20.1 s HeartRate [3]: 61.00
+22.0 s HeartRate-Extended [3]: 61.00, 0.00, 3.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
+22.0 s HeartRate [3]: 61.00
+23.9 s HeartRate-Extended [3]: 61.00, 0.00, 3.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
+23.9 s HeartRate [3]: 61.00
+25.8 s HeartRate-Extended [3]: 61.00, 0.00, 3.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
+25.8 s HeartRate [3]: 61.00
+27.8 s HeartRate-Extended [3]: 62.00, 0.00, 3.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
+27.8 s HeartRate [3]: 62.00

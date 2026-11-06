@@ -2,9 +2,11 @@ package app.haanf.wearprobe
 
 import android.app.Activity
 import android.content.pm.PackageManager
+import android.hardware.SensorManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.WindowManager
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.health.services.client.HealthServices
@@ -18,8 +20,10 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 /**
- * Lists what Health Services offers on this watch, once without permissions and once with
- * them, on screen, in the log and in a private file. It reads no readings at all.
+ * Reports what this watch offers, on screen, in the log and in a private file. By default it
+ * lists what Health Services offers, once without permissions and once with them. With the
+ * extra mode=sensors it lists the raw sensors, and with mode=listen it listens to the
+ * promising ones for 30 seconds, which needs the watch on a wrist.
  */
 class ProbeActivity : Activity() {
     private val scope = MainScope()
@@ -40,12 +44,38 @@ class ProbeActivity : Activity() {
             setPadding(inset, inset, inset, inset * 2)
         }
         setContentView(ScrollView(this).apply { addView(output) })
+        val sensors = SensorProbe(getSystemService(SensorManager::class.java), ::line)
+        when (intent.getStringExtra("mode")) {
+            "sensors" -> {
+                sensors.list()
+                save("sensors.txt")
+                return
+            }
+            "detail" -> {
+                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                scope.launch {
+                    sensors.detail(LISTEN_SECONDS)
+                    save("detail.txt")
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                }
+                return
+            }
+            "listen" -> {
+                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                scope.launch {
+                    sensors.listen(LISTEN_SECONDS)
+                    save("listen.txt")
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                }
+                return
+            }
+        }
         scope.launch {
             dump("Before asking for permissions")
             val missing = permissions.filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
             if (missing.isEmpty()) {
                 line("All permissions were already granted.")
-                save()
+                save("probe.txt")
             } else {
                 requestPermissions(missing.toTypedArray(), PERMISSION_REQUEST)
             }
@@ -57,7 +87,7 @@ class ProbeActivity : Activity() {
         if (requestCode != PERMISSION_REQUEST) return
         scope.launch {
             dump("After asking for permissions")
-            save()
+            save("probe.txt")
         }
     }
 
@@ -134,14 +164,15 @@ class ProbeActivity : Activity() {
         output.text = report
     }
 
-    private fun save() {
-        File(filesDir, "probe.txt").writeText(report.toString())
-        line("Saved to files/probe.txt.")
+    private fun save(name: String) {
+        File(filesDir, name).writeText(report.toString())
+        line("Saved to files/$name.")
     }
 
     private companion object {
         const val TAG = "HaanfProbe"
         const val PERMISSION_REQUEST = 1
+        const val LISTEN_SECONDS = 30
         const val HEART_RATE_PERMISSION = "android.permission.health.READ_HEART_RATE"
         const val HEALTH_SERVICES_PACKAGE = "com.google.android.wearable.healthservices"
 
