@@ -10,6 +10,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
@@ -30,7 +31,7 @@ class WorkoutPlannerTest {
     }
     private val checkIn = CheckIn(30, 4, "legs a bit tired", TrainingActivity.TREADMILL)
     private val llm = FakeLlm()
-    private val planner = WorkoutPlanner(llm, data) { CoachTone.CALM }
+    private val planner = WorkoutPlanner(llm, data, offersBenchmark = true) { CoachTone.CALM }
 
     private fun step(label: String, minutes: Double, target: String) = buildJsonObject {
         put("label", label)
@@ -107,6 +108,18 @@ class WorkoutPlannerTest {
         llm.then { FakeLlm.call("suggest_benchmark", buildJsonObject { put("reason", "Again") }) }
             .then { propose(workout(25.0)) }
         assertTrue(plan() is PlanOutcome.Approved)
+    }
+
+    @Test
+    fun `offers no benchmark while benchmarks are switched off`() {
+        val paused = WorkoutPlanner(llm, data, offersBenchmark = false) { CoachTone.CALM }
+        llm.then { FakeLlm.call("suggest_benchmark", buildJsonObject { put("reason", "It has been 40 days") }) }
+            .then { propose(workout(25.0)) }
+        assertTrue(runBlocking { paused.plan(checkIn) } is PlanOutcome.Approved)
+        val first = llm.requests.first()
+        assertEquals(listOf("propose_workout"), first.tools.map { it.name })
+        assertFalse(first.system.contains("benchmark is clearly due"))
+        assertTrue((llm.requests[1].items.last() as LlmItem.ToolTurn).outcomes.single().isError)
     }
 
     @Test

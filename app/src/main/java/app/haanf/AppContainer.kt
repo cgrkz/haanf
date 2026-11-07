@@ -110,7 +110,7 @@ class AppContainer(
     private val tone: () -> CoachTone = { aiSettings.settings.value?.tone ?: CoachTone.WARM }
     val speech = OnDeviceSpeech(appContext)
     val coachData = CoachData(trainingDao, coachDao, programs, { health.vitals(Instant.now()) }, clock)
-    val planner = WorkoutPlanner(llm, coachData, tone)
+    val planner = WorkoutPlanner(llm, coachData, tone = tone)
     private val workoutDetail = WorkoutDetail(
         samples = { samples(it) },
         timeline = { id -> trainingDao.events(id).mapNotNull(TimelineEntry::from) },

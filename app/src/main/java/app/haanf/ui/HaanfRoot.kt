@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.haanf.AppContainer
+import app.haanf.Features
 import app.haanf.data.BenchmarkEntity
 import app.haanf.data.ProfileEntity
 import app.haanf.ui.theme.HaanfColors
@@ -41,7 +42,10 @@ import app.haanf.workout.WorkoutState
 
 enum class OnboardingStep { WELCOME, ABOUT_YOU, CONNECT_WATCH, FIRST_BENCHMARK }
 
-/** Which first-run step is still to do, or null when the app is ready. */
+/**
+ * Which first-run step is still to do, or null when the app is ready. The benchmark step only
+ * appears while [benchmarkOn], which follows [Features.BENCHMARK].
+ */
 fun onboardingStep(
     profile: ProfileEntity?,
     benchmarks: List<BenchmarkEntity>,
@@ -49,12 +53,13 @@ fun onboardingStep(
     finished: Boolean,
     welcomed: Boolean,
     today: java.time.LocalDate,
+    benchmarkOn: Boolean = Features.BENCHMARK,
 ): OnboardingStep? = when {
     profile == null && !welcomed -> OnboardingStep.WELCOME
     profile == null || profile.benchmarkInputs(today) == null || profile.healthCheckClearedAtMs == null ->
         OnboardingStep.ABOUT_YOU
     !watchStepDone && profile.deviceId == null -> OnboardingStep.CONNECT_WATCH
-    !finished && benchmarks.isEmpty() -> OnboardingStep.FIRST_BENCHMARK
+    benchmarkOn && !finished && benchmarks.isEmpty() -> OnboardingStep.FIRST_BENCHMARK
     else -> null
 }
 

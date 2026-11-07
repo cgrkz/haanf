@@ -33,6 +33,8 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeFalse
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -154,6 +156,16 @@ class CoachScreensTest {
     }
 
     @Test
+    fun withBenchmarksOffTheCoachPlansWithoutOne() {
+        assumeFalse(Features.BENCHMARK)
+        launch(seed = false)
+        TestSupport.seedProfile(container)
+        openCoach()
+        waitForText("How much time do you have?")
+        assertEquals(0, compose.onAllNodesWithText("Do your first benchmark", substring = true).fetchSemanticsNodes().size)
+    }
+
+    @Test
     fun withAKeyTheCoachTabStillOpensTheKeyScreen() {
         launch()
         openCoach()
@@ -254,6 +266,7 @@ class CoachScreensTest {
 
     @Test
     fun benchmarksRunWithoutTheCoach() {
+        assumeTrue(Features.BENCHMARK)
         launch()
         waitForText("Progress")
         compose.onNodeWithText("Progress").performClick()

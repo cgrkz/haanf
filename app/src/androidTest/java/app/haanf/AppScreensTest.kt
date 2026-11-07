@@ -30,6 +30,8 @@ import app.haanf.workout.LiveLink
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeFalse
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -152,8 +154,7 @@ class AppScreensTest {
         compose.onNodeWithText("Health Connect").assertIsDisplayed()
     }
 
-    @Test
-    fun firstRunGoesFromWelcomeThroughTheHealthCheckToTheBenchmark() {
+    private fun runFirstRunToTheWatchStep() {
         launch(onboarded = false)
         show()
         waitForText("Get started")
@@ -167,10 +168,23 @@ class AppScreensTest {
 
         waitForText("Connect your watch")
         compose.onNodeWithText("Continue without a watch").performScrollTo().performClick()
+    }
 
+    @Test
+    fun firstRunGoesFromWelcomeThroughTheHealthCheckToTheBenchmark() {
+        assumeTrue(Features.BENCHMARK)
+        runFirstRunToTheWatchStep()
         waitForText("Your first step: a fitness benchmark")
         compose.onNodeWithText("Your program unlocks after this.").assertExists()
         assertEquals(0, compose.onAllNodesWithText("Start Foundation 8").fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun withBenchmarksOffFirstRunEndsOnTheProgram() {
+        assumeFalse(Features.BENCHMARK)
+        runFirstRunToTheWatchStep()
+        waitForText("Start Foundation 8")
+        assertEquals(0, compose.onAllNodesWithText("fitness benchmark", substring = true).fetchSemanticsNodes().size)
     }
 
     @Test
@@ -198,6 +212,7 @@ class AppScreensTest {
 
     @Test
     fun aScoredBenchmarkUnlocksTheProgram() {
+        assumeTrue(Features.BENCHMARK)
         launch(onboarded = true)
         TestSupport.seedProfile(container)
         TestSupport.seedBenchmark(container)
@@ -214,7 +229,24 @@ class AppScreensTest {
     }
 
     @Test
+    fun withBenchmarksOffTheProgramStartsWithoutOne() {
+        assumeFalse(Features.BENCHMARK)
+        launch(onboarded = true)
+        TestSupport.seedProfile(container)
+        show()
+        waitForText("Start Foundation 8")
+        compose.onNodeWithText("Start Foundation 8").performScrollTo().performClick()
+        compose.onNodeWithText("I understand").performClick()
+        waitForText("Week 1 of 8")
+
+        compose.onNodeWithText("Progress").performClick()
+        waitForText("Recent workouts")
+        assertEquals(0, compose.onAllNodesWithText("Estimated VO2max").fetchSemanticsNodes().size)
+    }
+
+    @Test
     fun anAbandonedBenchmarkGivesNoScoreAndKeepsTheProgramLocked() {
+        assumeTrue(Features.BENCHMARK)
         launch(onboarded = false)
         TestSupport.seedProfile(container)
         show()

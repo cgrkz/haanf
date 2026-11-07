@@ -1,6 +1,7 @@
 package app.haanf.ai
 
 import android.util.Log
+import app.haanf.Features
 import app.haanf.ai.CoachTools.text
 import app.haanf.talktest.TrainingActivity
 
@@ -33,10 +34,14 @@ sealed interface PlanOutcome {
     data class Failed(val message: String) : PlanOutcome
 }
 
-/** Asks the AI for today's workout, and lets nothing through without the rule check. */
+/**
+ * Asks the AI for today's workout, and lets nothing through without the rule check. It may also
+ * suggest a repeat benchmark, but only while [offersBenchmark], which follows [Features.BENCHMARK].
+ */
 class WorkoutPlanner(
     private val llm: LlmProvider,
     private val data: CoachDataSource,
+    private val offersBenchmark: Boolean = Features.BENCHMARK,
     private val tone: () -> CoachTone,
 ) {
     /**
@@ -51,11 +56,11 @@ class WorkoutPlanner(
         var outcome: PlanOutcome? = null
 
         val request = LlmRequest(
-            system = CoachPrompts.planner(tone()),
+            system = CoachPrompts.planner(tone(), offersBenchmark),
             items = listOf(
                 LlmItem.User(CoachContext.render(snapshot) + "\n\n" + checkInText(checkIn) + variationText(previous, easier)),
             ),
-            tools = listOf(CoachTools.PROPOSE_WORKOUT, CoachTools.SUGGEST_BENCHMARK),
+            tools = if (offersBenchmark) listOf(CoachTools.PROPOSE_WORKOUT, CoachTools.SUGGEST_BENCHMARK) else listOf(CoachTools.PROPOSE_WORKOUT),
             effort = LlmEffort.MEDIUM,
         )
         return try {
@@ -71,7 +76,7 @@ class WorkoutPlanner(
                         Log.i(TAG, "Proposal: ${workout?.title}, problems: $problems")
                         ToolOutcome(call.id, resultText(problems), isError = problems.isNotEmpty())
                     }
-                    CoachTools.SUGGEST_BENCHMARK.name -> {
+                    CoachTools.SUGGEST_BENCHMARK.name.takeIf { offersBenchmark } -> {
                         val blocked = AiWorkoutRules.benchmarkBlockedBy(lastBenchmark, rules.today)
                         if (blocked == null) outcome = PlanOutcome.Benchmark(call.input.text("reason").orEmpty())
                         ToolOutcome(call.id, blocked ?: "Approved.", isError = blocked != null)

@@ -245,8 +245,10 @@ class DesignScreenshotsTest {
         waitForText("Connect your watch")
         shot("03-connect-watch")
         compose.onNodeWithText("Continue without a watch").performScrollTo().performClick()
-        waitForText("Your first step: a fitness benchmark")
-        shot("04-first-benchmark")
+        if (Features.BENCHMARK) {
+            waitForText("Your first step: a fitness benchmark")
+            shot("04-first-benchmark")
+        }
     }
 
     @Test
@@ -335,7 +337,7 @@ class DesignScreenshotsTest {
         showRoot()
         waitForText("Progress")
         compose.onNodeWithText("Progress").performClick()
-        waitForText("Estimated VO2max")
+        waitForText(if (Features.BENCHMARK) "Estimated VO2max" else "Vitals, last 4 weeks")
         shot("14-progress")
         compose.onNodeWithText("See all workouts").performScrollTo()
         shot("14-progress-bottom")

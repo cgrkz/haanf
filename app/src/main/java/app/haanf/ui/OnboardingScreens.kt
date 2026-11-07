@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.haanf.AppContainer
+import app.haanf.Features
 import app.haanf.data.CoachFactEntity
 import app.haanf.data.FactKind
 import app.haanf.data.FactStatus
@@ -81,6 +82,9 @@ fun Onboarding(
         )
     }
 }
+
+/** About you and the watch, then the first benchmark while it is switched on. */
+private val ONBOARDING_STEPS = if (Features.BENCHMARK) 3 else 2
 
 @Composable
 private fun WelcomeScreen(onStart: () -> Unit) {
@@ -166,16 +170,16 @@ private fun AboutYouScreen(container: AppContainer, existing: ProfileEntity?) {
 
     HScreen(Modifier.safeDrawingPadding()) {
         Column {
-            Eyebrow("Step 1 of 3")
+            Eyebrow("Step 1 of $ONBOARDING_STEPS")
             ScreenTitle("About you", size = 40, modifier = Modifier.padding(vertical = 4.dp))
-            Lead("Used for your heart rate zones and benchmark. It stays on this phone.")
+            Lead("Used for your heart rate zones and fitness estimates. It stays on this phone.")
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             HTextField(birthYear, { birthYear = it.filter(Char::isDigit).take(4) }, "Year of birth", Modifier.weight(1f), numeric = true)
             HTextField(weight, { input -> weight = input.filter { it.isDigit() || it == '.' }.take(5) }, "Weight in kg", Modifier.weight(1f), numeric = true)
         }
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Sex, for the benchmark formula", style = body(14.sp, FontWeight.SemiBold), color = HaanfColors.Text)
+            Text("Sex, for fitness formulas", style = body(14.sp, FontWeight.SemiBold), color = HaanfColors.Text)
             Choices(listOf(Sex.FEMALE, Sex.MALE), sex, { it.label }, { sex = it })
         }
         HTextField(
@@ -251,7 +255,7 @@ private fun ConnectWatchScreen(container: AppContainer, profile: ProfileEntity?)
 
     HScreen(Modifier.safeDrawingPadding(), spacing = 20.dp) {
         Column {
-            Eyebrow("Step 2 of 3")
+            Eyebrow("Step 2 of $ONBOARDING_STEPS")
             ScreenTitle("Connect your watch", size = 40, modifier = Modifier.padding(vertical = 4.dp))
             Lead("Haanf reads your heart rate live during a workout.")
         }
@@ -361,7 +365,7 @@ fun ConnectedCard(name: String, connection: SourceState, bpm: Int?) {
 private fun FirstBenchmarkScreen(onStart: () -> Unit, onLater: () -> Unit) {
     HScreen(Modifier.safeDrawingPadding(), spacing = 20.dp) {
         Column {
-            Eyebrow("Step 3 of 3")
+            Eyebrow("Step 3 of $ONBOARDING_STEPS")
             ScreenTitle("Your first step: a fitness benchmark", size = 40, modifier = Modifier.padding(top = 4.dp, bottom = 8.dp))
             Lead("It tells Haanf how fit you are today, so you can see yourself improve.")
         }

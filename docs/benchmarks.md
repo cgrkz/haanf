@@ -1,5 +1,14 @@
 # Benchmarks
 
+**Paused on 7 November 2026.** The benchmark is switched off with `Features.BENCHMARK` in `app/src/main/java/app/haanf/Features.kt`. While it is off:
+
+- first run ends after the watch step;
+- the program and the coach open without a score;
+- Progress has no VO2max card;
+- the planner cannot suggest one.
+
+The code, its tests and any saved results stay, and the AI still sees past scores. Turning the switch back on restores everything below.
+
 A benchmark is a fixed, research-based fitness test. The AI will choose when and which, never the protocol. Every user does one right after setup, because it tells Haanf how fit they are before any training starts.
 
 ## The flow

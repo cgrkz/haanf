@@ -20,7 +20,7 @@
         android:name="android.permission.BLUETOOTH_ADMIN"
         android:maxSdkVersion="30" />
 
-    <!-- GPS measures an outdoor benchmark mile. Only the running total is kept, never a route. -->
+    <!-- GPS measures distance outdoors, and the benchmark mile. Only the running total is kept, never a route. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />

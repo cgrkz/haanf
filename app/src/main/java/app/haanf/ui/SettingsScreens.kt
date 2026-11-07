@@ -62,7 +62,7 @@ fun SettingsScreen(container: AppContainer, nav: Navigator) {
             } else {
                 Fact("Year of birth", "${current.birthYear}")
                 Fact("Weight", current.weightKg?.let { "%.0f kg".format(it) } ?: "Not set")
-                Fact("Sex, for the benchmark", current.sex?.let { Sex.valueOf(it).label } ?: "Not set")
+                Fact("Sex, for fitness formulas", current.sex?.let { Sex.valueOf(it).label } ?: "Not set")
                 Fact("Measured maximum", current.measuredMaxBpm?.let { "$it bpm" } ?: "Not measured")
                 LinkButton("Edit", onClick = { editing = true })
                 Hint("Injuries and conditions are kept in the coach chat, under What the coach knows.")
@@ -202,7 +202,7 @@ private fun ProfileEditor(existing: ProfileEntity?, onSave: (ProfileEntity) -> U
             HTextField(weight, { input -> weight = input.filter { it.isDigit() || it == '.' }.take(5) }, "Weight in kg", Modifier.weight(1f), numeric = true)
         }
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Sex, for the benchmark formula", style = body(14.sp, FontWeight.SemiBold), color = HaanfColors.Text)
+            Text("Sex, for fitness formulas", style = body(14.sp, FontWeight.SemiBold), color = HaanfColors.Text)
             Choices(listOf(Sex.FEMALE, Sex.MALE), sex, { it.label }, { sex = it })
         }
         HTextField(

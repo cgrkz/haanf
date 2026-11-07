@@ -35,7 +35,7 @@ Turn the proven pieces into the real training loop: start a workout, follow a fi
 - **Program mode:** one fixed 8-week program, and the reset rules from the brief.
 - **Vitals:** resting heart rate, HRV and sleep trends from Health Connect, labelled when stale.
 - **Safety:** a health check, a pre-enrolment warning, and an alert when heart rate stays above the estimated maximum.
-- **First benchmark:** added at the user's request. It follows setup and unlocks the program. See [benchmarks.md](benchmarks.md).
+- **First benchmark:** added at the user's request. It follows setup and unlocks the program. See [benchmarks.md](benchmarks.md). It was paused at the user's request on 7 November 2026.
 
 ## Out of scope, and why
 

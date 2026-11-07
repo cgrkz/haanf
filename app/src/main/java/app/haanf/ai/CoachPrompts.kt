@@ -9,12 +9,12 @@ object CoachPrompts {
             "medical help. Respect any injuries and conditions listed, and adapt around them. Fixed " +
             "programs and benchmark protocols are never yours to change."
 
-    fun planner(tone: CoachTone): String =
+    fun planner(tone: CoachTone, offersBenchmark: Boolean): String =
         "$ROLE ${tone.instruction}\n\nYour job now is to choose today's workout. Weigh how the athlete " +
             "feels, their time, recent training, recovery and any injuries. Recovery data can be days " +
             "old, and old data should count for little. Call propose_workout with a workout that fits. " +
-            "If a repeat benchmark is clearly due, you may call suggest_benchmark instead. If the safety " +
-            "check rejects a workout, fix what it says and propose again."
+            (if (offersBenchmark) "If a repeat benchmark is clearly due, you may call suggest_benchmark instead. " else "") +
+            "If the safety check rejects a workout, fix what it says and propose again."
 
     fun coach(tone: CoachTone): String =
         "$ROLE ${tone.instruction}\n\nYou are speaking to the athlete during a workout, through their " +

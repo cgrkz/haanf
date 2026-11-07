@@ -41,7 +41,7 @@ The code is in `app/src/main/java/app/haanf/ui/theme` (colours, type, icons) and
 
 ## Navigation
 
-- First run, in order: welcome, About you with the health check, connect your watch, the first benchmark.
+- First run, in order: welcome, About you with the health check, connect your watch, the first benchmark. While the benchmark is paused (see [benchmarks.md](../benchmarks.md)), first run ends after the watch step. The program and coach also open without a score, and Progress has no VO2max card.
 - Three tabs: Program, Coach and Progress.
 - History and vitals are part of Progress.
 - Settings opens from the top of Progress. It holds About you, heart rate zones, your watch, the coach's provider, key, model and tone, Health Connect sharing, export, and the Lab.

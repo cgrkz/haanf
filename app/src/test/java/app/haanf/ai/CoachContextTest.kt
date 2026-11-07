@@ -57,6 +57,12 @@ class CoachContextTest {
     }
 
     @Test
+    fun `says nothing about benchmarks when there are none`() {
+        assertTrue(text.contains("Fitness benchmarks"))
+        assertFalse(CoachContext.render(snapshot.copy(benchmarks = emptyList()), ZoneOffset.UTC).contains("benchmark"))
+    }
+
+    @Test
     fun `flags old recovery data so it is not trusted`() {
         assertTrue(text.contains("HRV: latest 42.0 ms on 2026-10-29 NOT RECENT: 4 days old"))
     }

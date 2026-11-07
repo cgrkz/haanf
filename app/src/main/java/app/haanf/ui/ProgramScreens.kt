@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.haanf.AppContainer
+import app.haanf.Features
+import app.haanf.data.BenchmarkEntity
 import app.haanf.data.EnrolmentEntity
 import app.haanf.data.ProfileEntity
 import app.haanf.program.ProgramDefinition
@@ -87,7 +89,7 @@ fun ProgramTab(container: AppContainer, nav: Navigator) {
     } else {
         HScreen {
             ProgramOverview(Programs.FOUNDATION_8)
-            BottomActions { ProgramStartActions(container, nav, Programs.FOUNDATION_8, scored.isNotEmpty()) }
+            BottomActions { ProgramStartActions(container, nav, Programs.FOUNDATION_8, unlocked(scored)) }
         }
     }
 }
@@ -111,10 +113,18 @@ private fun EnrolledProgram(
                 ScreenTitle("Program complete", modifier = Modifier.padding(top = 4.dp))
             }
             WeekStrip(program.weeks.size, program.weeks.size + 1)
-            BodyText("All ${program.weeks.size} weeks are done. A benchmark now shows how far you've come.")
+            if (Features.BENCHMARK) {
+                BodyText("All ${program.weeks.size} weeks are done. A benchmark now shows how far you've come.")
+            } else {
+                BodyText("All ${program.weeks.size} weeks are done.")
+            }
             BottomActions {
-                PrimaryButton("Start benchmark", onClick = { nav.open(Dest.GetReady(benchmarkWorkout())) })
-                SecondaryButton("Choose a program", onClick = { scope.launch { container.programs.leave() } })
+                if (Features.BENCHMARK) {
+                    PrimaryButton("Start benchmark", onClick = { nav.open(Dest.GetReady(benchmarkWorkout())) })
+                    SecondaryButton("Choose a program", onClick = { scope.launch { container.programs.leave() } })
+                } else {
+                    PrimaryButton("Choose a program", onClick = { scope.launch { container.programs.leave() } })
+                }
             }
         }
         return
@@ -313,17 +323,20 @@ private fun ProgramOverview(program: ProgramDefinition) {
     }
 }
 
+/** The program opens once a benchmark is scored, or straight away while benchmarks are off. */
+private fun unlocked(scored: List<BenchmarkEntity>): Boolean = !Features.BENCHMARK || scored.isNotEmpty()
+
 /** Start, or the benchmark that has to come first. */
 @Composable
 private fun ColumnScope.ProgramStartActions(
     container: AppContainer,
     nav: Navigator,
     program: ProgramDefinition,
-    benchmarkScored: Boolean,
+    unlocked: Boolean,
 ) {
     val scope = rememberCoroutineScope()
     var confirming by remember { mutableStateOf(false) }
-    if (benchmarkScored) {
+    if (unlocked) {
         PrimaryButton("Start ${program.name}", onClick = { confirming = true })
     } else {
         HCard(padding = PaddingValues(20.dp), spacing = 8.dp) {
@@ -388,7 +401,7 @@ fun ProgramDetailScreen(container: AppContainer, nav: Navigator) {
         }
         BottomActions {
             if (active == null) {
-                ProgramStartActions(container, nav, program, scored.isNotEmpty())
+                ProgramStartActions(container, nav, program, unlocked(scored))
             } else {
                 LinkButton("Leave program", onClick = { leaving = true })
             }

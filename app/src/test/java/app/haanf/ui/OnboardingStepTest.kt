@@ -21,7 +21,8 @@ class OnboardingStepTest {
         watch: Boolean = false,
         finished: Boolean = false,
         welcomed: Boolean = false,
-    ) = onboardingStep(profile, benchmarks, watch, finished, welcomed, today)
+        benchmarkOn: Boolean = true,
+    ) = onboardingStep(profile, benchmarks, watch, finished, welcomed, today, benchmarkOn)
 
     @Test
     fun `starts with the welcome`() {
@@ -46,6 +47,13 @@ class OnboardingStepTest {
     fun `then the first benchmark, unless put off or done`() {
         assertNull(step(complete, watch = true, finished = true))
         assertNull(step(complete, listOf(benchmark), watch = true))
+    }
+
+    @Test
+    fun `with benchmarks switched off, first run ends after the watch`() {
+        assertEquals(OnboardingStep.CONNECT_WATCH, step(complete, benchmarkOn = false))
+        assertNull(step(complete, watch = true, benchmarkOn = false))
+        assertNull(step(complete.copy(deviceId = "AA"), benchmarkOn = false))
     }
 
     @Test

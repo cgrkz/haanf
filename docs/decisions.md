@@ -117,6 +117,15 @@ The legitimate routes to this data, as of 7 November 2026:
 - **Health Connect.** It has a skin temperature record type. Whether the Fitbit app writes it from the Pixel Watch 2 is untested.
 - **The Google Health API,** which replaced the Fitbit Web API in 2026. It offers HRV samples, ECG recordings with their waveform, and nightly skin temperature changes for the Pixel Watch 2, after the watch syncs, but not EDA. It needs a Google sign-in and a new network host, which Haanf's rules exclude for now. Unverified apps are limited to 100 users.
 
+## Switched-off features
+
+`Features` in the `app.haanf` package holds switches for work that is built but off for now. `BENCHMARK` paused the 1-mile walk on 7 November 2026, at the user's request.
+
+- The screens read the switch directly.
+- `onboardingStep` and `WorkoutPlanner` take it as a parameter that defaults to the switch, so their unit tests cover both states.
+- Instrumented tests that need the benchmark skip themselves while it is off, and their counterparts check the off state.
+- Nothing is deleted from the database. Past results still show in History and still reach the AI.
+
 ## Testing limits
 
 - `tools/ble-sim` runs simulated Bluetooth devices on the emulator. It found two real bugs that unit tests could not, both in pairing. It tests Haanf's code, not any watch.

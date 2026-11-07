@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.haanf.AppContainer
+import app.haanf.Features
 import app.haanf.ai.AiProvider
 import app.haanf.ai.AiSettings
 import app.haanf.ai.AiSettingsStore
@@ -147,7 +148,7 @@ fun CoachTab(container: AppContainer, nav: Navigator, state: CoachTabState, vita
             onBack = null,
             onFreeWorkout = { nav.open(Dest.GetReady(freeWorkout())) },
         )
-        scored.isEmpty() -> CoachNeedsBenchmark(nav)
+        Features.BENCHMARK && scored.isEmpty() -> CoachNeedsBenchmark(nav)
         else -> when (val outcome = state.outcome) {
             is PlanOutcome.Approved -> PlanScreen(container, nav, state, outcome.workout, fallback = false)
             is PlanOutcome.Fallback -> PlanScreen(container, nav, state, outcome.workout, fallback = true)

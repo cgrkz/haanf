@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Haanf is an AI-native endurance training app for Android. See `docs/product-brief.md`. Phase 0 proved live heart rate, talk test recording and Health Connect on real hardware, and its results are in `docs/phase-0-results.md`. The project is now in Phase 1, the offline training loop: workouts, one fixed program, history and vitals. See `docs/phase-1-plan.md`, including what is deliberately out of scope, and `docs/benchmarks.md`. Slice 1, terrain and the coach's timeline, is in `docs/slice-1-plan.md`. Technical decisions are in `docs/decisions.md`.
+Haanf is an AI-native endurance training app for Android. See `docs/product-brief.md`. Phase 0 proved live heart rate, talk test recording and Health Connect on real hardware, and its results are in `docs/phase-0-results.md`. The project is now in Phase 1, the offline training loop: workouts, one fixed program, history and vitals. See `docs/phase-1-plan.md`, including what is deliberately out of scope, and `docs/benchmarks.md`. The benchmark is paused behind `Features.BENCHMARK`. Slice 1, terrain and the coach's timeline, is in `docs/slice-1-plan.md`. Technical decisions are in `docs/decisions.md`.
 
 ## Build and test
 

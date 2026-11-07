@@ -55,8 +55,8 @@ object CoachContext {
         if (snapshot.facts.isEmpty()) append("None recorded.\n")
         snapshot.facts.forEach { append("- ${it.kind.lowercase()}: ${it.text}\n") }
 
-        append("\nFitness benchmarks, newest first:\n")
-        if (snapshot.benchmarks.isEmpty()) append("None yet.\n")
+        // Left out when there are none, so the AI never asks for a benchmark while they are paused.
+        if (snapshot.benchmarks.isNotEmpty()) append("\nFitness benchmarks, newest first:\n")
         snapshot.benchmarks.take(MAX_BENCHMARKS).forEach { benchmark ->
             val level = FitnessNorms.level(benchmark.vo2Max, benchmark.ageYears, Sex.valueOf(benchmark.sex))
             append("- ${day(benchmark.takenAtMs)}: estimated VO2max ${"%.1f".format(benchmark.vo2Max)} ")

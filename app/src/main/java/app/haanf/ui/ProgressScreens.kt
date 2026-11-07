@@ -33,6 +33,7 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.haanf.AppContainer
+import app.haanf.Features
 import app.haanf.data.BenchmarkEntity
 import app.haanf.data.WorkoutEntity
 import app.haanf.health.VitalTrend
@@ -116,7 +117,7 @@ fun ProgressTab(container: AppContainer, nav: Navigator, vitals: VitalsHolder = 
                 HIconButton(HaanfIcons.Settings, "Settings and Lab", onClick = { nav.open(Dest.Settings) })
             }
         }
-        FitnessHeadline(benchmarks, today, nav)
+        if (Features.BENCHMARK) FitnessHeadline(benchmarks, today, nav)
         VitalsCard(vitals, today)
         WeekCard(finished, today)
         Column {
