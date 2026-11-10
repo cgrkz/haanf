@@ -1,6 +1,7 @@
 package app.haanf.workout
 
 import app.haanf.data.WorkoutEventEntity
+import app.haanf.training.Zone
 
 /** What a timeline line records. The first four are what was said; the rest is what happened. */
 enum class TimelineKind {
@@ -39,5 +40,5 @@ data class TimelineEntry(val elapsedSeconds: Int, val kind: TimelineKind, val te
 fun WorkoutState.Running.inHardEffort(bpm: Int?): Boolean {
     val step = stepIndex?.let { request.plan?.steps?.getOrNull(it) }
     val zone = step?.target ?: bpm?.let(request.zones::zoneFor) ?: return false
-    return zone == app.haanf.training.Zone.HARD || zone == app.haanf.training.Zone.VERY_HARD
+    return zone == Zone.HARD || zone == Zone.VERY_HARD
 }

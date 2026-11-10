@@ -31,7 +31,8 @@ enum class CoachTone(val label: String, val description: String, val instruction
     WARM(
         "Warm and encouraging",
         "Friendly and short, like a good running partner.",
-        "Be warm and encouraging, like a good running partner.",
+        "Be warm, like a running partner who is on their side. Show it by noticing what they did, " +
+            "not with praise words.",
     ),
     CALM(
         "Calm and factual",

@@ -47,9 +47,4 @@ class Navigator {
         stack.removeAt(stack.lastIndex)
         return true
     }
-
-    fun home(tab: Tab? = null) {
-        stack.clear()
-        if (tab != null) this.tab = tab.ordinal
-    }
 }

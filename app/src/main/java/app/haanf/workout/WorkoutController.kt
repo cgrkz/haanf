@@ -26,9 +26,12 @@ import app.haanf.training.Split
 import app.haanf.training.TimedBpm
 import app.haanf.training.WalkOutcome
 import app.haanf.training.WorkoutPlan
+import app.haanf.training.WorkoutStep
 import app.haanf.training.WorkoutSummaries
 import app.haanf.training.WorkoutSummary
 import app.haanf.training.Zone
+import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -37,8 +40,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import java.util.concurrent.CopyOnWriteArrayList
-import kotlin.math.roundToInt
 
 enum class WorkoutOrigin { FREE, PROGRAM, BENCHMARK, AI }
 
@@ -422,7 +423,7 @@ class WorkoutController(
         else -> MotionKind.RUN
     }
 
-    private fun stepText(step: app.haanf.training.WorkoutStep, zones: HeartRateZones): String {
+    private fun stepText(step: WorkoutStep, zones: HeartRateZones): String {
         val range = zones.rangeFor(step.target)
         return "Step: ${step.label}, ${WorkoutText.clock(step.seconds)}, ${step.target.label.lowercase()} " +
             "${range.first}-${range.last} bpm."

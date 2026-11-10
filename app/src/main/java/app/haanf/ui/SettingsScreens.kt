@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.haanf.AppContainer
+import app.haanf.ai.CoachTone
 import app.haanf.data.ProfileEntity
 import app.haanf.export.Csv
 import app.haanf.export.ShareFiles
@@ -34,8 +35,8 @@ import app.haanf.training.Zone
 import app.haanf.ui.theme.HaanfColors
 import app.haanf.ui.theme.HaanfIcons
 import app.haanf.ui.theme.body
-import kotlinx.coroutines.launch
 import java.time.LocalDate
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(container: AppContainer, nav: Navigator) {
@@ -110,7 +111,7 @@ fun SettingsScreen(container: AppContainer, nav: Navigator) {
                 Fact("Provider", chosen.provider.label)
                 Fact("Model", chosen.model)
                 Text("Tone", style = body(14.sp, FontWeight.SemiBold), color = HaanfColors.Text, modifier = Modifier.padding(top = 8.dp))
-                Choices(app.haanf.ai.CoachTone.entries, chosen.tone, { it.label }, { container.aiSettings.updateTone(it) }, height = 56.dp)
+                Choices(CoachTone.entries, chosen.tone, { it.label }, { container.aiSettings.updateTone(it) }, height = 56.dp)
                 Hint(chosen.tone.description)
                 Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                     LinkButton("Change key or model", onClick = { nav.open(Dest.CoachSetup) })

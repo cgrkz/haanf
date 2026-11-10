@@ -222,7 +222,7 @@ class CoachHarness(
             val now = clock.elapsedMs()
             val climbing = running.motion?.climbing == true
             if (climbing && !wasClimbing) {
-                wakes.trySend(Wake.ClimbStarted((running.motion?.gradePercent ?: 0.0).roundToInt()))
+                wakes.trySend(Wake.ClimbStarted((running.motion.gradePercent ?: 0.0).roundToInt()))
             }
             wasClimbing = climbing
             if (running.stepIndex != null && running.stepIndex != lastStep) {
@@ -523,7 +523,7 @@ class CoachHarness(
             description = "Say something to the athlete, and set when to check in next. This is the " +
                 "only way to be heard.",
             properties = buildJsonObject {
-                put("message", CoachTools.string("One or two short spoken sentences."))
+                put("message", CoachTools.string("One short spoken sentence, or two at most."))
                 put(
                     "next_check_in_minutes",
                     CoachTools.integer("Minutes until you check in again, from 2 to 10."),

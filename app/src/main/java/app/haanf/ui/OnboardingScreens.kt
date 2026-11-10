@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -55,11 +56,11 @@ import app.haanf.training.Sex
 import app.haanf.ui.theme.HaanfColors
 import app.haanf.ui.theme.body
 import app.haanf.ui.theme.condensed
-import kotlinx.coroutines.launch
 import java.time.LocalDate
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlinx.coroutines.launch
 
 @Composable
 fun Onboarding(
@@ -282,7 +283,7 @@ private fun ConnectWatchScreen(container: AppContainer, profile: ProfileEntity?)
         }
 
         if (missing.isNotEmpty()) {
-            HCard(padding = androidx.compose.foundation.layout.PaddingValues(20.dp)) {
+            HCard(padding = PaddingValues(20.dp)) {
                 Text("Haanf needs Bluetooth access to find it", style = body(17.sp, FontWeight.Bold))
                 PrimaryButton("Allow Bluetooth", onClick = {
                     launcher.launch((missing + AppPermissions.notifications).toTypedArray())
@@ -318,20 +319,19 @@ private fun WatchFinder(container: AppContainer, choice: WatchChoice, picked: Se
 
     snapshot.error?.let { ErrorText(it) }
     when {
-        choice == WatchChoice.OTHER && picked == null -> HCard(padding = androidx.compose.foundation.layout.PaddingValues(20.dp)) {
+        choice == WatchChoice.OTHER && picked == null -> HCard(padding = PaddingValues(20.dp)) {
             Text("Looking for nearby monitors", style = body(17.sp, FontWeight.Bold))
             Hint("Put your strap on so it wakes up, then choose it.")
             matches.forEach { device ->
                 LinkButton(device.name ?: device.address, onClick = { onPick(device) })
             }
         }
-        picked == null && choice == WatchChoice.AMAZFIT -> HCard(padding = androidx.compose.foundation.layout.PaddingValues(20.dp)) {
+        picked == null -> HCard(padding = PaddingValues(20.dp)) {
             Text("Looking for your watch", style = body(17.sp, FontWeight.Bold))
-            Hint("If it doesn't appear, start a workout on the watch and wait a moment.")
-        }
-        picked == null -> HCard(padding = androidx.compose.foundation.layout.PaddingValues(20.dp)) {
-            Text("Looking for your watch", style = body(17.sp, FontWeight.Bold))
-            Hint("Turn on Connected Fitness on the watch.")
+            Hint(
+                if (choice == WatchChoice.AMAZFIT) "If it doesn't appear, start a workout on the watch and wait a moment."
+                else "Turn on Connected Fitness on the watch.",
+            )
         }
     }
 }

@@ -22,8 +22,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -39,6 +40,7 @@ import app.haanf.ui.theme.HaanfColors
 import app.haanf.ui.theme.HaanfIcons
 import app.haanf.ui.theme.body
 import app.haanf.workout.WorkoutState
+import java.time.LocalDate
 
 enum class OnboardingStep { WELCOME, ABOUT_YOU, CONNECT_WATCH, FIRST_BENCHMARK }
 
@@ -52,7 +54,7 @@ fun onboardingStep(
     watchStepDone: Boolean,
     finished: Boolean,
     welcomed: Boolean,
-    today: java.time.LocalDate,
+    today: LocalDate,
     benchmarkOn: Boolean = Features.BENCHMARK,
 ): OnboardingStep? = when {
     profile == null && !welcomed -> OnboardingStep.WELCOME
@@ -72,7 +74,7 @@ fun HaanfRoot(container: AppContainer, sampleVitals: VitalsHolder? = null) {
     val watchDone by container.onboarding.watchStepDone.collectAsStateWithLifecycle()
     val finished by container.onboarding.finished.collectAsStateWithLifecycle()
     val nav = remember { Navigator() }
-    val appScope = androidx.compose.runtime.rememberCoroutineScope()
+    val appScope = rememberCoroutineScope()
     val coachTab = remember { CoachTabState(appScope) }
     val welcomed = remember { WelcomeState() }
 

@@ -144,7 +144,7 @@ fun GetReadyScreen(container: AppContainer, nav: Navigator, pending: PendingWork
     val bike = current?.bikeType?.let { name -> BikeType.entries.firstOrNull { it.name == name } }
     val rides = activity == TrainingActivity.CYCLING && !pending.benchmark
     val benchmarkInputs = current?.benchmarkInputs(today)
-    val canStart = device != null && current != null && bluetoothMissing.isEmpty() && !labRunning &&
+    val canStart = device != null && bluetoothMissing.isEmpty() && !labRunning &&
         !gpsOff && !(walksOutdoors && locationMissing) && !(pending.benchmark && benchmarkInputs == null)
 
     SubScreen(onBack = { nav.back() }) {

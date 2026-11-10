@@ -1,5 +1,6 @@
 package app.haanf.ai
 
+import app.haanf.data.FactKind
 import app.haanf.training.Zone
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -21,7 +22,7 @@ object CoachTools {
             name = "remember_fact",
             description = "Propose saving something lasting about the athlete. They confirm it first.",
             properties = buildJsonObject {
-                put("kind", choice("What sort of fact.", app.haanf.data.FactKind.entries.map { it.name }))
+                put("kind", choice("What sort of fact.", FactKind.entries.map { it.name }))
                 put("fact", string("A short statement, such as Left knee sore since October."))
             },
         )
@@ -56,7 +57,13 @@ object CoachTools {
             "what to change if it does not.",
         properties = buildJsonObject {
             put("title", string("A short title, such as Easy 30 minutes."))
-            put("reason", string("One or two sentences to the athlete on why this workout, today."))
+            put(
+                "reason",
+                string(
+                    "One or two sentences to the athlete on why this workout today. Name what decided " +
+                        "it, such as their sleep, their last hard day or the time they have.",
+                ),
+            )
             putJsonObject("steps") {
                 put("type", "array")
                 put("description", "The steps in order.")

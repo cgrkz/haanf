@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
@@ -21,6 +22,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -64,10 +67,10 @@ import app.haanf.ui.theme.HaanfColors
 import app.haanf.ui.theme.HaanfIcons
 import app.haanf.ui.theme.body
 import app.haanf.workout.AiWorkoutContext
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import java.time.LocalDate
 import kotlin.math.roundToInt
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 private const val MIN_KEY_LENGTH = 20
 private const val OTHER_MINUTES = -1
@@ -469,14 +472,14 @@ fun ChatScreen(container: AppContainer, nav: Navigator, state: CoachTabState) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(Modifier.weight(1f)) {
-                androidx.compose.material3.OutlinedTextField(
+                OutlinedTextField(
                     value = draft,
                     onValueChange = { draft = it },
                     placeholder = { Text("Message your coach", style = body(16.sp), color = HaanfColors.TextSecondary) },
                     textStyle = body(16.sp),
                     shape = Corner,
                     maxLines = 4,
-                    colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                    colors = OutlinedTextFieldDefaults.colors(
                         unfocusedBorderColor = HaanfColors.InputBorder,
                         focusedBorderColor = HaanfColors.Primary,
                     ),
@@ -580,11 +583,11 @@ fun CoachSetupScreen(
     var checking by remember { mutableStateOf(false) }
     var problem by remember { mutableStateOf<String?>(null) }
 
-    val content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit = {
+    val content: @Composable ColumnScope.() -> Unit = {
         Column {
             Eyebrow("Bring your own key")
             ScreenTitle("Set up your coach", modifier = Modifier.padding(vertical = 4.dp))
-            Lead("The coach plans workouts, talks you through them and reviews them. It uses your own API key.")
+            Lead("The coach plans workouts, talks you through them and reviews them.")
         }
         LabeledChoices("Provider") {
             Choices(AiProvider.entries, provider, { it.label }, {
