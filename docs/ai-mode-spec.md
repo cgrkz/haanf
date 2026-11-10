@@ -129,6 +129,8 @@ These tools only read. What they return reaches the AI provider like the rest of
 
 Chosen while configuring the coach: warm and encouraging, calm and factual, or tough and pushy.
 
+Whatever the tone, every feature gets the same instruction on how to talk: each sentence is about this athlete today, with a number, a reason or an instruction. Praise not tied to something they did, stock reminders, restating what they said and offers of more help are left out. Chat answers in its first sentence and usually stops within three. The review explains the numbers on the summary rather than reading them back. On 10 November 2026 the old and new wording were compared on Claude Haiku 5.5 with made-up data, in two tones. Chat replies to five questions fell from 44 to 267 words, with bullet lists and bold, to 10 to 90 words of plain text. Live lines fell from about 30 to 40 words to about 20 to 25. It has not been heard in a real workout.
+
 ## The rule check
 
 A separate check, with no AI in it, approves every AI workout and every change.

@@ -173,7 +173,7 @@ If it stops with "This device does not share heart rate over the standard profil
 
 ### Test 2
 
-1. On the Talk test tab, tap **Allow microphone**.
+1. In Settings, under Lab, open Talk test recorder and tap **Allow microphone**.
 2. Start a live heart rate session first, so that heart rate is saved.
 3. Choose the test, effort, activity and input, and tap **Start**. Pause any music first.
 4. Record a few of each effort level during a real workout, on both tests.
@@ -182,6 +182,6 @@ If it stops with "This device does not share heart rate over the standard profil
 
 ### Test 3
 
-1. On the Health data tab, tap **Choose what to share** and allow all.
+1. In Settings, under Lab, open the Health Connect report and tap **Choose what to share** and allow all.
 2. If a type shows no data, check Health Connect sync is on in the Fitbit or Google Health app, or in Zepp.
 3. Tap **Export this report**.

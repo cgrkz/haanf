@@ -18,7 +18,7 @@ Later updates install over the top only if they are built on the same Mac, becau
 2. If asked, allow installs from that app: **Settings > Apps > Special app access > Install unknown apps**. Wording varies by manufacturer.
 3. If Play Protect warns about an unknown app, tap **More details > Install anyway**.
 4. Open Haanf and allow Bluetooth, the microphone and notifications when asked.
-5. On Android 13 or older, Health Connect is a separate app. The Health data tab links to it in the Play Store.
+5. On Android 13 or older, Health Connect is a separate app. The Health Connect report in Settings, under Lab, links to it in the Play Store.
 
 ## Install with a cable or wireless debugging
 
