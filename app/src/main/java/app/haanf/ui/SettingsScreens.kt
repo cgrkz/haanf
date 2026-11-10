@@ -78,11 +78,11 @@ fun SettingsScreen(container: AppContainer, nav: Navigator) {
                 Zone.entries.forEach { zone ->
                     val range = zones.rangeFor(zone)
                     val text = when (zone) {
-                        Zone.RECOVERY -> "under ${range.last + 1}"
-                        Zone.VERY_HARD -> "${range.first} and over"
-                        else -> "${range.first} to ${range.last}"
+                        Zone.RECOVERY -> "under ${range.last + 1} bpm"
+                        Zone.VERY_HARD -> "${range.first} bpm and over"
+                        else -> "${range.first} to ${range.last} bpm"
                     }
-                    ZoneKey(zone, zone.label, "$text bpm")
+                    ZoneKey(zone, zone.label, text)
                 }
             }
         }

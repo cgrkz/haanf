@@ -111,13 +111,17 @@ class HealthConnectReader(private val context: Context) {
             .map { DayValue(it.time.day(), it.beatsPerMinute.toDouble()) }
         val hrv = readOrEmpty(HeartRateVariabilityRmssdRecord::class, range)
             .map { DayValue(it.time.day(), it.heartRateVariabilityMillis) }
-        val sleep = readOrEmpty(SleepSessionRecord::class, range)
-            .map { DayValue(it.endTime.day(), Duration.between(it.startTime, it.endTime).toMinutes() / 60.0) }
+        val sleep = readOrEmpty(SleepSessionRecord::class, range).map { session ->
+            SleepSession(
+                TimeSpan(session.startTime, session.endTime),
+                session.stages.filter { it.stage in AWAKE_STAGES }.map { TimeSpan(it.startTime, it.endTime) },
+            )
+        }
 
         return Vitals(
             restingHeartRate = VitalTrends.trend(VitalTrends.daily(resting) { it.average() }, today),
             hrv = VitalTrends.trend(VitalTrends.daily(hrv) { it.average() }, today),
-            sleepHours = VitalTrends.trend(VitalTrends.daily(sleep) { it.sum() }, today),
+            sleepHours = VitalTrends.trend(SleepHours.daily(sleep, zone), today),
         )
     }
 
@@ -138,5 +142,10 @@ class HealthConnectReader(private val context: Context) {
         const val WINDOW_DAYS = 14
         private const val VITALS_WINDOW_DAYS = 28L
         private const val PAGE_SIZE = 1000
+        private val AWAKE_STAGES = setOf(
+            SleepSessionRecord.STAGE_TYPE_AWAKE,
+            SleepSessionRecord.STAGE_TYPE_AWAKE_IN_BED,
+            SleepSessionRecord.STAGE_TYPE_OUT_OF_BED,
+        )
     }
 }

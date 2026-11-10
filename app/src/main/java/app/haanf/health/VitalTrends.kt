@@ -1,6 +1,8 @@
 package app.haanf.health
 
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
 data class DayValue(val date: LocalDate, val value: Double)
@@ -58,4 +60,48 @@ object VitalTrends {
             daysSinceLatest = ChronoUnit.DAYS.between(latest.date, today),
         )
     }
+}
+
+/** A stretch of time, such as one sleep session or one spell awake within it. */
+data class TimeSpan(val start: Instant, val end: Instant)
+
+/** One sleep session as Health Connect holds it, with the spells marked awake or out of bed. */
+data class SleepSession(val span: TimeSpan, val awake: List<TimeSpan> = emptyList())
+
+object SleepHours {
+    /**
+     * Hours asleep for each day woken up on. Sessions that overlap count once, because two apps
+     * can save the same night, and time marked awake is left out.
+     */
+    fun daily(sessions: List<SleepSession>, zone: ZoneId): List<DayValue> {
+        val nights = merge(sessions.map { it.span })
+        val awake = merge(sessions.flatMap { it.awake })
+        return nights
+            .map { night ->
+                val awakeSeconds = awake.sumOf { overlapSeconds(it, night) }
+                DayValue(night.end.atZone(zone).toLocalDate(), (seconds(night) - awakeSeconds) / 3600.0)
+            }
+            .groupBy { it.date }
+            .map { (date, values) -> DayValue(date, values.sumOf { it.value }) }
+            .sortedBy { it.date }
+    }
+
+    /** Joins spans that overlap or touch, oldest first. */
+    private fun merge(spans: List<TimeSpan>): List<TimeSpan> {
+        val merged = mutableListOf<TimeSpan>()
+        spans.filter { it.end > it.start }.sortedBy { it.start }.forEach { span ->
+            val last = merged.lastOrNull()
+            if (last != null && span.start <= last.end) {
+                merged[merged.lastIndex] = TimeSpan(last.start, maxOf(last.end, span.end))
+            } else {
+                merged += span
+            }
+        }
+        return merged
+    }
+
+    private fun seconds(span: TimeSpan): Long = span.end.epochSecond - span.start.epochSecond
+
+    private fun overlapSeconds(a: TimeSpan, b: TimeSpan): Long =
+        (minOf(a.end, b.end).epochSecond - maxOf(a.start, b.start).epochSecond).coerceAtLeast(0)
 }

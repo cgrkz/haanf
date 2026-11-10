@@ -296,7 +296,7 @@ private fun WorkoutRow(workout: WorkoutEntity, today: LocalDate, divider: Boolea
         },
         end = {
             val distance = workout.distanceMetres?.takeIf { it >= 100 }?.let { "%.1f km, ".format(it / 1000) }.orEmpty()
-            Text(distance + Format.minutes(workout.durationSeconds()), style = body(16.sp, FontWeight.SemiBold), color = HaanfColors.Text)
+            Text(distance + Format.duration(workout.durationSeconds()), style = body(16.sp, FontWeight.SemiBold), color = HaanfColors.Text)
         },
         divider = divider,
         minHeight = 56.dp,

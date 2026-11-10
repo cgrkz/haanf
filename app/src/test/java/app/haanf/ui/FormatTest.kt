@@ -9,6 +9,13 @@ class FormatTest {
     private val today = LocalDate.of(2026, 11, 5) // a Thursday
 
     @Test
+    fun `a workout under a minute is given in seconds`() {
+        assertEquals("12 s", Format.duration(12))
+        assertEquals("1 min", Format.duration(60))
+        assertEquals("23 min", Format.duration(23 * 60 + 20))
+    }
+
+    @Test
     fun `rounds seconds to whole minutes`() {
         assertEquals("0 min", Format.minutes(29))
         assertEquals("1 min", Format.minutes(30))

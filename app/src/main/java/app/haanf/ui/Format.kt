@@ -15,6 +15,9 @@ object Format {
 
     fun minutes(seconds: Int): String = "${((seconds + 30) / 60)} min"
 
+    /** How long a workout lasted. Under a minute it is given in seconds, so it never reads "0 min". */
+    fun duration(seconds: Int): String = if (seconds < 60) "$seconds s" else minutes(seconds)
+
     /** "today", "yesterday", a weekday within the last week, then a date. */
     fun relativeDay(day: LocalDate, today: LocalDate): String {
         val days = ChronoUnit.DAYS.between(day, today)

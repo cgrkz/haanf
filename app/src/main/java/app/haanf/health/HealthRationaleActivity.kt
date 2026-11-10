@@ -1,7 +1,9 @@
 package app.haanf.health
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Column
@@ -19,7 +21,9 @@ import app.haanf.ui.theme.HaanfTheme
 class HealthRationaleActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        // Haanf is light only, so the bar icons stay dark even when the phone is in dark mode.
+        val bars = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+        enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
         setContent {
             HaanfTheme {
                 Surface(Modifier.fillMaxSize()) {
@@ -27,9 +31,9 @@ class HealthRationaleActivity : ComponentActivity() {
                         Text("How Haanf uses health data", style = MaterialTheme.typography.headlineSmall)
                         Text(
                             "Haanf reads heart rate, resting heart rate, HRV, sleep and exercise " +
-                                "sessions from the last 14 days to show which apps provide them. " +
-                                "It never writes to Health Connect, and nothing leaves this phone " +
-                                "unless you tap export.",
+                                "sessions to show your recovery and which apps provide it. It never " +
+                                "writes to Health Connect. Resting heart rate, HRV and sleep go to the " +
+                                "AI coach only if you set one up with your own key.",
                             modifier = Modifier.padding(top = 16.dp),
                         )
                     }
