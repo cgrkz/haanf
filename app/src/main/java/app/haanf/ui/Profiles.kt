@@ -4,7 +4,6 @@ import app.haanf.data.ProfileEntity
 import app.haanf.heartrate.HeartRateDevice
 import app.haanf.training.BenchmarkInputs
 import app.haanf.training.HeartRateZones
-import app.haanf.training.MaxHeartRate
 import app.haanf.training.Sex
 import app.haanf.training.WorkoutPlan
 import app.haanf.training.Zone
@@ -26,9 +25,6 @@ data class PendingWorkout(
 val LOADING = ProfileEntity(birthYear = 0)
 const val FREE_WORKOUT_TITLE = "Free workout"
 const val BENCHMARK_TITLE = "1-mile walk benchmark"
-
-fun ProfileEntity.zones(today: LocalDate): HeartRateZones =
-    HeartRateZones.of(MaxHeartRate.resolve(today.year - birthYear, measuredMaxBpm), zoneStarts)
 
 /** What the benchmark needs, or null until setup has collected it. */
 fun ProfileEntity.benchmarkInputs(today: LocalDate): BenchmarkInputs? {

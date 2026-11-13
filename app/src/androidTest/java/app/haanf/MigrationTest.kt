@@ -201,6 +201,23 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun version7ProfileKeepsItsZonesAndHasNoRestingHeartRateYet() {
+        helper.createDatabase(DB, 7).use { db ->
+            db.execSQL("INSERT INTO profile (id, birthYear, measuredMaxBpm, zoneStarts) VALUES (1, 2004, 203, '140,160,175,190')")
+        }
+
+        helper.runMigrationsAndValidate(DB, 8, true).use { db ->
+            db.query("SELECT measuredMaxBpm, zoneStarts, restingBpm, healthRestingBpm FROM profile WHERE id = 1").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(203, cursor.getInt(0))
+                assertEquals("140,160,175,190", cursor.getString(1))
+                assertEquals(true, cursor.isNull(2))
+                assertEquals(true, cursor.isNull(3))
+            }
+        }
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

@@ -54,7 +54,12 @@ object CoachContext {
                 else -> "${it.label} ${range.first}-${range.last}"
             }
         }
-        val zoneSource = if (snapshot.zones.isCustom) "set by the athlete" else "from 60, 70, 80 and 90% of maximum"
+        val zoneSource = when {
+            snapshot.zones.isCustom -> "set by the athlete"
+            snapshot.zones.countsResting ->
+                "from heart rate reserve (60, 70, 80 and 90% of the way from resting ${snapshot.zones.restingBpm} to maximum)"
+            else -> "from 60, 70, 80 and 90% of maximum"
+        }
         append("Heart rate zones, $zoneSource: $zones. Zone 3 and above count as hard.\n")
 
         append("\nInjuries, conditions and notes:\n")

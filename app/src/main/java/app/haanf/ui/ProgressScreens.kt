@@ -84,7 +84,7 @@ fun rememberVitals(container: AppContainer): VitalsHolder {
             if (missing.containsAll(health.permissions)) {
                 VitalsStatus.NOT_SHARED
             } else {
-                vitals = health.vitals(Instant.now())
+                vitals = container.vitals(Instant.now())
                 VitalsStatus.READ
             }
         } catch (e: Exception) {

@@ -303,6 +303,7 @@ class DesignScreenshotsTest {
         build(onboarded = true)
         seedTraining()
         runBlocking {
+            container.trainingDao.saveHealthResting(61)
             container.coachDao.insertFact(CoachFactEntity(createdAtMs = 0, kind = "INJURY", text = "Left knee sore since October", status = FactStatus.ACTIVE.name))
             container.coachDao.insertMessage(CoachMessageEntity(atMs = 0, fromCoach = false, text = "My left knee is a bit sore after Tuesday."))
             container.coachDao.insertMessage(
@@ -328,6 +329,7 @@ class DesignScreenshotsTest {
         build(onboarded = true)
         seedTraining()
         runBlocking {
+            container.trainingDao.saveHealthResting(61)
             container.coachDao.insertFact(CoachFactEntity(createdAtMs = 0, kind = "INJURY", text = "Left knee sore since October", status = FactStatus.ACTIVE.name))
             container.coachDao.insertMessage(CoachMessageEntity(atMs = 0, fromCoach = false, text = "My left knee is a bit sore after Tuesday."))
             container.coachDao.insertMessage(

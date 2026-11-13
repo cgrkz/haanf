@@ -60,6 +60,7 @@ import app.haanf.data.CoachFactEntity
 import app.haanf.data.CoachMessageEntity
 import app.haanf.data.FactKind
 import app.haanf.data.FactStatus
+import app.haanf.data.zones
 import app.haanf.health.Vitals
 import app.haanf.talktest.TrainingActivity
 import app.haanf.training.HeartRateZones

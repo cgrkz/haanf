@@ -57,6 +57,21 @@ class CoachContextTest {
     }
 
     @Test
+    fun `says how the zones were worked out`() {
+        assertTrue(text, text.contains("Heart rate zones, from 60, 70, 80 and 90% of maximum: Zone 1 under 113, Zone 2 113-130"))
+        val reserve = CoachContext.render(snapshot.copy(zones = HeartRateZones(187, restingBpm = 61)), ZoneOffset.UTC)
+        assertTrue(
+            reserve,
+            reserve.contains(
+                "Heart rate zones, from heart rate reserve (60, 70, 80 and 90% of the way from resting 61 to maximum): " +
+                    "Zone 1 under 137, Zone 2 137-149",
+            ),
+        )
+        val custom = CoachContext.render(snapshot.copy(zones = HeartRateZones.of(187, "140,160,170,180", 61)), ZoneOffset.UTC)
+        assertTrue(custom, custom.contains("Heart rate zones, set by the athlete: Zone 1 under 140, Zone 2 140-159"))
+    }
+
+    @Test
     fun `says nothing about benchmarks when there are none`() {
         assertTrue(text.contains("Fitness benchmarks"))
         assertFalse(CoachContext.render(snapshot.copy(benchmarks = emptyList()), ZoneOffset.UTC).contains("benchmark"))

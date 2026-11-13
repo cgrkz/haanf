@@ -20,9 +20,27 @@ data class ProfileEntity(
     val deviceSourceKind: String? = null,
     /** A [app.haanf.training.BikeType] name, for estimating watts. */
     val bikeType: String? = null,
-    /** Where Zones 2 to 5 start, if the athlete set them. Null follows their maximum. */
+    /** Where Zones 2 to 5 start, if the athlete set them. Null follows the defaults. */
     val zoneStarts: String? = null,
+    /** Resting heart rate the athlete typed. It wins over [healthRestingBpm]. */
+    val restingBpm: Int? = null,
+    /**
+     * Health Connect's 7-day average resting heart rate, as last read. Kept here because Health
+     * Connect only answers while the app is open, and the zones are needed at other times.
+     */
+    val healthRestingBpm: Int? = null,
 )
+
+/** The resting heart rate the zones count: the athlete's own, or Health Connect's. */
+val ProfileEntity.resting: Int? get() = restingBpm ?: healthRestingBpm
+
+/** The athlete's zones today, from their maximum, resting heart rate and any starts they set. */
+fun ProfileEntity.zones(today: java.time.LocalDate): app.haanf.training.HeartRateZones =
+    app.haanf.training.HeartRateZones.of(
+        maxBpm = app.haanf.training.MaxHeartRate.resolve(today.year - birthYear, measuredMaxBpm),
+        savedStarts = zoneStarts,
+        restingBpm = resting,
+    )
 
 /** One workout from any mode. Only program workouts ever touch the program clock. */
 @Entity(tableName = "workout", indices = [Index("startedAtMs")])
@@ -43,7 +61,7 @@ data class WorkoutEntity(
     val deviceName: String? = null,
     val avgBpm: Int? = null,
     val maxBpm: Int? = null,
-    /** Where Zones 2 to 5 started for this workout. Null means the defaults for [zoneMaxBpm]. */
+    /** Where Zones 2 to 5 started for this workout. Null, from before they were saved, means % of [zoneMaxBpm]. */
     val zoneStarts: String? = null,
     val zone1Seconds: Int = 0,
     val zone2Seconds: Int = 0,

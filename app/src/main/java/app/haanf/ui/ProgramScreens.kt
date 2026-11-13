@@ -34,6 +34,7 @@ import app.haanf.Features
 import app.haanf.data.BenchmarkEntity
 import app.haanf.data.EnrolmentEntity
 import app.haanf.data.ProfileEntity
+import app.haanf.data.zones
 import app.haanf.program.ProgramDefinition
 import app.haanf.program.ProgramNotice
 import app.haanf.program.ProgramPosition

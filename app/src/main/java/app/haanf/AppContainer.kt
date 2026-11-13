@@ -2,6 +2,8 @@ package app.haanf
 
 import android.content.Context
 import android.os.Build
+import android.util.Log
+import androidx.health.connect.client.HealthConnectClient
 import app.haanf.ai.AiSettingsStore
 import app.haanf.ai.CoachChat
 import app.haanf.ai.CoachData
@@ -22,6 +24,7 @@ import app.haanf.data.RoomSessionStore
 import app.haanf.data.TalkAnswer
 import app.haanf.data.TalkCheckEntity
 import app.haanf.health.HealthConnectReader
+import app.haanf.health.Vitals
 import app.haanf.heartrate.HeartRateSourceFactory
 import app.haanf.heartrate.ble.BleDiscovery
 import app.haanf.heartrate.ble.BleHeartRateSourceFactory
@@ -49,6 +52,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.io.File
 import java.time.Instant
+import kotlin.math.roundToInt
 
 /** Wires the app together by hand. One instance lives as long as the process. */
 class AppContainer(
@@ -109,7 +113,7 @@ class AppContainer(
     val llm: LlmProvider = llmOverride ?: aiSettings
     private val tone: () -> CoachTone = { aiSettings.settings.value?.tone ?: CoachTone.WARM }
     val speech = OnDeviceSpeech(appContext)
-    val coachData = CoachData(trainingDao, coachDao, programs, { health.vitals(Instant.now()) }, clock)
+    val coachData = CoachData(trainingDao, coachDao, programs, { vitals(Instant.now()) }, clock)
     val planner = WorkoutPlanner(llm, coachData, tone = tone)
     private val workoutDetail = WorkoutDetail(
         samples = { samples(it) },
@@ -160,6 +164,27 @@ class AppContainer(
         tone = tone,
     )
 
+    /**
+     * Reads vitals, and keeps Health Connect's 7-day resting heart rate in the profile, so the zones
+     * can count it while Health Connect won't answer.
+     */
+    suspend fun vitals(now: Instant): Vitals {
+        val read = health.vitals(now)
+        val resting = read.restingHeartRate?.recentAverage?.roundToInt()
+        if (resting != null && trainingDao.profile()?.healthRestingBpm != resting) trainingDao.saveHealthResting(resting)
+        return read
+    }
+
+    /** Picks up a newer resting heart rate when the app opens. Without Health Connect nothing changes. */
+    suspend fun refreshRestingHeartRate() {
+        if (health.sdkStatus() != HealthConnectClient.SDK_AVAILABLE) return
+        try {
+            vitals(Instant.now())
+        } catch (e: Exception) {
+            Log.w(TAG, "Resting heart rate unavailable: ${e.message}")
+        }
+    }
+
     private suspend fun samples(sessionId: Long): List<TimedBpm> =
         hrDao.samples(sessionId).map { TimedBpm(it.receivedAtMs, it.bpm) }
 
@@ -174,3 +199,5 @@ class AppContainer(
         }
     }
 }
+
+private const val TAG = "HaanfHealth"

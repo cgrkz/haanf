@@ -49,21 +49,25 @@ The data model leaves room for AI workouts: `Workout.origin` separates them, and
 
 ### Zones
 
-Five numbered zones, as shares of maximum heart rate. On 13 November 2026 the user replaced the four named zones (Recovery, Easy, Hard and Very hard) with these, and asked for them to be editable.
+Five numbered zones. On 13 November 2026 the user replaced the four named zones (Recovery, Easy, Hard and Very hard) with these, and asked for them to be editable. The same day they found Zone 2 too low at 60 to 70% of maximum, which gave 116 to 135 bpm, and chose to count resting heart rate.
 
-| Zone | Share of maximum | Basis |
+By default each zone starts a share of the way from resting to maximum heart rate. That gap is the heart rate reserve (Karvonen 1957), so a zone starting at 60% starts at resting + 0.6 x (maximum - resting).
+
+| Zone | Starts at | Without a resting heart rate |
 | --- | --- | --- |
-| Zone 1 | Below 60% | Everything under Zone 2 |
-| Zone 2 | 60 to 70% | Upper half of the [AHA](https://www.heart.org/en/healthy-living/fitness/fitness-basics/target-heart-rates) moderate band |
-| Zone 3 | 70 to 80% | AHA vigorous activity starts at 70% |
-| Zone 4 | 80 to 90% | |
-| Zone 5 | 90% and above | The 4 x 4 study's 90 to 95% |
+| Zone 1 | Everything under Zone 2 | |
+| Zone 2 | 60% of reserve | 60% of maximum |
+| Zone 3 | 70% of reserve | 70% of maximum |
+| Zone 4 | 80% of reserve | 80% of maximum |
+| Zone 5 | 90% of reserve | 90% of maximum |
 
-The 60, 70, 80 and 90% starts are the common five-zone default, the one Garmin uses. Zone 3 and above count as hard work, which keeps the old line at 70%.
+Fitbit and the Pixel Watch draw their zones from heart rate reserve too. It lifts the zones for someone with a high maximum or a low resting rate. Without a resting heart rate the zones fall back to shares of maximum, the common five-zone default that Garmin uses. Zone 3 and above count as hard work. Counting reserve, Zone 3 starts inside the ACSM's vigorous band of 60 to 89% of reserve. Counting maximum, it starts at 70%, where the [AHA](https://www.heart.org/en/healthy-living/fitness/fitness-basics/target-heart-rates)'s vigorous band starts.
 
-**Editing.** Settings lets the athlete set where Zones 2 to 5 start, in bpm. Zone 1 is everything below Zone 2. Each start must be higher than the one before. Edited zones stay put when the maximum changes, until "Use the defaults" puts them back. Each workout saves the zones it was measured against, so editing them later does not change past workouts.
+**Resting heart rate.** The athlete can type theirs under About you in Settings. Otherwise Haanf uses Health Connect's average over the last 7 days. Health Connect only answers while the app is open, so Haanf saves that average in the profile whenever it reads Health Connect, including each time the app opens. A typed value wins. A resting rate outside 30 to 110 bpm, or less than 40 beats below maximum, is left out.
 
-**Moving saved workouts to five zones.** The database's version 7 works out each saved workout's time in each zone again from its saved heart rate, against the default zones for the maximum it was recorded with. A workout with no saved heart rate keeps its old totals, moved to the nearest new zone: Recovery to Zone 1, Easy to Zone 2, Hard to Zone 3 and Very hard to Zone 5.
+**Editing.** Settings lets the athlete set where Zones 2 to 5 start, in bpm. Zone 1 is everything below Zone 2. Each start must be higher than the one before. Edited zones stay put when the maximum or resting heart rate changes, until "Use the defaults" puts them back. Each workout saves the zones it was measured against, so later edits or a new resting rate do not change past workouts.
+
+**Moving saved workouts to five zones.** The database's version 7 works out each saved workout's time in each zone again from its saved heart rate, against 60, 70, 80 and 90% of the maximum it was recorded with. A workout with no saved heart rate keeps its old totals, moved to the nearest new zone: Recovery to Zone 1, Easy to Zone 2, Hard to Zone 3 and Very hard to Zone 5. Version 8 adds the resting heart rate and leaves workouts alone.
 
 Maximum heart rate is `208 - 0.7 x age` ([Tanaka 2001](https://pubmed.ncbi.nlm.nih.gov/11153730/)), unless the user enters a measured value. It is an estimate, and individuals can differ from it.
 

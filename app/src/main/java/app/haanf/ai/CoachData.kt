@@ -5,17 +5,15 @@ import app.haanf.core.Clock
 import app.haanf.data.CoachDao
 import app.haanf.data.CoachFactEntity
 import app.haanf.data.FactStatus
-import app.haanf.data.ProfileEntity
 import app.haanf.data.TrainingDao
 import app.haanf.data.WorkoutEntity
+import app.haanf.data.zones
 import app.haanf.health.HealthConnectReader
 import app.haanf.health.Vitals
 import app.haanf.program.ProgramRules
 import app.haanf.program.ProgramTracker
 import app.haanf.program.Programs
 import app.haanf.program.progress
-import app.haanf.training.HeartRateZones
-import app.haanf.training.MaxHeartRate
 import app.haanf.training.Sex
 import kotlinx.coroutines.flow.first
 import java.time.Instant
@@ -58,7 +56,7 @@ class CoachData(
             ageYears = age,
             sex = sex,
             weightKg = weight,
-            zones = zones(profile, age),
+            zones = profile.zones(today),
             maxIsMeasured = profile.measuredMaxBpm != null,
             facts = coach.activeFacts(),
             benchmarks = training.benchmarks(),
@@ -68,9 +66,6 @@ class CoachData(
             program = programLine(today),
         )
     }
-
-    private fun zones(profile: ProfileEntity, age: Int) =
-        HeartRateZones.of(MaxHeartRate.resolve(age, profile.measuredMaxBpm), profile.zoneStarts)
 
     /** The last good reading stands in when Health Connect refuses a background read. */
     private suspend fun freshVitals(): Vitals? {

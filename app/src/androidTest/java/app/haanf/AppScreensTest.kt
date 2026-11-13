@@ -115,7 +115,33 @@ class AppScreensTest {
 
         compose.onNodeWithText("Use the defaults").performScrollTo().performClick()
         compose.waitUntil(timeoutMillis = 5_000) { runBlocking { container.trainingDao.profile()?.zoneStarts } == null }
-        waitForText("From 60, 70, 80 and 90% of your maximum.")
+        waitForText("From 60, 70, 80 and 90% of your maximum. Add a resting heart rate under About you to count it too.")
+    }
+
+    @Test
+    fun zonesCountRestingHeartRateFromHealthConnectOrTyped() {
+        launch(onboarded = true)
+        TestSupport.seedProfile(container)
+        TestSupport.seedBenchmark(container)
+        runBlocking { container.trainingDao.saveHealthResting(73) }
+        show()
+        waitForText("Progress")
+        compose.onNodeWithText("Progress").performClick()
+        compose.onNodeWithContentDescription("Settings and Lab").performClick()
+
+        // Maximum 187 from age 30, resting 73: each zone starts 60 to 90% of the way between them.
+        waitForText("Maximum 187 bpm, estimated from your age. Resting 73 bpm, Health Connect's 7-day average.")
+        compose.onNodeWithText("142 to 152 bpm").assertExists()
+        compose.onNodeWithText("Each starts 60, 70, 80 or 90% of the way from resting to maximum.").assertExists()
+        compose.onNodeWithText("73 bpm, from Health Connect").assertExists()
+
+        compose.onNodeWithText("Edit").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Resting heart rate (optional)").performScrollTo().performTextReplacement("61")
+        compose.onNodeWithText("Save").performScrollTo().performClick()
+
+        waitForText("Maximum 187 bpm, estimated from your age. Resting 61 bpm, as you entered it.")
+        compose.onNodeWithText("137 to 149 bpm").assertExists()
+        compose.waitUntil(timeoutMillis = 5_000) { runBlocking { container.trainingDao.profile()?.restingBpm } == 61 }
     }
 
     @Test

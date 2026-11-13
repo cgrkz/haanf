@@ -61,6 +61,7 @@ import app.haanf.data.SplitEntity
 import app.haanf.data.TalkAnswer
 import app.haanf.data.WorkoutEntity
 import app.haanf.data.zoneSeconds
+import app.haanf.data.zones
 import app.haanf.program.Programs
 import app.haanf.talktest.TrainingActivity
 import app.haanf.training.BenchmarkInputs

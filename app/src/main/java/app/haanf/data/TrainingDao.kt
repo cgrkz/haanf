@@ -18,6 +18,9 @@ interface TrainingDao {
     @Upsert
     suspend fun saveProfile(profile: ProfileEntity)
 
+    @Query("UPDATE profile SET healthRestingBpm = :bpm WHERE id = 1")
+    suspend fun saveHealthResting(bpm: Int)
+
     @Insert
     suspend fun insertWorkout(workout: WorkoutEntity): Long
 

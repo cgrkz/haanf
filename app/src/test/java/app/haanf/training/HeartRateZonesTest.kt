@@ -16,6 +16,32 @@ class HeartRateZonesTest {
     }
 
     @Test
+    fun `with a resting heart rate, zones start a share of the way from resting to maximum`() {
+        val reserve = HeartRateZones(maxBpm = 203, restingBpm = 73)
+        assertEquals(listOf(151, 164, 177, 190), reserve.starts)
+        assertTrue(reserve.countsResting)
+        assertFalse(reserve.isCustom)
+        assertEquals(listOf(144, 158, 172, 186), HeartRateZones(maxBpm = 200, restingBpm = 60).starts)
+        assertEquals(reserve, HeartRateZones.of(203, null, restingBpm = 73))
+    }
+
+    @Test
+    fun `an unlikely resting heart rate is left out`() {
+        assertEquals(zones.starts, HeartRateZones(maxBpm = 200, restingBpm = 20).starts)
+        assertEquals(zones.starts, HeartRateZones(maxBpm = 200, restingBpm = 130).starts)
+        assertEquals(listOf(84, 98, 112, 126), HeartRateZones(maxBpm = 140, restingBpm = 105).starts)
+        assertFalse(HeartRateZones(maxBpm = 140, restingBpm = 105).countsResting)
+        assertFalse(zones.countsResting)
+    }
+
+    @Test
+    fun `custom zones stay as set when the resting heart rate changes`() {
+        val custom = HeartRateZones.of(203, "140,160,175,190", restingBpm = 73)
+        assertTrue(custom.isCustom)
+        assertEquals(listOf(140, 160, 175, 190), HeartRateZones.of(203, "140,160,175,190", restingBpm = 55).starts)
+    }
+
+    @Test
     fun `places heart rates in zones at the band edges`() {
         assertEquals(Zone.ZONE_1, zones.zoneFor(119))
         assertEquals(Zone.ZONE_2, zones.zoneFor(120))

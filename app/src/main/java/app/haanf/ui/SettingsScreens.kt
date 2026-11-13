@@ -27,6 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.haanf.AppContainer
 import app.haanf.ai.CoachTone
 import app.haanf.data.ProfileEntity
+import app.haanf.data.zones
 import app.haanf.export.Csv
 import app.haanf.export.ShareFiles
 import app.haanf.training.BikeType
@@ -67,6 +68,12 @@ fun SettingsScreen(container: AppContainer, nav: Navigator) {
                 Fact("Weight", current.weightKg?.let { "%.0f kg".format(it) } ?: "Not set")
                 Fact("Sex, for fitness formulas", current.sex?.let { Sex.valueOf(it).label } ?: "Not set")
                 Fact("Measured maximum", current.measuredMaxBpm?.let { "$it bpm" } ?: "Not measured")
+                Fact(
+                    "Resting heart rate",
+                    current.restingBpm?.let { "$it bpm" }
+                        ?: current.healthRestingBpm?.let { "$it bpm, from Health Connect" }
+                        ?: "Not known",
+                )
                 LinkButton("Edit", onClick = { editing = true })
                 Hint("Injuries and conditions are kept in the coach chat, under What the coach knows.")
             }
@@ -76,12 +83,17 @@ fun SettingsScreen(container: AppContainer, nav: Navigator) {
             SettingsSection("Heart rate zones") {
                 val zones = saved.zones(today)
                 val source = if (saved.measuredMaxBpm != null) "measured" else "estimated from your age"
-                Hint("Maximum ${zones.maxBpm} bpm, $source.")
+                val resting = when {
+                    !zones.countsResting -> ""
+                    saved.restingBpm != null -> " Resting ${zones.restingBpm} bpm, as you entered it."
+                    else -> " Resting ${zones.restingBpm} bpm, Health Connect's 7-day average."
+                }
+                Hint("Maximum ${zones.maxBpm} bpm, $source.$resting")
                 if (editingZones) {
                     ZonesEditor(
                         zones = zones,
                         onSave = { starts ->
-                            val custom = starts.takeIf { it != HeartRateZones.defaultStarts(zones.maxBpm) }
+                            val custom = starts.takeIf { it != HeartRateZones.defaultStarts(zones.maxBpm, zones.restingBpm) }
                             scope.launch { container.trainingDao.saveProfile(saved.copy(zoneStarts = custom?.let(HeartRateZones::encode))) }
                             editingZones = false
                         },
@@ -90,8 +102,11 @@ fun SettingsScreen(container: AppContainer, nav: Navigator) {
                 } else {
                     Zone.entries.forEach { zone -> ZoneKey(zone, zone.label, zones.bpmText(zone)) }
                     Hint(
-                        if (zones.isCustom) "Set by you. They stay put if your maximum changes."
-                        else "From 60, 70, 80 and 90% of your maximum.",
+                        when {
+                            zones.isCustom -> "Set by you. They stay put if your maximum or resting heart rate changes."
+                            zones.countsResting -> "Each starts 60, 70, 80 or 90% of the way from resting to maximum."
+                            else -> "From 60, 70, 80 and 90% of your maximum. Add a resting heart rate under About you to count it too."
+                        },
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                         LinkButton("Edit zones", onClick = { editingZones = true })
@@ -207,13 +222,16 @@ private fun ProfileEditor(existing: ProfileEntity?, onSave: (ProfileEntity) -> U
     var weight by rememberSaveable { mutableStateOf(existing?.weightKg?.let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString() }.orEmpty()) }
     var sex by rememberSaveable { mutableStateOf(existing?.sex?.let(Sex::valueOf)) }
     var measuredMax by rememberSaveable { mutableStateOf(existing?.measuredMaxBpm?.toString().orEmpty()) }
+    var restingText by rememberSaveable { mutableStateOf(existing?.restingBpm?.toString().orEmpty()) }
     val year = birthYear.toIntOrNull()
     val kilograms = weight.toDoubleOrNull()
     val max = measuredMax.toIntOrNull()
+    val resting = restingText.toIntOrNull()
     val chosenSex = sex
     val valid = year != null && year in 1920..LocalDate.now().year - 13 &&
         kilograms != null && kilograms in 30.0..250.0 && chosenSex != null &&
-        (measuredMax.isBlank() || (max != null && max in 100..230))
+        (measuredMax.isBlank() || (max != null && max in 100..230)) &&
+        (restingText.isBlank() || (resting != null && resting in HeartRateZones.RESTING_RANGE))
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -231,6 +249,13 @@ private fun ProfileEditor(existing: ProfileEntity?, onSave: (ProfileEntity) -> U
             numeric = true,
             placeholder = "Leave empty to estimate from age",
         )
+        HTextField(
+            restingText,
+            { restingText = it.filter(Char::isDigit).take(3) },
+            "Resting heart rate (optional)",
+            numeric = true,
+            placeholder = "Leave empty to use Health Connect",
+        )
         PrimaryButton("Save", enabled = valid, onClick = {
             onSave(
                 (existing ?: ProfileEntity(birthYear = requireNotNull(year))).copy(
@@ -238,6 +263,7 @@ private fun ProfileEditor(existing: ProfileEntity?, onSave: (ProfileEntity) -> U
                     weightKg = requireNotNull(kilograms),
                     sex = requireNotNull(chosenSex).name,
                     measuredMaxBpm = max,
+                    restingBpm = resting,
                 ),
             )
         })

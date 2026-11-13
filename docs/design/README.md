@@ -45,7 +45,7 @@ The code is in `app/src/main/java/app/haanf/ui/theme` (colours, type, icons) and
 - First run, in order: welcome, About you with the health check, connect your watch, the first benchmark. While the benchmark is paused (see [benchmarks.md](../benchmarks.md)), first run ends after the watch step. The program and coach also open without a score, and Progress has no VO2max card.
 - Three tabs: Program, Coach and Progress.
 - History and vitals are part of Progress.
-- Settings opens from the top of Progress. It holds About you, heart rate zones (with "Edit zones" for where Zones 2 to 5 start), your watch, the coach's provider, key, model and tone, Health Connect sharing, export, and the Lab.
+- Settings opens from the top of Progress. It holds About you (with an optional resting heart rate), heart rate zones (with where they come from, and "Edit zones" for where Zones 2 to 5 start), your watch, the coach's provider, key, model and tone, Health Connect sharing, export, and the Lab.
 - The coach's key screen opens from the Coach tab. With no key saved, it is the whole tab. With a key saved, the settings button next to the chat button at the top of the Coach tab opens it, and so does Coach in Settings.
 - The Lab holds the Phase 0 tools: the heart rate tool, the talk test recorder and the Health Connect report.
 - A running workout takes over the whole screen, with no tabs.
