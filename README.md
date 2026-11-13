@@ -70,22 +70,7 @@ Built screens on the emulator, with sample data.
 <a id="how-it-works"></a>
 ## How it works
 
-```mermaid
-flowchart LR
-    watch["Watch or strap<br/>Bluetooth Heart Rate Profile"] --> ble["heartrate.ble"]
-    ble --> source["HeartRateSource"]
-    source --> session["session<br/>LiveSessionController"]
-    session --> workout["workout<br/>WorkoutController"]
-    sensors["GPS and barometer"] --> workout
-    workout --> room[("Room database")]
-    workout <--> coach["ai.CoachHarness"]
-    health["Health Connect<br/>read only"] --> vitals["health"]
-    vitals --> coach
-    coach -- "CoachContext snapshot" --> llm["Claude or OpenRouter<br/>your own key"]
-    llm -- "tool calls" --> rules{"AiWorkoutRules"}
-    rules -- "approved" --> workout
-    coach -- "spoken cue" --> voice["Offline voice"]
-```
+<img src="docs/readme/architecture.png" alt="Architecture: a watch streams heart rate over Bluetooth to the live session, which feeds the workout controller along with GPS and the barometer. The workout controller saves to Room and works with the coach harness. The coach reads Health Connect and sends a snapshot to Claude or OpenRouter. The AI's tool calls pass AiWorkoutRules before any change reaches the workout." width="100%">
 
 - **One boundary per device.** `HeartRateSource` is the only thing workout logic knows about a wearable. A new watch means a new source, not a change to sessions or workouts.
 - **Workouts run outside the screens.** `WorkoutController` owns the steps, timers and speech, so a session survives the screen turning off and the app going to the background.
