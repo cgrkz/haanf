@@ -39,7 +39,7 @@ class WorkoutPlannerTest {
         put("target", target)
     }
 
-    private fun workout(minutes: Double, target: String = "easy"): JsonObject = buildJsonObject {
+    private fun workout(minutes: Double, target: String = "zone_2"): JsonObject = buildJsonObject {
         put("title", "Workout")
         put("reason", "Because")
         putJsonArray("steps") { add(step("Main", minutes, target)) }
@@ -137,7 +137,7 @@ class WorkoutPlannerTest {
     private val shown = ProposedWorkout(
         "Easy run",
         "Because",
-        listOf(ProposedStep("Easy", 30.0, app.haanf.training.Zone.EASY)),
+        listOf(ProposedStep("Easy", 30.0, app.haanf.training.Zone.ZONE_2)),
     )
 
     @Test
@@ -159,7 +159,7 @@ class WorkoutPlannerTest {
 
     @Test
     fun `something else rejects anything harder`() {
-        llm.then { propose(workout(25.0, "hard")) }
+        llm.then { propose(workout(25.0, "zone_4")) }
         val outcome = runBlocking { planner.plan(checkIn, shown, easier = false) }
         assertTrue(outcome is PlanOutcome.Fallback)
     }

@@ -18,25 +18,25 @@ class AiWorkoutRulesTest {
         hardProgramDays = emptyList(),
         nextProgramSessionHard = false,
     )
-    private val easy = ProposedWorkout("Easy", "", listOf(ProposedStep("Easy", 30.0, Zone.EASY)))
+    private val easy = ProposedWorkout("Easy", "", listOf(ProposedStep("Easy", 30.0, Zone.ZONE_2)))
     private val intervals = ProposedWorkout(
         "Intervals",
         "",
         listOf(
-            ProposedStep("Warm up", 10.0, Zone.EASY),
-            ProposedStep("Hard", 4.0, Zone.HARD),
-            ProposedStep("Recover", 3.0, Zone.EASY),
-            ProposedStep("Hard", 4.0, Zone.HARD),
-            ProposedStep("Cool down", 5.0, Zone.EASY),
+            ProposedStep("Warm up", 10.0, Zone.ZONE_2),
+            ProposedStep("Hard", 4.0, Zone.ZONE_4),
+            ProposedStep("Recover", 3.0, Zone.ZONE_2),
+            ProposedStep("Hard", 4.0, Zone.ZONE_4),
+            ProposedStep("Cool down", 5.0, Zone.ZONE_2),
         ),
     )
     private val veryHard = ProposedWorkout(
         "Very hard",
         "",
         listOf(
-            ProposedStep("Warm up", 10.0, Zone.EASY),
-            ProposedStep("Very hard", 4.0, Zone.VERY_HARD),
-            ProposedStep("Cool down", 5.0, Zone.EASY),
+            ProposedStep("Warm up", 10.0, Zone.ZONE_2),
+            ProposedStep("Very hard", 4.0, Zone.ZONE_5),
+            ProposedStep("Cool down", 5.0, Zone.ZONE_2),
         ),
     )
 
@@ -56,7 +56,7 @@ class AiWorkoutRulesTest {
 
     @Test
     fun `must be at least 5 minutes and have steps`() {
-        val short = ProposedWorkout("Short", "", listOf(ProposedStep("Easy", 3.0, Zone.EASY)))
+        val short = ProposedWorkout("Short", "", listOf(ProposedStep("Easy", 3.0, Zone.ZONE_2)))
         assertEquals(1, check(short).size)
         assertTrue(check(easy.copy(steps = emptyList())).isNotEmpty())
     }
@@ -107,15 +107,15 @@ class AiWorkoutRulesTest {
 
     @Test
     fun `a very hard step lasts at most 4 minutes`() {
-        val long = veryHard.copy(steps = veryHard.steps.map { if (it.target == Zone.VERY_HARD) it.copy(minutes = 5.0) else it })
+        val long = veryHard.copy(steps = veryHard.steps.map { if (it.target == Zone.ZONE_5) it.copy(minutes = 5.0) else it })
         assertEquals(1, check(long).size)
     }
 
     @Test
     fun `hard work needs a warm up and a cool down`() {
-        val cold = ProposedWorkout("Cold", "", listOf(ProposedStep("Hard", 10.0, Zone.HARD), ProposedStep("Easy", 5.0, Zone.EASY)))
+        val cold = ProposedWorkout("Cold", "", listOf(ProposedStep("Hard", 10.0, Zone.ZONE_4), ProposedStep("Easy", 5.0, Zone.ZONE_2)))
         assertEquals(1, check(cold).size)
-        val abrupt = ProposedWorkout("Abrupt", "", listOf(ProposedStep("Easy", 10.0, Zone.EASY), ProposedStep("Hard", 10.0, Zone.HARD)))
+        val abrupt = ProposedWorkout("Abrupt", "", listOf(ProposedStep("Easy", 10.0, Zone.ZONE_2), ProposedStep("Hard", 10.0, Zone.ZONE_4)))
         assertEquals(1, check(abrupt).size)
     }
 
@@ -142,8 +142,8 @@ class AiWorkoutRulesTest {
     fun `easing off is checked for really being easier`() {
         val shorter = intervals.copy(steps = intervals.steps.dropLast(1))
         assertTrue(AiWorkoutRules.checkChange(intervals, shorter, increase = false, context).isEmpty())
-        assertEquals(1, AiWorkoutRules.checkChange(easy, intervals.copy(steps = listOf(ProposedStep("Hard", 30.0, Zone.HARD))), false, context).size)
-        val longer = easy.copy(steps = listOf(ProposedStep("Easy", 40.0, Zone.EASY)))
+        assertEquals(1, AiWorkoutRules.checkChange(easy, intervals.copy(steps = listOf(ProposedStep("Hard", 30.0, Zone.ZONE_4))), false, context).size)
+        val longer = easy.copy(steps = listOf(ProposedStep("Easy", 40.0, Zone.ZONE_2)))
         assertEquals(1, AiWorkoutRules.checkChange(easy, longer, increase = false, context).size)
     }
 
@@ -156,24 +156,24 @@ class AiWorkoutRulesTest {
 
     @Test
     fun `make it easier must be easier, and never harder`() {
-        val shorter = intervals.copy(steps = intervals.steps.dropLast(1) + ProposedStep("Cool down", 3.0, Zone.EASY))
+        val shorter = intervals.copy(steps = intervals.steps.dropLast(1) + ProposedStep("Cool down", 3.0, Zone.ZONE_2))
         assertTrue(AiWorkoutRules.checkAlternative(intervals, shorter, easier = true).isEmpty())
-        val gentler = intervals.copy(steps = intervals.steps.map { if (it.isHard) it.copy(target = Zone.EASY) else it })
+        val gentler = intervals.copy(steps = intervals.steps.map { if (it.isHard) it.copy(target = Zone.ZONE_2) else it })
         assertTrue(AiWorkoutRules.checkAlternative(intervals, gentler, easier = true).isEmpty())
         assertTrue(AiWorkoutRules.checkAlternative(intervals, intervals, easier = true).isNotEmpty())
-        val harder = intervals.copy(steps = intervals.steps.map { if (it.isHard) it.copy(target = Zone.VERY_HARD) else it })
+        val harder = intervals.copy(steps = intervals.steps.map { if (it.isHard) it.copy(target = Zone.ZONE_5) else it })
         assertTrue(AiWorkoutRules.checkAlternative(intervals, harder, easier = true).isNotEmpty())
-        val longer = easy.copy(steps = listOf(ProposedStep("Easy", 40.0, Zone.EASY)))
+        val longer = easy.copy(steps = listOf(ProposedStep("Easy", 40.0, Zone.ZONE_2)))
         assertTrue(AiWorkoutRules.checkAlternative(easy, longer, easier = true).isNotEmpty())
     }
 
     @Test
     fun `something else may change shape but never add intensity`() {
-        val different = easy.copy(steps = listOf(ProposedStep("Easy", 20.0, Zone.EASY), ProposedStep("Recovery", 10.0, Zone.RECOVERY)))
+        val different = easy.copy(steps = listOf(ProposedStep("Easy", 20.0, Zone.ZONE_2), ProposedStep("Recovery", 10.0, Zone.ZONE_1)))
         assertTrue(AiWorkoutRules.checkAlternative(easy, different, easier = false).isEmpty())
         assertTrue(AiWorkoutRules.checkAlternative(easy, easy, easier = false).isNotEmpty())
         assertTrue(AiWorkoutRules.checkAlternative(easy, intervals, easier = false).isNotEmpty())
-        val moreHard = intervals.copy(steps = intervals.steps + ProposedStep("Hard", 4.0, Zone.HARD))
+        val moreHard = intervals.copy(steps = intervals.steps + ProposedStep("Hard", 4.0, Zone.ZONE_4))
         assertTrue(AiWorkoutRules.checkAlternative(intervals, moreHard, easier = false).isNotEmpty())
     }
 }

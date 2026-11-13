@@ -11,11 +11,11 @@ class PlanEditsTest {
     private val plan = WorkoutPlan(
         "Intervals",
         listOf(
-            WorkoutStep("Warm up", 600, Zone.EASY),
-            WorkoutStep("Hard 1", 240, Zone.HARD),
-            WorkoutStep("Recover", 180, Zone.EASY),
-            WorkoutStep("Hard 2", 240, Zone.HARD),
-            WorkoutStep("Cool down", 300, Zone.EASY),
+            WorkoutStep("Warm up", 600, Zone.ZONE_2),
+            WorkoutStep("Hard 1", 240, Zone.ZONE_4),
+            WorkoutStep("Recover", 180, Zone.ZONE_2),
+            WorkoutStep("Hard 2", 240, Zone.ZONE_4),
+            WorkoutStep("Cool down", 300, Zone.ZONE_2),
         ),
     )
 
@@ -25,20 +25,20 @@ class PlanEditsTest {
         assertEquals(plan.positionAt(699)!!.step.label, edited.positionAt(699)!!.step.label)
         assertEquals(600, edited.steps[0].seconds)
         assertEquals(100, edited.steps[1].seconds)
-        assertEquals(Zone.HARD, edited.steps[1].target)
+        assertEquals(Zone.ZONE_4, edited.steps[1].target)
     }
 
     @Test
     fun `easing lowers what is left by one zone`() {
         val edited = PlanEdits.apply(plan, 700, PlanChange.EASE, 0)
-        assertTrue(edited.steps.drop(2).none { it.target == Zone.HARD })
+        assertTrue(edited.steps.drop(2).none { it.target == Zone.ZONE_4 })
         assertEquals(plan.totalSeconds, edited.totalSeconds)
     }
 
     @Test
     fun `easing very hard work leaves it hard`() {
-        val veryHard = WorkoutPlan("v", listOf(WorkoutStep("Very hard", 240, Zone.VERY_HARD)))
-        assertEquals(Zone.HARD, PlanEdits.apply(veryHard, 0, PlanChange.EASE, 0).steps.single().target)
+        val veryHard = WorkoutPlan("v", listOf(WorkoutStep("Very hard", 240, Zone.ZONE_5)))
+        assertEquals(Zone.ZONE_4, PlanEdits.apply(veryHard, 0, PlanChange.EASE, 0).steps.single().target)
     }
 
     @Test
@@ -66,9 +66,9 @@ class PlanEditsTest {
     @Test
     fun `intensifying raises what is left but keeps the cool down easy`() {
         val edited = PlanEdits.apply(plan, 650, PlanChange.INTENSIFY, 0)
-        assertEquals(Zone.EASY, edited.steps.last().target)
-        assertEquals(Zone.HARD, edited.steps.first { it.label == "Recover" }.target)
-        assertEquals(Zone.EASY, edited.steps[0].target)
+        assertEquals(Zone.ZONE_2, edited.steps.last().target)
+        assertEquals(Zone.ZONE_3, edited.steps.first { it.label == "Recover" }.target)
+        assertEquals(Zone.ZONE_2, edited.steps[0].target)
     }
 
     @Test

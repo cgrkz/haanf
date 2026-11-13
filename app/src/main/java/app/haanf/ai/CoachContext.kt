@@ -5,6 +5,7 @@ import app.haanf.data.CoachFactEntity
 import app.haanf.data.TalkAnswer
 import app.haanf.data.TalkCheckEntity
 import app.haanf.data.WorkoutEntity
+import app.haanf.data.zoneSeconds
 import app.haanf.health.VitalTrend
 import app.haanf.health.Vitals
 import app.haanf.talktest.TrainingActivity
@@ -45,11 +46,16 @@ object CoachContext {
         append("${snapshot.weightKg} kg.\n")
         val source = if (snapshot.maxIsMeasured) "measured" else "estimated from age"
         append("Maximum heart rate ${snapshot.zones.maxBpm} bpm ($source).\n")
-        val zones = listOf(Zone.EASY, Zone.HARD, Zone.VERY_HARD).joinToString {
+        val zones = Zone.entries.joinToString {
             val range = snapshot.zones.rangeFor(it)
-            "${it.label} ${range.first}-${range.last}"
+            when (it) {
+                Zone.ZONE_1 -> "${it.label} under ${range.last + 1}"
+                Zone.ZONE_5 -> "${it.label} ${range.first} and over"
+                else -> "${it.label} ${range.first}-${range.last}"
+            }
         }
-        append("Heart rate zones: $zones.\n")
+        val zoneSource = if (snapshot.zones.isCustom) "set by the athlete" else "from 60, 70, 80 and 90% of maximum"
+        append("Heart rate zones, $zoneSource: $zones. Zone 3 and above count as hard.\n")
 
         append("\nInjuries, conditions and notes:\n")
         if (snapshot.facts.isEmpty()) append("None recorded.\n")
@@ -115,8 +121,7 @@ object CoachContext {
         val activity = activityName(workout)
         val kind = kindName(workout)
         val heartRate = workout.avgBpm?.let { "Heart rate average $it, highest ${workout.maxBpm} bpm" } ?: "No heart rate"
-        val zones = "easy ${workout.easySeconds / 60} min, hard ${workout.hardSeconds / 60} min, " +
-            "very hard ${workout.veryHardSeconds / 60} min"
+        val zones = workout.zoneSeconds().entries.joinToString { (zone, time) -> "${zone.label} ${time / 60} min" }
         return buildString {
             append("$day: ${workout.title} ($kind), $activity, ${WorkoutText.clock(seconds)}. $heartRate; $zones.")
             motion(workout, activity == "ride")?.let { append(" $it") }

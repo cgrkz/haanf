@@ -149,7 +149,7 @@ private fun EnrolledProgram(
         TodayCard(
             label = if (trainedToday) "Next session" else "Today",
             session = session,
-            easyTop = profile?.zones(today)?.rangeFor(Zone.EASY)?.last?.plus(1),
+            easyZone = profile?.zones(today)?.target(Zone.ZONE_2),
         ) {
             nav.open(
                 Dest.GetReady(
@@ -253,15 +253,15 @@ private fun UpcomingReset(warning: ProgramWarning, today: LocalDate) {
 }
 
 @Composable
-private fun TodayCard(label: String, session: ProgramSession, easyTop: Int?, onStart: () -> Unit) {
+private fun TodayCard(label: String, session: ProgramSession, easyZone: String?, onStart: () -> Unit) {
     HCard(color = HaanfColors.Primary, padding = PaddingValues(20.dp), spacing = 4.dp) {
         Text(label, style = body(15.sp, FontWeight.SemiBold), color = HaanfColors.White)
         Text(session.plan.title, style = condensed(40.sp, lineHeight = 1.05), color = HaanfColors.White)
         val detail = if (session.hard) {
-            "About ${session.minutes()} min, with warm-up, easy recoveries and cool-down. " +
+            "About ${session.minutes()} min, with warm-up, recoveries and cool-down. " +
                 "Rest well the day before and after."
         } else {
-            "${session.minutes()} min at an easy pace" + (easyTop?.let { ", under $it bpm." } ?: ".")
+            "${session.minutes()} min" + (easyZone?.let { " in $it." } ?: " in Zone 2.")
         }
         Text(
             detail,

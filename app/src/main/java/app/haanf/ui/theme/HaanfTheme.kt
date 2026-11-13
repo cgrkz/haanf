@@ -35,16 +35,17 @@ object HaanfColors {
 
 /** Zone colours passed a colour-blind check. Always show a zone's name with its colour. */
 fun Zone.color(): Color = when (this) {
-    Zone.RECOVERY -> Color(0xFF009FB0)
-    Zone.EASY -> Color(0xFF1F5BFF)
-    Zone.HARD -> Color(0xFFE8850C)
-    Zone.VERY_HARD -> Color(0xFFC93400)
+    Zone.ZONE_1 -> Color(0xFF009FB0)
+    Zone.ZONE_2 -> Color(0xFF1F5BFF)
+    Zone.ZONE_3 -> Color(0xFFF2B700)
+    Zone.ZONE_4 -> Color(0xFFE8850C)
+    Zone.ZONE_5 -> Color(0xFFC93400)
 }
 
-/** Dark text on Recovery and Hard, white on Easy and Very hard. */
+/** White on Zones 2 and 5, dark text on the rest. */
 fun Zone.onColor(): Color = when (this) {
-    Zone.RECOVERY, Zone.HARD -> HaanfColors.Text
-    Zone.EASY, Zone.VERY_HARD -> HaanfColors.White
+    Zone.ZONE_2, Zone.ZONE_5 -> HaanfColors.White
+    else -> HaanfColors.Text
 }
 
 val Barlow = FontFamily(

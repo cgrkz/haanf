@@ -8,11 +8,11 @@ class HeartRateRecoveryTest {
     private val plan = WorkoutPlan(
         "Intervals",
         listOf(
-            WorkoutStep("Warm up", 600, Zone.EASY),
-            WorkoutStep("Hard 1", 120, Zone.HARD),
-            WorkoutStep("Recover", 180, Zone.EASY),
-            WorkoutStep("Hard 2", 120, Zone.VERY_HARD),
-            WorkoutStep("Cool down", 300, Zone.EASY),
+            WorkoutStep("Warm up", 600, Zone.ZONE_2),
+            WorkoutStep("Hard 1", 120, Zone.ZONE_4),
+            WorkoutStep("Recover", 180, Zone.ZONE_2),
+            WorkoutStep("Hard 2", 120, Zone.ZONE_5),
+            WorkoutStep("Cool down", 300, Zone.ZONE_2),
         ),
     )
 
@@ -23,7 +23,7 @@ class HeartRateRecoveryTest {
 
     @Test
     fun `an easy plan has no hard step`() {
-        assertNull(HeartRateRecovery.lastHardStepEndSeconds(WorkoutPlan("Easy", listOf(WorkoutStep("Easy", 600, Zone.EASY)))))
+        assertNull(HeartRateRecovery.lastHardStepEndSeconds(WorkoutPlan("Easy", listOf(WorkoutStep("Easy", 600, Zone.ZONE_2)))))
     }
 
     @Test

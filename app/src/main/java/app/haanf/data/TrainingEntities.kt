@@ -20,6 +20,8 @@ data class ProfileEntity(
     val deviceSourceKind: String? = null,
     /** A [app.haanf.training.BikeType] name, for estimating watts. */
     val bikeType: String? = null,
+    /** Where Zones 2 to 5 start, if the athlete set them. Null follows their maximum. */
+    val zoneStarts: String? = null,
 )
 
 /** One workout from any mode. Only program workouts ever touch the program clock. */
@@ -41,10 +43,13 @@ data class WorkoutEntity(
     val deviceName: String? = null,
     val avgBpm: Int? = null,
     val maxBpm: Int? = null,
-    val recoverySeconds: Int = 0,
-    val easySeconds: Int = 0,
-    val hardSeconds: Int = 0,
-    val veryHardSeconds: Int = 0,
+    /** Where Zones 2 to 5 started for this workout. Null means the defaults for [zoneMaxBpm]. */
+    val zoneStarts: String? = null,
+    val zone1Seconds: Int = 0,
+    val zone2Seconds: Int = 0,
+    val zone3Seconds: Int = 0,
+    @ColumnInfo(defaultValue = "0") val zone4Seconds: Int = 0,
+    val zone5Seconds: Int = 0,
     val noReadingSeconds: Int = 0,
     val countedForProgram: Boolean = false,
     @ColumnInfo(defaultValue = "0") val plannedHard: Boolean = false,
@@ -154,3 +159,16 @@ data class WorkoutEventEntity(
     val text: String,
     val bpm: Int?,
 )
+
+/** Seconds in each zone, as saved. */
+fun WorkoutEntity.zoneSeconds(): Map<app.haanf.training.Zone, Int> = mapOf(
+    app.haanf.training.Zone.ZONE_1 to zone1Seconds,
+    app.haanf.training.Zone.ZONE_2 to zone2Seconds,
+    app.haanf.training.Zone.ZONE_3 to zone3Seconds,
+    app.haanf.training.Zone.ZONE_4 to zone4Seconds,
+    app.haanf.training.Zone.ZONE_5 to zone5Seconds,
+)
+
+/** The zones this workout was measured against. */
+fun WorkoutEntity.zones(): app.haanf.training.HeartRateZones? =
+    zoneMaxBpm?.let { app.haanf.training.HeartRateZones.of(it, zoneStarts) }

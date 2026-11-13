@@ -400,7 +400,7 @@ private fun PlanScreen(
 @Composable
 private fun ProposedSteps(workout: ProposedWorkout, zones: HeartRateZones?) {
     val description = workout.steps.joinToString(", ") {
-        "${it.minutes.roundToInt()} minutes ${it.target.label.lowercase()}"
+        "${it.minutes.roundToInt()} minutes in ${it.target.label}"
     }
     HCard(spacing = 0.dp) {
         ZoneBar(workout.steps.map { it.target to it.minutes.toFloat() }, description = description)

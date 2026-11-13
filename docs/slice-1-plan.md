@@ -64,7 +64,7 @@ Every line carries the time into the workout and the heart rate at that moment.
 - Benchmark walks are called walks.
 - Each workout says whether it was a program, coach or free workout, and includes the effort rating and heart rate drop.
 
-**Talk tests.** Without planned steps, heart rate decides what counts as a hard effort. Hard or Very hard means no talk test, in the coach and on the screen.
+**Talk tests.** Without planned steps, heart rate decides what counts as a hard effort. Zone 3 and above means no talk test, in the coach and on the screen. These were Hard and Very hard until the five numbered zones of 13 November 2026.
 
 **Screens.**
 - Get ready explains GPS and asks for the bike type.

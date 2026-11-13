@@ -27,21 +27,22 @@ object Programs {
     private fun easy(minutes: Int) = ProgramSession(
         plan = WorkoutPlan(
             title = "Easy $minutes minutes",
-            steps = listOf(WorkoutStep("Easy", minutes * MINUTE, Zone.EASY)),
+            steps = listOf(WorkoutStep("Easy", minutes * MINUTE, Zone.ZONE_2)),
         ),
         hard = false,
     )
 
     private fun intervals(reps: Int, hardMinutes: Int, target: Zone) = ProgramSession(
         plan = WorkoutPlan(
-            title = "$reps x $hardMinutes minutes ${target.label.lowercase()}",
+            // A no-break space keeps "Zone 4" together when the title wraps.
+            title = "$reps x $hardMinutes minutes in Zone\u00A0${target.number}",
             steps = buildList {
-                add(WorkoutStep("Warm up", 10 * MINUTE, Zone.EASY))
+                add(WorkoutStep("Warm up", 10 * MINUTE, Zone.ZONE_2))
                 repeat(reps) { rep ->
-                    add(WorkoutStep("${target.label} ${rep + 1} of $reps", hardMinutes * MINUTE, target))
-                    if (rep < reps - 1) add(WorkoutStep("Recover", 3 * MINUTE, Zone.EASY))
+                    add(WorkoutStep("Interval ${rep + 1} of $reps", hardMinutes * MINUTE, target))
+                    if (rep < reps - 1) add(WorkoutStep("Recover", 3 * MINUTE, Zone.ZONE_2))
                 }
-                add(WorkoutStep("Cool down", 5 * MINUTE, Zone.EASY))
+                add(WorkoutStep("Cool down", 5 * MINUTE, Zone.ZONE_1))
             },
         ),
         hard = true,
@@ -60,10 +61,10 @@ object Programs {
             week(easy(25), easy(25), easy(30)),
             week(easy(30), easy(30), easy(35)),
             week(easy(25), easy(25), easy(30)),
-            week(easy(30), intervals(4, 2, Zone.HARD), easy(35)),
-            week(easy(30), intervals(4, 3, Zone.HARD), easy(35)),
-            week(easy(30), intervals(4, 4, Zone.HARD), easy(40)),
-            week(easy(30), intervals(4, 4, Zone.VERY_HARD), easy(40)),
+            week(easy(30), intervals(4, 2, Zone.ZONE_4), easy(35)),
+            week(easy(30), intervals(4, 3, Zone.ZONE_4), easy(35)),
+            week(easy(30), intervals(4, 4, Zone.ZONE_4), easy(40)),
+            week(easy(30), intervals(4, 4, Zone.ZONE_5), easy(40)),
         ),
     )
 

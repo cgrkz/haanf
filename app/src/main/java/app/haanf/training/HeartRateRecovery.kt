@@ -9,7 +9,7 @@ object HeartRateRecovery {
 
     /** Seconds from the start of [plan] to the end of its last hard step, or null with none. */
     fun lastHardStepEndSeconds(plan: WorkoutPlan): Int? {
-        val last = plan.steps.indexOfLast { it.target == Zone.HARD || it.target == Zone.VERY_HARD }
+        val last = plan.steps.indexOfLast { it.target.isHard }
         if (last < 0) return null
         return plan.steps.take(last + 1).sumOf { it.seconds }
     }

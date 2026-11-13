@@ -1,6 +1,7 @@
 package app.haanf.training
 
 import app.haanf.data.WorkoutEntity
+import app.haanf.data.zoneSeconds
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -14,11 +15,6 @@ object WeekTotals {
             val day = Instant.ofEpochMilli(it.startedAtMs).atZone(zone).toLocalDate()
             !day.isBefore(monday) && !day.isAfter(today)
         }
-        return mapOf(
-            Zone.RECOVERY to thisWeek.sumOf { it.recoverySeconds } / 60,
-            Zone.EASY to thisWeek.sumOf { it.easySeconds } / 60,
-            Zone.HARD to thisWeek.sumOf { it.hardSeconds } / 60,
-            Zone.VERY_HARD to thisWeek.sumOf { it.veryHardSeconds } / 60,
-        )
+        return Zone.entries.associateWith { zone -> thisWeek.sumOf { it.zoneSeconds().getValue(zone) } / 60 }
     }
 }

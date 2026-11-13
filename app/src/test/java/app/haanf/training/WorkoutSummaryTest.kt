@@ -16,8 +16,8 @@ class WorkoutSummaryTest {
             zones = zones,
         )
         assertEquals(8, summary.durationSeconds)
-        assertEquals(4, summary.zoneSeconds[Zone.EASY])
-        assertEquals(4, summary.zoneSeconds[Zone.HARD])
+        assertEquals(4, summary.zoneSeconds[Zone.ZONE_2])
+        assertEquals(4, summary.zoneSeconds[Zone.ZONE_3])
         assertEquals(0, summary.noReadingSeconds)
         assertEquals(135, summary.avgBpm)
         assertEquals(150, summary.maxBpm)
@@ -31,7 +31,7 @@ class WorkoutSummaryTest {
             endedAtMs = 62_000,
             zones = zones,
         )
-        assertEquals(12, summary.zoneSeconds[Zone.EASY])
+        assertEquals(12, summary.zoneSeconds[Zone.ZONE_2])
         assertEquals(50, summary.noReadingSeconds)
     }
 

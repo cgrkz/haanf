@@ -31,7 +31,7 @@ class ProgramsTest {
     @Test
     fun `saves very hard intervals for the final week`() {
         val veryHardWeeks = program.weeks.indices.filter { week ->
-            program.weeks[week].sessions.any { session -> session.plan.steps.any { it.target == Zone.VERY_HARD } }
+            program.weeks[week].sessions.any { session -> session.plan.steps.any { it.target == Zone.ZONE_5 } }
         }
         assertEquals(listOf(7), veryHardWeeks)
     }
@@ -39,11 +39,11 @@ class ProgramsTest {
     @Test
     fun `builds interval sessions with warm up, recoveries and cool down`() {
         val plan = program.session(week = 7, session = 1).plan
-        assertEquals("4 x 4 minutes hard", plan.title)
-        assertEquals("Warm up", plan.steps.first().label)
-        assertEquals("Cool down", plan.steps.last().label)
-        assertEquals(3, plan.steps.count { it.label == "Recover" })
-        assertEquals(4, plan.steps.count { it.target == Zone.HARD })
+        assertEquals("4 x 4 minutes in Zone\u00A04", plan.title)
+        assertEquals(Zone.ZONE_2, plan.steps.first { it.label == "Warm up" }.target)
+        assertEquals(Zone.ZONE_1, plan.steps.last { it.label == "Cool down" }.target)
+        assertEquals(3, plan.steps.count { it.label == "Recover" && it.target == Zone.ZONE_2 })
+        assertEquals(4, plan.steps.count { it.target == Zone.ZONE_4 })
         assertEquals((10 + 16 + 9 + 5) * 60, plan.totalSeconds)
     }
 

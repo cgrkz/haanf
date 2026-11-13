@@ -34,7 +34,7 @@ class CoachContextTest {
         workouts = listOf(
             WorkoutEntity(
                 startedAtMs = 0, endedAtMs = 1_800_000, title = "Easy 30 minutes", activity = "TREADMILL",
-                origin = "PROGRAM", deviceName = "SECRET-DEVICE-NAME", avgBpm = 128, maxBpm = 140, easySeconds = 1700,
+                origin = "PROGRAM", deviceName = "SECRET-DEVICE-NAME", avgBpm = 128, maxBpm = 140, zone2Seconds = 1700,
             ),
         ),
         talkChecks = listOf(TalkCheckEntity(workoutId = 1, atMs = 0, bpm = 140, answer = "SOME_EFFORT")),

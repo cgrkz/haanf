@@ -28,12 +28,7 @@ object CoachTools {
         )
     }
 
-    val TARGETS = mapOf(
-        "recovery" to Zone.RECOVERY,
-        "easy" to Zone.EASY,
-        "hard" to Zone.HARD,
-        "very_hard" to Zone.VERY_HARD,
-    )
+    val TARGETS = Zone.entries.associateBy { "zone_${it.number}" }
 
     fun string(description: String): JsonObject = buildJsonObject {
         put("type", "string")
@@ -75,7 +70,7 @@ object CoachTools {
                             put("type", "number")
                             put("description", "Length in minutes.")
                         }
-                        put("target", choice("Target heart rate zone.", TARGETS.keys))
+                        put("target", choice("Target heart rate zone. Zone 3 and above count as hard.", TARGETS.keys))
                     }
                     putJsonArray("required") {
                         add(JsonPrimitive("label"))

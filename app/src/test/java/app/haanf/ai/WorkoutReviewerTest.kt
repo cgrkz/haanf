@@ -21,8 +21,8 @@ class WorkoutReviewerTest {
     private val start = 1_793_897_649_850L
     private val ride = WorkoutEntity(
         id = 5, startedAtMs = start, endedAtMs = start + 1_400_000, title = "Free workout", activity = "CYCLING",
-        origin = "FREE", zoneMaxBpm = 193, hrSessionId = 7, avgBpm = 149, maxBpm = 185, easySeconds = 447,
-        hardSeconds = 421, veryHardSeconds = 525, coached = true, distanceMetres = 4_200.0, movingSeconds = 1_300,
+        origin = "FREE", zoneMaxBpm = 193, hrSessionId = 7, avgBpm = 149, maxBpm = 185, zone2Seconds = 447,
+        zone4Seconds = 421, zone5Seconds = 525, coached = true, distanceMetres = 4_200.0, movingSeconds = 1_300,
         maxSpeedMps = 8.4, climbMetres = 91.0, descentMetres = 88.0, avgWatts = 120, bikeType = "HYBRID",
     )
     private val earlier = ride.copy(id = 4, startedAtMs = start - 86_400_000, endedAtMs = start - 86_400_000 + 1_800_000, title = "Yesterday's ride")

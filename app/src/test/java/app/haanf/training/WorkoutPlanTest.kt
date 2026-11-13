@@ -8,8 +8,8 @@ class WorkoutPlanTest {
     private val plan = WorkoutPlan(
         title = "Test",
         steps = listOf(
-            WorkoutStep("Warm up", 60, Zone.EASY),
-            WorkoutStep("Hard", 30, Zone.HARD),
+            WorkoutStep("Warm up", 60, Zone.ZONE_2),
+            WorkoutStep("Hard", 30, Zone.ZONE_4),
         ),
     )
 

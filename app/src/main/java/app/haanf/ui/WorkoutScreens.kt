@@ -60,16 +60,17 @@ import app.haanf.data.BenchmarkEntity
 import app.haanf.data.SplitEntity
 import app.haanf.data.TalkAnswer
 import app.haanf.data.WorkoutEntity
+import app.haanf.data.zoneSeconds
 import app.haanf.program.Programs
 import app.haanf.talktest.TrainingActivity
 import app.haanf.training.BenchmarkInputs
 import app.haanf.training.BikeType
-import app.haanf.training.MotionNow
 import app.haanf.training.FitnessNorms
 import app.haanf.training.HeartRateZones
+import app.haanf.training.MotionNow
+import app.haanf.training.RockportWalkTest
 import app.haanf.training.SafetyRules
 import app.haanf.training.Sex
-import app.haanf.training.RockportWalkTest
 import app.haanf.training.WalkOutcome
 import app.haanf.training.WorkoutStep
 import app.haanf.training.Zone
@@ -88,8 +89,8 @@ import app.haanf.workout.WorkoutRequest
 import app.haanf.workout.WorkoutState
 import app.haanf.workout.WorkoutText
 import app.haanf.workout.inHardEffort
-import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
 private val QUICK_REPLIES = listOf("Too easy", "OK", "Too hard")
 
@@ -97,7 +98,6 @@ private val QUICK_REPLIES = listOf("Too easy", "OK", "Too hard")
 private const val NO_READING = "- -"
 private val EFFORT_ENDS = "Very easy" to "All out"
 
-private fun Zone.isHard() = this == Zone.HARD || this == Zone.VERY_HARD
 
 // ---------------------------------------------------------------- Get ready
 
@@ -336,14 +336,14 @@ fun LiveWorkoutScreen(container: AppContainer, running: WorkoutState.Running) {
             LiveBanners(live.inDropout, running.highHeartRate, coach.offline, live.device?.name)
             when {
                 request.benchmark != null -> BenchmarkLive(running, bpm, look.content)
-                step != null && step.target.isHard() -> IntervalLive(running, step, bpm, zones, look.content)
+                step != null && step.target.isHard -> IntervalLive(running, step, bpm, zones, look.content)
                 else -> SteadyLive(running, step, bpm, zones, look.content)
             }
             if (request.benchmark == null) {
                 running.stepIndex?.let { index ->
                     val next = plan?.steps?.getOrNull(index + 1)
                     Text(
-                        if (next != null) "Then ${WorkoutText.clock(next.seconds)} ${next.target.label.lowercase()}" else "Then you're done",
+                        if (next != null) "Then ${WorkoutText.clock(next.seconds)} in ${next.target.label}" else "Then you're done",
                         style = body(17.sp, FontWeight.SemiBold),
                         color = look.content,
                         modifier = Modifier.padding(bottom = 12.dp),
@@ -513,16 +513,13 @@ private fun ClimbLine(motion: MotionNow, content: Color) {
 
 private fun zoneSentence(current: Zone?, target: Zone?, zones: HeartRateZones): String {
     if (current == null) return "Waiting for heart rate"
-    if (target == null) return "In your ${current.label.lowercase()} zone."
+    if (target == null) return "In ${current.label}."
     val range = zones.rangeFor(target)
     return when {
-        current == target -> when (target) {
-            Zone.RECOVERY, Zone.EASY -> "In your ${target.label.lowercase()} zone. Stay under ${range.last + 1}."
-            Zone.HARD -> "In your hard zone. Stay under ${range.last + 1}."
-            Zone.VERY_HARD -> "In your very hard zone."
-        }
-        current.ordinal > target.ordinal -> "Above your ${target.label.lowercase()} zone. Ease off to under ${range.last + 1}."
-        else -> "Below your ${target.label.lowercase()} zone. Aim for ${range.first} or more."
+        current == target && target == Zone.ZONE_5 -> "In ${target.label}."
+        current == target -> "In ${target.label}. Stay under ${range.last + 1}."
+        current > target -> "Above ${target.label}. Ease off to under ${range.last + 1}."
+        else -> "Below ${target.label}. Aim for ${range.first} or more."
     }
 }
 
@@ -577,7 +574,7 @@ private fun ColumnScope.IntervalLive(
 ) {
     val plan = requireNotNull(running.request.plan)
     val index = requireNotNull(running.stepIndex)
-    val efforts = plan.steps.withIndex().filter { it.value.target.isHard() }
+    val efforts = plan.steps.withIndex().filter { it.value.target.isHard }
     val effort = efforts.indexOfFirst { it.index == index } + 1
     Row(
         Modifier
@@ -613,11 +610,11 @@ private fun ColumnScope.IntervalLive(
         }
         val where = when {
             current == null -> "No reading"
-            current == step.target -> "In zone"
-            current.ordinal > step.target.ordinal -> "Above zone"
-            else -> "Below zone"
+            current == step.target -> "In ${step.target.label}"
+            current > step.target -> "Above ${step.target.label}"
+            else -> "Below ${step.target.label}"
         }
-        val target = if (step.target == Zone.VERY_HARD) "Target ${range.first} or more" else "Target ${range.first} to ${range.last}"
+        val target = if (step.target == Zone.ZONE_5) "Target ${range.first} or more" else "Target ${range.first} to ${range.last}"
         Text(
             "$where\n$target",
             style = body(17.sp, FontWeight.SemiBold, 1.25),
@@ -1048,12 +1045,7 @@ private fun BenchmarkResultCard(result: BenchmarkResult, firstScore: Boolean) {
 
 @Composable
 private fun ZoneCard(workout: WorkoutEntity) {
-    val zones = listOf(
-        Zone.RECOVERY to workout.recoverySeconds,
-        Zone.EASY to workout.easySeconds,
-        Zone.HARD to workout.hardSeconds,
-        Zone.VERY_HARD to workout.veryHardSeconds,
-    )
+    val zones = workout.zoneSeconds().toList()
     HCard(spacing = 8.dp) {
         Text("Time in each zone", style = body(17.sp, FontWeight.Bold), color = HaanfColors.Text)
         if (zones.all { it.second == 0 }) {
@@ -1067,6 +1059,7 @@ private fun ZoneCard(workout: WorkoutEntity) {
             zones.chunked(2).forEach { pair ->
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     pair.forEach { (zone, seconds) -> ZoneKey(zone, zone.label, Format.minutes(seconds), Modifier.weight(1f)) }
+                    if (pair.size == 1) Spacer(Modifier.weight(1f))
                 }
             }
         }

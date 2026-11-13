@@ -35,10 +35,10 @@ data class TimelineEntry(val elapsedSeconds: Int, val kind: TimelineKind, val te
 
 /**
  * True during a hard effort, when a talk test must not be asked. A planned step decides when
- * there is one. Otherwise heart rate does: Hard or Very hard counts.
+ * there is one. Otherwise heart rate does: Zone 3 and above counts.
  */
 fun WorkoutState.Running.inHardEffort(bpm: Int?): Boolean {
     val step = stepIndex?.let { request.plan?.steps?.getOrNull(it) }
     val zone = step?.target ?: bpm?.let(request.zones::zoneFor) ?: return false
-    return zone == Zone.HARD || zone == Zone.VERY_HARD
+    return zone.isHard
 }

@@ -26,12 +26,13 @@ The 14 designed screens are in `screens/*.dc.html`, laid out in `canvas.json`, a
 
 | Zone | Colour | Text on it |
 | --- | --- | --- |
-| Recovery | #009FB0 | #101418 |
-| Easy | #1F5BFF | White |
-| Hard | #E8850C | #101418 |
-| Very hard | #C93400 | White |
+| Zone 1 | #009FB0 | #101418 |
+| Zone 2 | #1F5BFF | White |
+| Zone 3 | #F2B700 | #101418 |
+| Zone 4 | #E8850C | #101418 |
+| Zone 5 | #C93400 | White |
 
-A zone's colour always appears with its name.
+A zone's colour always appears with its name. The designs had four named zones. Zone 3's yellow was added on 13 November 2026, when they became five numbered zones, and was chosen as the most distinct of five candidates under simulated protanopia, deuteranopia and tritanopia.
 
 **Shape.** 8 dp corners, flat cards with no shadows or borders, outline icons drawn from the design's SVG paths, and no emoji.
 
@@ -44,7 +45,7 @@ The code is in `app/src/main/java/app/haanf/ui/theme` (colours, type, icons) and
 - First run, in order: welcome, About you with the health check, connect your watch, the first benchmark. While the benchmark is paused (see [benchmarks.md](../benchmarks.md)), first run ends after the watch step. The program and coach also open without a score, and Progress has no VO2max card.
 - Three tabs: Program, Coach and Progress.
 - History and vitals are part of Progress.
-- Settings opens from the top of Progress. It holds About you, heart rate zones, your watch, the coach's provider, key, model and tone, Health Connect sharing, export, and the Lab.
+- Settings opens from the top of Progress. It holds About you, heart rate zones (with "Edit zones" for where Zones 2 to 5 start), your watch, the coach's provider, key, model and tone, Health Connect sharing, export, and the Lab.
 - The coach's key screen opens from the Coach tab. With no key saved, it is the whole tab. With a key saved, the settings button next to the chat button at the top of the Coach tab opens it, and so does Coach in Settings.
 - The Lab holds the Phase 0 tools: the heart rate tool, the talk test recorder and the Health Connect report.
 - A running workout takes over the whole screen, with no tabs.
@@ -78,12 +79,12 @@ These follow the same visual system and stay plain.
 | Connect your watch | Changed | The Pixel Watch 2 copy says to turn on Connected Fitness, because Phase 0 needed it. The Amazfit steps keep "Not yet tested with this watch". "Continue without a watch" works, and Get ready asks for a watch before a workout. The screenshot shows the search, since the emulator has no watch. |
 | First benchmark | Changed | Adds "Not now", which goes to the app with the program still locked. |
 | Program details | Changed | The stay-consistent box says coach and free workouts don't count, rather than only AI workouts. Adds "A draft plan, still under review", and a week-by-week list when opened from "See the full plan". Start asks for confirmation with the existing safety warning. With no benchmark scored, a benchmark card replaces Start. |
-| Program tab | Changed | Session names are the program's own ("4 x 2 minutes hard"), since programs are fixed. The warning names the real deadline ("by tomorrow"). Easy sessions describe their pace and bpm. A label says "Next session" if a program workout was already done today. |
+| Program tab | Changed | Session names are the program's own ("4 x 2 minutes in Zone 4"), since programs are fixed. The warning names the real deadline ("by tomorrow"). Easy sessions give their zone and bpm. A label says "Next session" if a program workout was already done today. |
 | Coach check-in | Changed | Feel has five choices in two rows. Keeps the optional note from the earlier check-in. "Last night" shows which day the data is from, not when the watch synced, because Health Connect doesn't say when a sync happened. "Start a free workout" sits under the main button. A settings button beside the chat button opens the coach's key screen. |
 | Coach recommendation | Changed | Each step shows its zone and bpm under its name. The design's line about the next benchmark is left out, because the planner doesn't return it. "Change my answers" returns to the check-in. |
 | Get ready | Changed | The talk test switch is "Talk test checks", shown only with the coach on, since the coach now asks the question. Adds the "Coach me" switch from the brief, and an "Allow the microphone" link when needed. |
 | Live: steady step | Changed | Shows elapsed time instead of distance when nothing measures distance. With the coach on, the coach's latest line appears, with "Talk to coach", or quick replies on a phone with no on-device speech. The emulator has none, so the screenshot shows quick replies. |
-| Live: hard interval | Matching | The step name is the program's own ("Hard 2 of 4"). |
+| Live: hard interval | Matching | The step name is the program's own ("Interval 2 of 4"). |
 | Talk test | Changed | No counting and no recording. The coach asks, and the answer is spoken or one of three buttons: Could talk, Some effort, Couldn't talk. Adds Skip. Never shown during a hard effort. |
 | Workout summary | Changed | The talk test line gives minutes into the workout, not the step, since steps aren't saved with workouts. Adds highest heart rate, and time with no reading when over 30 seconds. "Coach note" appears only when there's a review. |
 | Progress tab | Changed | The headline is estimated VO2max, because the talking threshold isn't measured yet. Vitals cover the last 4 weeks, not 6, matching what Haanf reads from Health Connect. The screenshot uses sample vitals, because the emulator has no Health Connect data. |

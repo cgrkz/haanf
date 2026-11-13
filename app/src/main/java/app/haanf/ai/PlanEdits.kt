@@ -64,7 +64,7 @@ object PlanEdits {
     }
 
     private fun extend(steps: List<WorkoutStep>, seconds: Int): List<WorkoutStep> {
-        val extra = WorkoutStep("Extra easy", seconds, Zone.EASY)
+        val extra = WorkoutStep("Extra easy", seconds, Zone.ZONE_2)
         return if (steps.isEmpty()) listOf(extra) else steps.dropLast(1) + extra + steps.last()
     }
 
@@ -74,19 +74,13 @@ object PlanEdits {
             if (index == steps.lastIndex && steps.size > 1) step else step.copy(target = harder(step.target))
         }
 
-    private fun isHard(step: WorkoutStep) = step.target == Zone.HARD || step.target == Zone.VERY_HARD
+    private fun isHard(step: WorkoutStep) = step.target.isHard
 
-    private fun easier(zone: Zone): Zone = when (zone) {
-        Zone.VERY_HARD -> Zone.HARD
-        Zone.HARD -> Zone.EASY
-        else -> zone
-    }
+    /** Hard steps drop a zone, down to Zone 2. Easy steps stay as they are. */
+    private fun easier(zone: Zone): Zone = if (zone.isHard) zone.easier() else zone
 
-    private fun harder(zone: Zone): Zone = when (zone) {
-        Zone.RECOVERY -> Zone.EASY
-        Zone.EASY -> Zone.HARD
-        else -> zone
-    }
+    /** Up a zone, but never into Zone 5: the AI may not make a session very hard. */
+    private fun harder(zone: Zone): Zone = if (zone < Zone.ZONE_4) zone.harder() else zone
 
     fun toProposal(plan: WorkoutPlan, reason: String) = ProposedWorkout(
         title = plan.title,

@@ -14,8 +14,8 @@ class WeekTotalsTest {
         title = "w",
         activity = "TREADMILL",
         origin = "FREE",
-        easySeconds = easyMinutes * 60,
-        hardSeconds = hardMinutes * 60,
+        zone2Seconds = easyMinutes * 60,
+        zone4Seconds = hardMinutes * 60,
     )
 
     @Test
@@ -30,9 +30,9 @@ class WeekTotalsTest {
             wednesday,
             ZoneOffset.UTC,
         )
-        assertEquals(50, minutes[Zone.EASY])
-        assertEquals(8, minutes[Zone.HARD])
-        assertEquals(0, minutes[Zone.VERY_HARD])
+        assertEquals(50, minutes[Zone.ZONE_2])
+        assertEquals(8, minutes[Zone.ZONE_4])
+        assertEquals(0, minutes[Zone.ZONE_5])
     }
 
     @Test

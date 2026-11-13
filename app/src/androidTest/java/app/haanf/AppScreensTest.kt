@@ -3,6 +3,7 @@ package app.haanf
 import android.accessibilityservice.AccessibilityService
 import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -11,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -27,6 +29,7 @@ import app.haanf.ui.HaanfRoot
 import app.haanf.ui.LabTool
 import app.haanf.ui.theme.HaanfTheme
 import app.haanf.workout.LiveLink
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -36,7 +39,6 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.concurrent.CopyOnWriteArrayList
 
 /** Exercises the screens on an emulator. Says nothing about real Bluetooth or microphones. */
 @RunWith(AndroidJUnit4::class)
@@ -85,6 +87,35 @@ class AppScreensTest {
         compose.onNodeWithContentDescription("Settings and Lab").performClick()
         waitForText(tool.title)
         compose.onNodeWithText(tool.title).performScrollTo().performClick()
+    }
+
+    @Test
+    fun zonesCanBeSetInSettingsAndPutBack() {
+        launch(onboarded = true)
+        TestSupport.seedProfile(container)
+        TestSupport.seedBenchmark(container)
+        show()
+        waitForText("Progress")
+        compose.onNodeWithText("Progress").performClick()
+        compose.onNodeWithContentDescription("Settings and Lab").performClick()
+        waitForText("Edit zones")
+        compose.onNodeWithText("Edit zones").performScrollTo().performClick()
+
+        listOf("Zone 2 from" to "120", "Zone 3 from" to "110", "Zone 4 from" to "150", "Zone 5 from" to "170").forEach { (field, bpm) ->
+            compose.onNodeWithContentDescription(field).performScrollTo().performTextReplacement(bpm)
+        }
+        waitForText("Each zone must start higher than the one before.")
+        compose.onNodeWithText("Save zones").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("Zone 3 from").performTextReplacement("135")
+        compose.onNodeWithText("Save zones").performScrollTo().performClick()
+
+        waitForText("120 to 134 bpm")
+        compose.onNodeWithText("170 bpm and over").assertExists()
+        compose.waitUntil(timeoutMillis = 5_000) { runBlocking { container.trainingDao.profile()?.zoneStarts } == "120,135,150,170" }
+
+        compose.onNodeWithText("Use the defaults").performScrollTo().performClick()
+        compose.waitUntil(timeoutMillis = 5_000) { runBlocking { container.trainingDao.profile()?.zoneStarts } == null }
+        waitForText("From 60, 70, 80 and 90% of your maximum.")
     }
 
     @Test
@@ -284,7 +315,7 @@ class AppScreensTest {
         compose.waitUntil(timeoutMillis = 5_000) { container.live.live.value.bpm == 142 }
         compose.onNodeWithTag("workout-bpm").assertIsDisplayed()
         waitForText("142")
-        compose.onNodeWithText("In your hard zone.").assertIsDisplayed()
+        compose.onNodeWithText("In Zone 3.").assertIsDisplayed()
 
         compose.onNodeWithText("Finish").performClick()
         compose.onAllNodesWithText("Finish")[1].performClick()

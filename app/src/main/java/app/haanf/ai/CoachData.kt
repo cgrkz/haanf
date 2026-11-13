@@ -23,7 +23,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 /** A workout counts as hard if it was planned that way or the heart rate says so. */
-fun WorkoutEntity.wasHard(): Boolean = plannedHard || hardSeconds + veryHardSeconds >= HARD_SECONDS
+fun WorkoutEntity.wasHard(): Boolean = plannedHard || zone3Seconds + zone4Seconds + zone5Seconds >= HARD_SECONDS
 
 private const val HARD_SECONDS = 600
 
@@ -70,7 +70,7 @@ class CoachData(
     }
 
     private fun zones(profile: ProfileEntity, age: Int) =
-        HeartRateZones(MaxHeartRate.resolve(age, profile.measuredMaxBpm))
+        HeartRateZones.of(MaxHeartRate.resolve(age, profile.measuredMaxBpm), profile.zoneStarts)
 
     /** The last good reading stands in when Health Connect refuses a background read. */
     private suspend fun freshVitals(): Vitals? {

@@ -5,6 +5,7 @@ import app.haanf.data.BenchmarkEntity
 import app.haanf.data.SplitEntity
 import app.haanf.data.WorkoutEntity
 import app.haanf.data.WorkoutEventEntity
+import app.haanf.data.zones
 import app.haanf.heartrate.HeartRateDevice
 import app.haanf.talktest.TrainingActivity
 import app.haanf.training.BenchmarkInputs
@@ -192,6 +193,7 @@ class WorkoutController(
                 programSession = slot?.session,
                 plannedSeconds = request.plan?.totalSeconds,
                 zoneMaxBpm = request.zones.maxBpm,
+                zoneStarts = HeartRateZones.encode(request.zones.starts),
                 deviceName = request.device.name,
                 plannedHard = request.plannedHard,
                 coached = request.coached,
@@ -315,7 +317,7 @@ class WorkoutController(
         motion: MotionTotals? = null,
     ): WorkoutEntity {
         val samples = sessionId?.let { store.samples(it) }.orEmpty()
-        val zones = workout.zoneMaxBpm?.let(::HeartRateZones)
+        val zones = workout.zones()
         val summary = WorkoutSummaries.summarize(samples, workout.startedAtMs, endedAt, zones)
         val planned = workout.plannedSeconds
         val counted = workout.programId != null &&
@@ -425,7 +427,7 @@ class WorkoutController(
 
     private fun stepText(step: WorkoutStep, zones: HeartRateZones): String {
         val range = zones.rangeFor(step.target)
-        return "Step: ${step.label}, ${WorkoutText.clock(step.seconds)}, ${step.target.label.lowercase()} " +
+        return "Step: ${step.label}, ${WorkoutText.clock(step.seconds)}, ${step.target.label} " +
             "${range.first}-${range.last} bpm."
     }
 
@@ -455,10 +457,11 @@ class WorkoutController(
         hrSessionId = sessionId,
         avgBpm = summary.avgBpm,
         maxBpm = summary.maxBpm,
-        recoverySeconds = summary.zoneSeconds[Zone.RECOVERY] ?: 0,
-        easySeconds = summary.zoneSeconds[Zone.EASY] ?: 0,
-        hardSeconds = summary.zoneSeconds[Zone.HARD] ?: 0,
-        veryHardSeconds = summary.zoneSeconds[Zone.VERY_HARD] ?: 0,
+        zone1Seconds = summary.zoneSeconds[Zone.ZONE_1] ?: 0,
+        zone2Seconds = summary.zoneSeconds[Zone.ZONE_2] ?: 0,
+        zone3Seconds = summary.zoneSeconds[Zone.ZONE_3] ?: 0,
+        zone4Seconds = summary.zoneSeconds[Zone.ZONE_4] ?: 0,
+        zone5Seconds = summary.zoneSeconds[Zone.ZONE_5] ?: 0,
         noReadingSeconds = summary.noReadingSeconds,
         countedForProgram = counted,
     )

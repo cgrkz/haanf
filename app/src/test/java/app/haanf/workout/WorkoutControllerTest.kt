@@ -63,8 +63,8 @@ class WorkoutControllerTest {
     private val plan = WorkoutPlan(
         title = "Test plan",
         steps = listOf(
-            WorkoutStep("Warm up", 60, Zone.EASY),
-            WorkoutStep("Hard 1 of 1", 60, Zone.HARD),
+            WorkoutStep("Warm up", 60, Zone.ZONE_2),
+            WorkoutStep("Hard 1 of 1", 60, Zone.ZONE_4),
         ),
     )
     private val programRequest = WorkoutRequest(
@@ -148,8 +148,8 @@ class WorkoutControllerTest {
 
         assertEquals(135, finished.avgBpm)
         assertEquals(150, finished.maxBpm)
-        assertEquals(10, finished.easySeconds)
-        assertEquals(9, finished.hardSeconds)
+        assertEquals(10, finished.zone2Seconds)
+        assertEquals(9, finished.zone3Seconds)
         assertEquals(9L, finished.hrSessionId)
         assertEquals("user_finished", finished.endReason)
         assertEquals(1, link.ended)
@@ -386,7 +386,7 @@ class WorkoutControllerTest {
             TimedBpm(START_MS + 120_000, 170),
             TimedBpm(START_MS + 180_000, 140),
         )
-        val withCoolDown = plan.copy(steps = plan.steps + WorkoutStep("Cool down", 120, Zone.EASY))
+        val withCoolDown = plan.copy(steps = plan.steps + WorkoutStep("Cool down", 120, Zone.ZONE_2))
         start(programRequest.copy(plan = withCoolDown))
         run(200)
         finish()
@@ -473,7 +473,7 @@ class WorkoutControllerTest {
         run(65)
         val lines = controller.timeline.map { it.line() }
         assertTrue(lines.toString(), lines.first().startsWith("[0:00] Step: Warm up"))
-        assertTrue(lines.toString(), lines.any { it.startsWith("[1:00] Step: Hard 1 of 1, 1:00, hard") })
+        assertTrue(lines.toString(), lines.any { it.startsWith("[1:00] Step: Hard 1 of 1, 1:00, Zone 4") })
         assertEquals(lines.size, store.events.size)
     }
 

@@ -8,7 +8,7 @@ import java.time.temporal.ChronoUnit
 import kotlin.math.roundToInt
 
 data class ProposedStep(val label: String, val minutes: Double, val target: Zone) {
-    val isHard: Boolean get() = target == Zone.HARD || target == Zone.VERY_HARD
+    val isHard: Boolean get() = target.isHard
 }
 
 data class ProposedWorkout(
@@ -73,12 +73,12 @@ object AiWorkoutRules {
             if (context.workoutsLogged < WORKOUTS_BEFORE_HARD) {
                 add("No hard work until $WORKOUTS_BEFORE_HARD workouts are logged. There are ${context.workoutsLogged}.")
             }
-            if (workout.steps.any { it.target == Zone.VERY_HARD }) {
+            if (workout.steps.any { it.target == Zone.ZONE_5 }) {
                 if (context.workoutsLogged < WORKOUTS_BEFORE_VERY_HARD) {
-                    add("No very hard work until $WORKOUTS_BEFORE_VERY_HARD workouts are logged.")
+                    add("No Zone 5 work until $WORKOUTS_BEFORE_VERY_HARD workouts are logged.")
                 }
-                if (workout.steps.any { it.target == Zone.VERY_HARD && it.minutes > MAX_VERY_HARD_STEP_MINUTES }) {
-                    add("A very hard step can last at most 4 minutes.")
+                if (workout.steps.any { it.target == Zone.ZONE_5 && it.minutes > MAX_VERY_HARD_STEP_MINUTES }) {
+                    add("A Zone 5 step can last at most 4 minutes.")
                 }
             }
             val nearProgram = context.hardProgramDays.any { daysBetween(it, context.today) in 0..1 }
@@ -94,10 +94,10 @@ object AiWorkoutRules {
         val firstHard = workout.steps.indexOfFirst { it.isHard }
         val lastHard = workout.steps.indexOfLast { it.isHard }
         if (workout.steps.take(firstHard).sumOf { it.minutes } < WARM_UP_MINUTES) {
-            add("Start with at least 5 easy minutes.")
+            add("Start with at least 5 minutes in Zone 1 or 2.")
         }
         if (workout.steps.drop(lastHard + 1).sumOf { it.minutes } < COOL_DOWN_MINUTES) {
-            add("End with at least 3 easy minutes.")
+            add("End with at least 3 minutes in Zone 1 or 2.")
         }
     }
 
@@ -157,7 +157,7 @@ object AiWorkoutRules {
         return ProposedWorkout(
             title = "Easy ${minutes.toInt()} minutes",
             reason = "A simple easy session, because the coach could not plan one that passed the safety rules.",
-            steps = listOf(ProposedStep("Easy", minutes, Zone.EASY)),
+            steps = listOf(ProposedStep("Easy", minutes, Zone.ZONE_2)),
         )
     }
 }

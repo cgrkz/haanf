@@ -110,9 +110,9 @@ class CoachHarnessTest {
     private val plan = WorkoutPlan(
         "Plan",
         listOf(
-            WorkoutStep("Warm up", 600, Zone.EASY),
-            WorkoutStep("Hard", 600, Zone.HARD),
-            WorkoutStep("Cool down", 600, Zone.EASY),
+            WorkoutStep("Warm up", 600, Zone.ZONE_2),
+            WorkoutStep("Hard", 600, Zone.ZONE_4),
+            WorkoutStep("Cool down", 600, Zone.ZONE_2),
         ),
     )
     private val device = HeartRateDevice("id", "Watch", "fake")
@@ -298,7 +298,7 @@ class CoachHarnessTest {
             .then { if (round++ == 0) FakeLlm.adjust(PlanChange.EASE) else FakeLlm.speak("Easing off", 5) }
         start()
         run(121)
-        assertTrue(runningPlan.steps.none { it.target == Zone.HARD })
+        assertTrue(runningPlan.steps.none { it.target == Zone.ZONE_4 })
         assertTrue(spoken.contains("Easing off"))
     }
 

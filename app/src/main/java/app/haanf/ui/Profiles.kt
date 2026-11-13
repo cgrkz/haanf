@@ -28,7 +28,7 @@ const val FREE_WORKOUT_TITLE = "Free workout"
 const val BENCHMARK_TITLE = "1-mile walk benchmark"
 
 fun ProfileEntity.zones(today: LocalDate): HeartRateZones =
-    HeartRateZones(MaxHeartRate.resolve(today.year - birthYear, measuredMaxBpm))
+    HeartRateZones.of(MaxHeartRate.resolve(today.year - birthYear, measuredMaxBpm), zoneStarts)
 
 /** What the benchmark needs, or null until setup has collected it. */
 fun ProfileEntity.benchmarkInputs(today: LocalDate): BenchmarkInputs? {
@@ -43,14 +43,16 @@ fun ProfileEntity.device(): HeartRateDevice? {
     return HeartRateDevice(id, deviceName, kind)
 }
 
-/** "Easy, under 133 bpm" and the like, for a step's target. */
-fun HeartRateZones.target(zone: Zone): String {
+/** "Zone 2, 116 to 134 bpm" and the like, for a step's target. */
+fun HeartRateZones.target(zone: Zone): String = "${zone.label}, ${bpmText(zone)}"
+
+/** "under 116 bpm", "116 to 134 bpm" or "174 bpm and over". */
+fun HeartRateZones.bpmText(zone: Zone): String {
     val range = rangeFor(zone)
     return when (zone) {
-        Zone.RECOVERY -> "Recovery, under ${range.last + 1} bpm"
-        Zone.EASY -> "Easy, under ${range.last + 1} bpm"
-        Zone.HARD -> "Hard, ${range.first} to ${range.last} bpm"
-        Zone.VERY_HARD -> "Very hard, over ${range.first - 1} bpm"
+        Zone.ZONE_1 -> "under ${range.last + 1} bpm"
+        Zone.ZONE_5 -> "${range.first} bpm and over"
+        else -> "${range.first} to ${range.last} bpm"
     }
 }
 

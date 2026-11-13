@@ -109,9 +109,9 @@ class DesignScreenshotsTest {
                                     "steps",
                                     JsonArray(
                                         listOf(
-                                            step("Warm-up", 5, "recovery"),
-                                            step("Easy", 20, "easy"),
-                                            step("Cool-down", 5, "recovery"),
+                                            step("Warm-up", 5, "zone_1"),
+                                            step("Easy", 20, "zone_2"),
+                                            step("Cool-down", 5, "zone_1"),
                                         ),
                                     ),
                                 )
@@ -202,9 +202,9 @@ class DesignScreenshotsTest {
                     activity = TrainingActivity.OUTDOOR_RUN.name,
                     origin = origin.name,
                     avgBpm = 128,
-                    recoverySeconds = 60,
-                    easySeconds = 27 * 60,
-                    hardSeconds = 2 * 60,
+                    zone1Seconds = 60,
+                    zone2Seconds = 27 * 60,
+                    zone4Seconds = 2 * 60,
                 ),
             )
         }
@@ -425,7 +425,7 @@ class DesignScreenshotsTest {
             val entity = WorkoutEntity(
                 startedAtMs = started,
                 endedAtMs = started + (32 * 60 + 10) * 1000L,
-                title = "4 x 2 minutes hard",
+                title = "4 x 2 minutes in Zone\u00A04",
                 activity = "OUTDOOR_RUN",
                 origin = "PROGRAM",
                 programId = Programs.FOUNDATION_8.id,
@@ -433,10 +433,10 @@ class DesignScreenshotsTest {
                 programSession = 1,
                 avgBpm = 139,
                 maxBpm = 166,
-                recoverySeconds = 2 * 60,
-                easySeconds = 21 * 60,
-                hardSeconds = 8 * 60,
-                veryHardSeconds = 60,
+                zone1Seconds = 2 * 60,
+                zone2Seconds = 21 * 60,
+                zone4Seconds = 8 * 60,
+                zone5Seconds = 60,
                 countedForProgram = true,
                 review = "Good control today. You stayed in your target zone on all four efforts, and your heart rate settled quickly afterwards.",
                 hrDropBpm = 28,
@@ -469,8 +469,8 @@ class DesignScreenshotsTest {
                 origin = "BENCHMARK",
                 avgBpm = 128,
                 maxBpm = 141,
-                easySeconds = 11 * 60,
-                hardSeconds = 3 * 60,
+                zone2Seconds = 11 * 60,
+                zone4Seconds = 3 * 60,
             )
             entity.copy(id = container.trainingDao.insertWorkout(entity))
         }
@@ -599,8 +599,8 @@ class DesignScreenshotsTest {
             val started = System.currentTimeMillis() - 1_400_000L
             val entity = WorkoutEntity(
                 startedAtMs = started, endedAtMs = started + 1_400_000L, title = "Free workout", activity = "CYCLING",
-                origin = "FREE", avgBpm = 149, maxBpm = 185, recoverySeconds = 5, easySeconds = 447, hardSeconds = 421,
-                veryHardSeconds = 525, coached = true, effortRating = 3, distanceMetres = 4_230.0, movingSeconds = 1_310,
+                origin = "FREE", avgBpm = 149, maxBpm = 185, zone1Seconds = 5, zone2Seconds = 447, zone4Seconds = 421,
+                zone5Seconds = 525, coached = true, effortRating = 3, distanceMetres = 4_230.0, movingSeconds = 1_310,
                 maxSpeedMps = 8.4, climbMetres = 91.0, descentMetres = 88.0, avgWatts = 118, bikeType = BikeType.HYBRID.name,
                 review = "A strong climb: heart rate rose with the 7% gradient and peaked at 185 near the top, then dropped " +
                     "52 bpm on the descent. Next time, shift down early on the climb to keep it under 165.",
@@ -617,7 +617,7 @@ class DesignScreenshotsTest {
                 Triple(0, TimelineKind.COACH, "Nice start. Keep it easy for the first few minutes.") to 117,
                 Triple(250, TimelineKind.ATHLETE, "Big hill coming up.") to 147,
                 Triple(262, TimelineKind.COACH, "Shift down early and let your speed drop on the climb.") to 148,
-                Triple(720, TimelineKind.COACH, "You're very hard now. Ease off if you want this steady.") to 172,
+                Triple(720, TimelineKind.COACH, "You're in Zone 4 now. Ease off if you want this steady.") to 172,
                 Triple(1_025, TimelineKind.ATHLETE, "Knee feels a bit tight on the descent.") to 157,
                 Triple(1_260, TimelineKind.TALK_TEST, "Could talk comfortably.") to 121,
             ).forEach { (line, bpm) ->

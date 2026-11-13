@@ -66,7 +66,7 @@ class CsvTest {
                     origin = "AI",
                     deviceName = "Pixel Watch 2",
                     avgBpm = 120,
-                    easySeconds = 60,
+                    zone2Seconds = 60,
                     hrDropBpm = 25,
                     effortRating = 3,
                 ),
@@ -75,7 +75,7 @@ class CsvTest {
         val lines = csv.trimEnd().lines()
         assertEquals(2, lines.size)
         assertEquals(
-            "1970-01-01T00:00:00Z,1970-01-01T00:01:00Z,\"Easy, 30 minutes\",OUTDOOR_RUN,AI,,,false,120,,0,60,0,0,0,25,3,,,,,,,,",
+            "1970-01-01T00:00:00Z,1970-01-01T00:01:00Z,\"Easy, 30 minutes\",OUTDOOR_RUN,AI,,,false,120,,0,60,0,0,0,0,25,3,,,,,,,,",
             lines[1],
         )
         assertEquals(false, csv.contains("Pixel"))

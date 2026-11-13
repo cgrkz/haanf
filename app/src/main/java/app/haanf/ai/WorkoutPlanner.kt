@@ -102,7 +102,7 @@ class WorkoutPlanner(
 
     private fun variationText(previous: ProposedWorkout?, easier: Boolean): String {
         if (previous == null) return ""
-        val shown = previous.steps.joinToString { "${it.label} ${it.minutes} min ${it.target.label.lowercase()}" }
+        val shown = previous.steps.joinToString { "${it.label} ${it.minutes} min in ${it.target.label}" }
         val ask = if (easier) {
             "They asked for something easier than this: shorter or gentler, never harder."
         } else {

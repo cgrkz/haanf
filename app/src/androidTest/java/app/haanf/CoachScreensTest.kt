@@ -92,7 +92,7 @@ class CoachScreensTest {
                     buildJsonObject {
                         put("label", "Easy")
                         put("minutes", 20)
-                        put("target", "easy")
+                        put("target", "zone_2")
                     },
                 ),
             ),

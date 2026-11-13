@@ -100,7 +100,7 @@ Events between check-ins are delivered at the next one, with their times. The sa
 | Program | No | No | No |
 | AI | Yes | No | Yes |
 
-Every change must pass the rule check. Enforced in code, not only in the prompt: an increase is accepted only in a turn triggered by you speaking.
+Every change must pass the rule check. Enforced in code, not only in the prompt: an increase is accepted only in a turn triggered by you speaking. Easing off moves hard steps down one zone, no lower than Zone 2. Making it harder moves steps up one zone, never into Zone 5.
 
 ## Talking to the coach
 
@@ -110,7 +110,7 @@ Every change must pass the rule check. Enforced in code, not only in the prompt:
 
 ## Talk test
 
-When "Talk test checks" is on in Get ready, the coach can ask whether you could talk comfortably, never during a hard effort. With planned steps, the step decides what is hard. Without them, heart rate does: Hard or Very hard means no talk test. You answer by voice or with one of three buttons, or skip. No audio leaves the phone. The answer is saved with your heart rate, which builds the data for your talking threshold.
+When "Talk test checks" is on in Get ready, the coach can ask whether you could talk comfortably, never during a hard effort. With planned steps, the step decides what is hard. Without them, heart rate does: Zone 3 and above means no talk test. You answer by voice or with one of three buttons, or skip. No audio leaves the phone. The answer is saved with your heart rate, which builds the data for your talking threshold.
 
 ## Chat that remembers
 
@@ -143,10 +143,10 @@ From the brief:
 
 - Fits the time you said you have, and is at least 5 minutes long.
 - At most 2 hard sessions in any 7 days, counting every kind of workout.
-- Hard sessions start with at least 5 easy minutes and end with at least 3.
-- No hard work until 6 workouts are logged, and no very hard work until 12.
+- Hard work is any step in Zone 3 or above. Hard sessions start with at least 5 minutes in Zone 1 or 2 and end with at least 3.
+- No hard work until 6 workouts are logged, and no Zone 5 work until 12.
 - No hard work if you feel 1 or 2 out of 5.
-- A very hard step lasts at most 4 minutes, matching the 4 x 4 protocol.
+- A Zone 5 step lasts at most 4 minutes, matching the 4 x 4 protocol.
 - A benchmark repeat is allowed from 28 days after the last one.
 
 **Injuries do not block anything.** The AI reads them and adapts. This was the user's choice.

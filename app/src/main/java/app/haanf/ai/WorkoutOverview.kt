@@ -45,7 +45,7 @@ object WorkoutOverview {
         if (window.isNotEmpty()) {
             val summary = WorkoutSummaries.summarize(window, window.first().atMs, at(nowSeconds), zones)
             val inZones = Zone.entries.mapNotNull { zone ->
-                summary.zoneSeconds[zone]?.takeIf { it >= 30 }?.let { "${zone.label.lowercase()} ${WorkoutText.clock(it)}" }
+                summary.zoneSeconds[zone]?.takeIf { it >= 30 }?.let { "${zone.label} ${WorkoutText.clock(it)}" }
             }
             lines += "Overall: average ${summary.avgBpm}, highest ${summary.maxBpm}, lowest ${window.minOf { it.bpm }} bpm." +
                 if (inZones.isNotEmpty()) " Time in zones: ${inZones.joinToString(", ")}." else ""

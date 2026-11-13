@@ -160,6 +160,47 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun version6WorkoutsAreRecountedInFiveZones() {
+        helper.createDatabase(DB, 6).use { db ->
+            db.execSQL("INSERT INTO profile (id, birthYear) VALUES (1, 2004)")
+            db.execSQL(
+                "INSERT INTO hr_session (id, startedAtMs, deviceId, deviceName, sourceKind, watchWorkoutRunning) " +
+                    "VALUES (3, 0, 'B8', 'Google Pixel Watch 2', 'ble', 0)",
+            )
+            // With a maximum of 200, these fall in Zones 1 to 5 for 4 seconds each.
+            listOf(110, 130, 150, 170, 190).forEachIndexed { index, bpm ->
+                listOf(0, 2_000).forEach { offset ->
+                    db.execSQL(
+                        "INSERT INTO hr_sample (sessionId, receivedAtMs, bpm, sensorContact, rrIntervalsMs) " +
+                            "VALUES (3, ${index * 4_000 + offset}, $bpm, 'UNSUPPORTED', '')",
+                    )
+                }
+            }
+            val columns = "id, startedAtMs, endedAtMs, title, activity, origin, zoneMaxBpm, hrSessionId, " +
+                "recoverySeconds, easySeconds, hardSeconds, veryHardSeconds, noReadingSeconds, countedForProgram"
+            db.execSQL("INSERT INTO workout ($columns) VALUES (8, 0, 20000, 'Free', 'CYCLING', 'FREE', 200, 3, 1, 1, 1, 1, 0, 0)")
+            db.execSQL("INSERT INTO workout ($columns) VALUES (9, 0, 60000, 'Old', 'TREADMILL', 'FREE', 200, NULL, 6, 7, 8, 9, 0, 0)")
+        }
+
+        helper.runMigrationsAndValidate(DB, 7, true).use { db ->
+            val zones = "zone1Seconds, zone2Seconds, zone3Seconds, zone4Seconds, zone5Seconds"
+            db.query("SELECT $zones, zoneStarts FROM workout WHERE id = 8").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(listOf(4, 4, 4, 4, 4), (0..4).map(cursor::getInt))
+                assertEquals(true, cursor.isNull(5))
+            }
+            db.query("SELECT $zones FROM workout WHERE id = 9").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(listOf(6, 7, 8, 0, 9), (0..4).map(cursor::getInt))
+            }
+            db.query("SELECT zoneStarts FROM profile WHERE id = 1").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(true, cursor.isNull(0))
+            }
+        }
+    }
+
     private companion object {
         const val DB = "migration-test"
     }

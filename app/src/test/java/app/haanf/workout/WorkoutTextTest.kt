@@ -15,7 +15,7 @@ class WorkoutTextTest {
 
     @Test
     fun `speaks singular and plural minutes`() {
-        assertEquals("Warm up. 1 minute.", WorkoutText.stepLine(WorkoutStep("Warm up", 60, Zone.EASY)))
-        assertEquals("Recover. 3 minutes.", WorkoutText.stepLine(WorkoutStep("Recover", 180, Zone.EASY)))
+        assertEquals("Warm up. 1 minute.", WorkoutText.stepLine(WorkoutStep("Warm up", 60, Zone.ZONE_2)))
+        assertEquals("Recover. 3 minutes.", WorkoutText.stepLine(WorkoutStep("Recover", 180, Zone.ZONE_2)))
     }
 }

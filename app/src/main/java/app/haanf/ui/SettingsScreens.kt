@@ -30,6 +30,7 @@ import app.haanf.data.ProfileEntity
 import app.haanf.export.Csv
 import app.haanf.export.ShareFiles
 import app.haanf.training.BikeType
+import app.haanf.training.HeartRateZones
 import app.haanf.training.Sex
 import app.haanf.training.Zone
 import app.haanf.ui.theme.HaanfColors
@@ -46,6 +47,7 @@ fun SettingsScreen(container: AppContainer, nav: Navigator) {
     val settings by container.aiSettings.settings.collectAsStateWithLifecycle()
     val vitals = rememberVitals(container)
     var editing by rememberSaveable { mutableStateOf(false) }
+    var editingZones by rememberSaveable { mutableStateOf(false) }
     var removingKey by remember { mutableStateOf(false) }
     val current = profile
     if (current === LOADING) return
@@ -75,14 +77,30 @@ fun SettingsScreen(container: AppContainer, nav: Navigator) {
                 val zones = saved.zones(today)
                 val source = if (saved.measuredMaxBpm != null) "measured" else "estimated from your age"
                 Hint("Maximum ${zones.maxBpm} bpm, $source.")
-                Zone.entries.forEach { zone ->
-                    val range = zones.rangeFor(zone)
-                    val text = when (zone) {
-                        Zone.RECOVERY -> "under ${range.last + 1} bpm"
-                        Zone.VERY_HARD -> "${range.first} bpm and over"
-                        else -> "${range.first} to ${range.last} bpm"
+                if (editingZones) {
+                    ZonesEditor(
+                        zones = zones,
+                        onSave = { starts ->
+                            val custom = starts.takeIf { it != HeartRateZones.defaultStarts(zones.maxBpm) }
+                            scope.launch { container.trainingDao.saveProfile(saved.copy(zoneStarts = custom?.let(HeartRateZones::encode))) }
+                            editingZones = false
+                        },
+                        onCancel = { editingZones = false },
+                    )
+                } else {
+                    Zone.entries.forEach { zone -> ZoneKey(zone, zone.label, zones.bpmText(zone)) }
+                    Hint(
+                        if (zones.isCustom) "Set by you. They stay put if your maximum changes."
+                        else "From 60, 70, 80 and 90% of your maximum.",
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                        LinkButton("Edit zones", onClick = { editingZones = true })
+                        if (zones.isCustom) {
+                            LinkButton("Use the defaults", onClick = {
+                                scope.launch { container.trainingDao.saveProfile(saved.copy(zoneStarts = null)) }
+                            })
+                        }
                     }
-                    ZoneKey(zone, zone.label, text)
                 }
             }
         }
@@ -223,6 +241,41 @@ private fun ProfileEditor(existing: ProfileEntity?, onSave: (ProfileEntity) -> U
                 ),
             )
         })
+    }
+}
+
+/** Where Zones 2 to 5 start. Zone 1 is everything below Zone 2, so it needs no field. */
+@Composable
+private fun ZonesEditor(zones: HeartRateZones, onSave: (List<Int>) -> Unit, onCancel: () -> Unit) {
+    val fields = remember { zones.starts.map { mutableStateOf(it.toString()) } }
+    val starts = fields.map { it.value.toIntOrNull() }
+    val complete = starts.filterNotNull().takeIf { it.size == 4 }
+    val problem = when {
+        complete == null -> "Fill in where each zone starts."
+        complete.any { it !in HeartRateZones.LOWEST_START..HeartRateZones.HIGHEST_START } ->
+            "Each zone must start between ${HeartRateZones.LOWEST_START} and ${HeartRateZones.HIGHEST_START} bpm."
+        !HeartRateZones.isValid(complete) -> "Each zone must start higher than the one before."
+        else -> null
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Hint("Where each zone starts, in bpm. Zone 1 is everything under Zone 2.")
+        fields.chunked(2).forEachIndexed { row, pair ->
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                pair.forEachIndexed { column, field ->
+                    val zone = Zone.entries[row * 2 + column + 1]
+                    HTextField(
+                        field.value,
+                        { field.value = it.filter(Char::isDigit).take(3) },
+                        "${zone.label} from",
+                        Modifier.weight(1f),
+                        numeric = true,
+                    )
+                }
+            }
+        }
+        problem?.let { if (complete != null) ErrorText(it) else Hint(it) }
+        PrimaryButton("Save zones", enabled = problem == null, onClick = { onSave(requireNotNull(complete)) })
+        LinkButton("Cancel", onClick = onCancel, modifier = Modifier.align(Alignment.CenterHorizontally))
     }
 }
 

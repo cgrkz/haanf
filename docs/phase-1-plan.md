@@ -49,14 +49,21 @@ The data model leaves room for AI workouts: `Workout.origin` separates them, and
 
 ### Zones
 
-Percentages of maximum heart rate, using the American Heart Association's bands for moderate and vigorous activity, plus a top band for intervals.
+Five numbered zones, as shares of maximum heart rate. On 13 November 2026 the user replaced the four named zones (Recovery, Easy, Hard and Very hard) with these, and asked for them to be editable.
 
 | Zone | Share of maximum | Basis |
 | --- | --- | --- |
-| Recovery | Below 50% | Below the moderate band |
-| Easy | 50 to 70% | [AHA](https://www.heart.org/en/healthy-living/fitness/fitness-basics/target-heart-rates) moderate activity |
-| Hard | 70 to 85% | AHA vigorous activity |
-| Very hard | 85% and above | Top of the range, used for the final week's intervals |
+| Zone 1 | Below 60% | Everything under Zone 2 |
+| Zone 2 | 60 to 70% | Upper half of the [AHA](https://www.heart.org/en/healthy-living/fitness/fitness-basics/target-heart-rates) moderate band |
+| Zone 3 | 70 to 80% | AHA vigorous activity starts at 70% |
+| Zone 4 | 80 to 90% | |
+| Zone 5 | 90% and above | The 4 x 4 study's 90 to 95% |
+
+The 60, 70, 80 and 90% starts are the common five-zone default, the one Garmin uses. Zone 3 and above count as hard work, which keeps the old line at 70%.
+
+**Editing.** Settings lets the athlete set where Zones 2 to 5 start, in bpm. Zone 1 is everything below Zone 2. Each start must be higher than the one before. Edited zones stay put when the maximum changes, until "Use the defaults" puts them back. Each workout saves the zones it was measured against, so editing them later does not change past workouts.
+
+**Moving saved workouts to five zones.** The database's version 7 works out each saved workout's time in each zone again from its saved heart rate, against the default zones for the maximum it was recorded with. A workout with no saved heart rate keeps its old totals, moved to the nearest new zone: Recovery to Zone 1, Easy to Zone 2, Hard to Zone 3 and Very hard to Zone 5.
 
 Maximum heart rate is `208 - 0.7 x age` ([Tanaka 2001](https://pubmed.ncbi.nlm.nih.gov/11153730/)), unless the user enters a measured value. It is an estimate, and individuals can differ from it.
 
@@ -86,12 +93,12 @@ A program workout counts when at least 80% of its planned time was done. A short
 | 2 | Easy 25 min | Easy 25 min | Easy 30 min |
 | 3 | Easy 30 min | Easy 30 min | Easy 35 min |
 | 4 | Easy 25 min | Easy 25 min | Easy 30 min |
-| 5 | Easy 30 min | 4 x 2 min hard | Easy 35 min |
-| 6 | Easy 30 min | 4 x 3 min hard | Easy 35 min |
-| 7 | Easy 30 min | 4 x 4 min hard | Easy 40 min |
-| 8 | Easy 30 min | 4 x 4 min very hard | Easy 40 min |
+| 5 | Easy 30 min | 4 x 2 min in Zone 4 | Easy 35 min |
+| 6 | Easy 30 min | 4 x 3 min in Zone 4 | Easy 35 min |
+| 7 | Easy 30 min | 4 x 4 min in Zone 4 | Easy 40 min |
+| 8 | Easy 30 min | 4 x 4 min in Zone 5 | Easy 40 min |
 
-Interval sessions add a 10-minute warm-up, 3-minute easy recoveries and a 5-minute cool-down.
+Easy sessions are in Zone 2. Interval sessions add a 10-minute warm-up and 3-minute recoveries in Zone 2, and a 5-minute cool-down in Zone 1.
 
 What the evidence does and does not support:
 

@@ -3,6 +3,7 @@ package app.haanf.ai
 import app.haanf.data.BenchmarkEntity
 import app.haanf.data.SplitEntity
 import app.haanf.data.WorkoutEntity
+import app.haanf.data.zoneSeconds
 import app.haanf.talktest.TrainingActivity
 import app.haanf.training.BikeType
 import app.haanf.training.HeartRateZones
@@ -36,8 +37,8 @@ class WorkoutDetail(
         if (workout.endReason == "abandoned") append(", stopped early")
         append(". Times in square brackets are minutes and seconds into the workout.\n")
         append("Heart rate: average ${workout.avgBpm ?: "unknown"}, highest ${workout.maxBpm ?: "unknown"} bpm. ")
-        append("Time in zones: easy ${WorkoutText.clock(workout.easySeconds)}, hard ${WorkoutText.clock(workout.hardSeconds)}, ")
-        append("very hard ${WorkoutText.clock(workout.veryHardSeconds)}")
+        append("Time in zones: ")
+        append(workout.zoneSeconds().entries.joinToString { (zone, time) -> "${zone.label} ${WorkoutText.clock(time)}" })
         if (workout.noReadingSeconds >= 30) append(", no reading ${WorkoutText.clock(workout.noReadingSeconds)}")
         append(".\n")
         workout.hrDropBpm?.let { append("Heart rate fell $it bpm in the minute after the last hard step.\n") }
@@ -60,7 +61,7 @@ class WorkoutDetail(
                     workoutStartMs = workout.startedAtMs,
                     nowSeconds = seconds,
                     lastMinutes = (seconds + 59) / 60,
-                    zones = HeartRateZones(maxBpm),
+                    zones = HeartRateZones.of(maxBpm, workout.zoneStarts),
                     ride = ride,
                     bucketSeconds = FIVE_MINUTES,
                 ),

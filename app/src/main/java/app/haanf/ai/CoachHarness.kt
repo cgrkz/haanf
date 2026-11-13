@@ -411,7 +411,7 @@ class CoachHarness(
                 plan.steps.forEach { step ->
                     val range = request.zones.rangeFor(step.target)
                     append("[${WorkoutText.clock(at)}] ${step.label}, ${WorkoutText.clock(step.seconds)}, ")
-                    append("${step.target.label.lowercase()} ${range.first}-${range.last} bpm\n")
+                    append("${step.target.label} ${range.first}-${range.last} bpm\n")
                     at += step.seconds
                 }
             }
@@ -443,7 +443,7 @@ class CoachHarness(
             if (bpm == null) {
                 append("Heart rate now: no recent reading.\n")
             } else {
-                append("Heart rate now: $bpm bpm, ${running.request.zones.zoneFor(bpm).label.lowercase()}.\n")
+                append("Heart rate now: $bpm bpm, ${running.request.zones.zoneFor(bpm).label}.\n")
             }
             running.stepIndex?.let { index ->
                 val step = requireNotNull(plan).steps[index]
