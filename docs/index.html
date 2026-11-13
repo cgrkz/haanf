@@ -3,398 +3,337 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Haanf: AI-native endurance training for Android</title>
-<meta name="description" content="Haanf reads live heart rate from your watch, runs a research-backed training program, and pairs it with an AI coach that talks you through every session. Built with Kotlin and Jetpack Compose.">
-<meta property="og:title" content="Haanf: AI-native endurance training for Android">
+<title>Haanf: endurance training for Android, with an AI coach</title>
+<meta name="description" content="Haanf is an Android app that reads your heart rate live from your watch, runs a research-backed training program, and coaches you through each session by voice. Everything stays on your phone.">
+<meta property="og:title" content="Haanf: endurance training for Android, with an AI coach">
 <meta property="og:description" content="Live heart rate from your watch, a research-backed program, and an AI coach that talks you through every session.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://cgrkz.github.io/haanf/">
 <meta property="og:image" content="https://cgrkz.github.io/haanf/readme/banner.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://cgrkz.github.io/haanf/readme/banner.png">
-<meta name="theme-color" content="#101418">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%231F5BFF'/%3E%3Cpath fill='white' transform='translate(4.2 4.6) scale(.65)' d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
+  /* Tokens. Colour means a zone wherever a zone colour appears. */
   :root {
-    --bg: #F3F5F6;
-    --card: #FFFFFF;
-    --text: #101418;
-    --muted: #56616B;
-    --line: #DDE2E6;
-    --primary: #1F5BFF;
-    --primary-soft: #E4ECFF;
-    --dark: #101418;
-    --dark-2: #1A2027;
+    --paper: #FFFFFF;
+    --mist: #F3F5F6;
+    --ink: #101418;
+    --slate: #56616B;
+    --rule: #DDE2E6;
+    --signal: #1F5BFF;
+    --signal-ink: #FFFFFF;
     --z1: #009FB0;
     --z2: #1F5BFF;
     --z3: #F2B700;
     --z4: #E8850C;
     --z5: #C93400;
-    --radius: 18px;
-    --max: 1160px;
+    --band: .09;
+    --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --text: "Barlow", system-ui, sans-serif;
+    --measure: 62ch;
+    --gutter: 32px;
+    --max: 1200px;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #0C1014;
-      --card: #161C22;
-      --text: #EEF1F4;
-      --muted: #9AA6B1;
-      --line: #27303A;
-      --primary-soft: #18264D;
+      --paper: #101418;
+      --mist: #171D23;
+      --ink: #EEF1F4;
+      --slate: #9AA6B1;
+      --rule: #29323B;
+      --signal: #5C86FF;
+      --signal-ink: #0B0F14;
+      --band: .14;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #0C1014;
-    --card: #161C22;
-    --text: #EEF1F4;
-    --muted: #9AA6B1;
-    --line: #27303A;
-    --primary-soft: #18264D;
+    --paper: #101418;
+    --mist: #171D23;
+    --ink: #EEF1F4;
+    --slate: #9AA6B1;
+    --rule: #29323B;
+    --signal: #5C86FF;
+    --signal-ink: #0B0F14;
+    --band: .14;
   }
+
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
   body {
     margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: "Barlow", system-ui, sans-serif;
-    font-size: 18px;
-    line-height: 1.55;
+    background: var(--paper);
+    color: var(--ink);
+    font: 400 18px/1.55 var(--text);
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
-  img { max-width: 100%; display: block; }
-  a { color: inherit; }
-  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
-  .condensed, h1, h2, h3 { font-family: "Barlow Condensed", "Barlow", sans-serif; }
-  h2 { font-size: clamp(36px, 5vw, 52px); line-height: 1; margin: 0 0 16px; font-weight: 700; letter-spacing: -0.01em; }
-  h3 { font-size: 26px; line-height: 1.1; margin: 0 0 8px; font-weight: 700; }
-  .eyebrow {
-    font-family: "Barlow Condensed", sans-serif; font-weight: 600; font-size: 15px;
-    letter-spacing: .16em; text-transform: uppercase; color: var(--primary); margin: 0 0 12px;
-  }
-  .lede { font-size: 20px; color: var(--muted); max-width: 720px; margin: 0; }
-  section { padding: 96px 0; scroll-margin-top: 88px; }
+  img { display: block; max-width: 100%; height: auto; }
+  a { color: var(--signal); text-underline-offset: .18em; text-decoration-thickness: 1px; }
+  a:hover { text-decoration-thickness: 2px; }
+  a:focus-visible, .screens:focus-visible { outline: 3px solid var(--signal); outline-offset: 3px; border-radius: 6px; }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
 
-  /* Nav */
-  .nav { position: sticky; top: 0; z-index: 20; background: rgba(16,20,24,.86); backdrop-filter: saturate(160%) blur(12px); -webkit-backdrop-filter: saturate(160%) blur(12px); border-bottom: 1px solid rgba(255,255,255,.06); }
-  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; }
-  .brand { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 28px; }
-  .brand svg { width: 30px; height: 30px; }
-  .nav-links { display: flex; gap: 28px; align-items: center; }
-  .nav-links a { color: #C9D1D9; text-decoration: none; font-weight: 500; font-size: 16px; }
-  .nav-links a:hover { color: #fff; }
-  .gh { display: inline-flex; align-items: center; gap: 8px; background: #fff; color: #101418 !important; padding: 8px 14px; border-radius: 10px; font-weight: 600 !important; }
-  .gh svg { width: 18px; height: 18px; }
+  /* Type scale, a perfect fourth from 18px */
+  h1, h2, h3, .num { font-family: var(--display); font-weight: 700; letter-spacing: -.005em; }
+  h1 { font-size: clamp(58px, 8.2vw, 112px); line-height: .86; margin: 0; }
+  h2 { font-size: clamp(42px, 5vw, 56px); line-height: .95; margin: 0 0 18px; }
+  h3 { font-size: 24px; line-height: 1.1; margin: 0; font-weight: 600; }
+  p { margin: 0; }
+  .intro { font-size: 20px; color: var(--slate); max-width: var(--measure); }
+
+  /* Top bar */
+  .top { display: flex; justify-content: space-between; align-items: center; padding-top: 22px; padding-bottom: 22px; }
+  .mark { display: flex; align-items: center; gap: 10px; font: 700 28px/1 var(--display); color: var(--ink); text-decoration: none; }
+  .mark svg { width: 28px; height: 28px; }
+  .top a.code { font-weight: 500; }
 
   /* Hero */
-  .hero { background: var(--dark); color: #fff; position: relative; overflow: hidden; padding: 72px 0 0; }
-  .hero::before { content: ""; position: absolute; inset: 0; background:
-      radial-gradient(720px 560px at 82% 58%, rgba(31,91,255,.42), transparent 70%),
-      radial-gradient(480px 380px at 60% 110%, rgba(232,133,12,.24), transparent 70%); pointer-events: none; }
-  .hero .wrap { position: relative; display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; align-items: center; }
-  .hero .eyebrow { color: #9FB3FF; }
-  .hero h1 { font-size: clamp(56px, 8.4vw, 112px); line-height: .9; margin: 0 0 22px; font-weight: 700; letter-spacing: -0.015em; }
-  .hero p.sub { font-size: 21px; color: #B9C2CA; margin: 0 0 32px; max-width: 540px; }
-  .zones { display: flex; gap: 6px; margin: 0 0 36px; }
-  .zones span { height: 8px; flex: 0 0 56px; border-radius: 4px; }
-  .cta { display: flex; flex-wrap: wrap; gap: 12px; }
-  .btn { display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px; border-radius: 12px; font-weight: 600; text-decoration: none; font-size: 17px; }
-  .btn svg { width: 20px; height: 20px; }
-  .btn-primary { background: var(--primary); color: #fff; }
-  .btn-primary:hover { background: #1749D6; }
-  .btn-ghost { border: 1.5px solid rgba(255,255,255,.28); color: #fff; }
-  .btn-ghost:hover { border-color: #fff; }
-  .phones { position: relative; height: 600px; }
-  .phone { position: absolute; width: 230px; padding: 7px; border-radius: 32px; background: #2A3038; box-shadow: 0 34px 70px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.08); }
-  .phone img { border-radius: 25px; width: 100%; height: auto; }
-  .phones .p1 { left: 0; top: 70px; transform: rotate(-5deg); }
-  .phones .p2 { left: 50%; top: 20px; transform: translateX(-50%); z-index: 2; }
-  .phones .p3 { right: 0; top: 70px; transform: rotate(5deg); }
+  .hero-text { display: grid; grid-template-columns: 7fr 5fr; gap: 48px; align-items: end; padding-top: 36px; padding-bottom: 40px; }
+  .hero-text .intro { color: var(--ink); font-size: 21px; margin-bottom: 26px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; }
+  .button { display: inline-block; background: var(--signal); color: var(--signal-ink); text-decoration: none; font-weight: 600; padding: 13px 20px; border-radius: 10px; }
+  .button:hover { filter: brightness(.94); }
 
-  /* Stats */
-  .stats { background: var(--dark-2); color: #fff; padding: 0; }
-  .stats .wrap { display: grid; grid-template-columns: repeat(4, 1fr); }
-  .stat { padding: 30px 24px; border-left: 1px solid rgba(255,255,255,.08); }
-  .stat:first-child { border-left: 0; }
-  .stat b { display: block; font-family: "Barlow Condensed", sans-serif; font-size: 46px; line-height: 1; font-weight: 700; }
-  .stat span { color: #9AA6B1; font-size: 16px; }
+  /* The session trace */
+  .session { max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
+  .chart { display: grid; grid-template-columns: 120px 1fr; height: clamp(240px, 38vh, 400px); }
+  .axis, .bands { display: flex; flex-direction: column; }
+  .axis div { display: flex; flex-direction: column; justify-content: center; padding-right: 12px; line-height: 1.15; }
+  .axis b { font: 600 16px var(--display); letter-spacing: .01em; }
+  .axis span { color: var(--slate); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .plot { position: relative; }
+  .bands { position: absolute; inset: 0; }
+  .band { position: relative; background: color-mix(in srgb, var(--c) calc(var(--band) * 100%), var(--paper)); }
+  .band + .band { border-top: 1px dashed color-mix(in srgb, var(--c) 40%, transparent); }
+  .z5 { --c: var(--z5); flex: 18; }
+  .z4 { --c: var(--z4); flex: 14; }
+  .z3 { --c: var(--z3); flex: 13; }
+  .z2 { --c: var(--z2); flex: 14; }
+  .z1 { --c: var(--z1); flex: 41; }
+  .trace { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .trace path { fill: none; stroke: var(--ink); stroke-width: 2.25; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+  .head { position: absolute; left: 100%; top: 84%; transform: translate(-50%, -50%); }
+  .head i { display: block; width: 14px; height: 14px; border-radius: 50%; background: var(--z1); box-shadow: 0 0 0 4px var(--paper); }
+  .head .num { position: absolute; right: 16px; bottom: 8px; font-size: 40px; line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .head.below .num { bottom: auto; top: 8px; }
+  .head .num small { font: 600 16px var(--display); margin-left: 3px; color: var(--slate); }
+  .plan { display: grid; grid-template-columns: 10fr 4fr 3fr 4fr 3fr 4fr 3fr 4fr 5fr; gap: 3px; margin: 14px 0 0 120px; }
+  .plan div { font-size: 15px; color: var(--slate); }
+  .plan div::before { content: ""; display: block; height: 8px; border-radius: 4px; background: var(--c); margin-bottom: 8px; }
+  .plan .p1 { --c: var(--z1); }
+  .plan .p2 { --c: var(--z2); }
+  .plan .p4 { --c: var(--z4); color: var(--ink); font-weight: 500; }
+  .caption { margin: 18px 0 0 120px; font-size: 16px; color: var(--slate); max-width: 80ch; }
 
-  /* Features */
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 48px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; }
-  .card .icon { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; margin-bottom: 18px; }
-  .card .icon svg { width: 24px; height: 24px; }
-  .card p { margin: 0; color: var(--muted); font-size: 17px; }
-  .card code { font-size: 14px; }
-  code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; background: var(--primary-soft); color: var(--text); padding: 1px 6px; border-radius: 6px; }
+  /* Sections */
+  .section { padding-top: 128px; }
+  .section > .wrap > .intro { margin-bottom: 48px; }
 
-  /* Coach */
-  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; }
-  .log { background: var(--dark); color: #E6EAEE; border-radius: var(--radius); padding: 26px; font-size: 16px; box-shadow: 0 24px 50px rgba(16,20,24,.18); }
-  .log-head { display: flex; justify-content: space-between; align-items: center; color: #9AA6B1; font-size: 14px; margin-bottom: 18px; }
-  .log-head b { color: #fff; font-family: "Barlow Condensed", sans-serif; font-size: 20px; letter-spacing: .02em; }
-  .ev { display: grid; grid-template-columns: 52px 1fr; gap: 12px; padding: 12px 0; border-top: 1px solid rgba(255,255,255,.07); }
-  .ev time { color: #8792A0; font-variant-numeric: tabular-nums; font-size: 15px; padding-top: 2px; }
-  .tool { display: inline-block; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px; color: #9FB3FF; background: rgba(31,91,255,.16); border-radius: 6px; padding: 1px 7px; margin-bottom: 4px; }
-  .tool.ok { color: #7FE0B0; background: rgba(46,164,79,.16); }
-  .ev q { quotes: "“" "”"; }
-  .rules { list-style: none; padding: 0; margin: 28px 0 0; display: grid; gap: 12px; }
-  .rules li { display: grid; grid-template-columns: 26px 1fr; gap: 10px; color: var(--text); }
-  .rules svg { width: 22px; height: 22px; margin-top: 2px; color: var(--primary); }
+  /* A session, start to finish */
+  .screens { --edge: max(var(--gutter), calc((100vw - var(--max)) / 2 + var(--gutter))); display: flex; gap: 40px; overflow-x: auto; padding: 4px var(--edge) 24px; scroll-padding-left: var(--edge); scroll-snap-type: x proximity; }
+  .stage { flex: none; scroll-snap-align: start; }
+  .stage h3 { border-top: 2px solid var(--ink); padding-top: 12px; margin-bottom: 20px; }
+  .stage .row { display: flex; gap: 20px; }
+  .screens figure { margin: 0; width: 216px; }
+  .screens img { border-radius: 22px; border: 1px solid var(--rule); }
+  .screens figcaption { margin-top: 12px; font-size: 16px; line-height: 1.4; color: var(--slate); }
+  .screens figcaption b { color: var(--ink); font-weight: 600; }
 
-  /* Zones */
-  .zone-table { margin-top: 40px; display: grid; gap: 10px; }
-  .zrow { display: grid; grid-template-columns: 120px 1fr 200px; align-items: center; gap: 18px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; }
-  .zrow b { font-family: "Barlow Condensed", sans-serif; font-size: 24px; }
-  .zbar { height: 12px; border-radius: 6px; }
-  .zrow span { color: var(--muted); font-size: 16px; text-align: right; }
+  /* The coach */
+  .coach { display: grid; grid-template-columns: 5fr 6fr; gap: 64px; align-items: start; }
+  .rules { list-style: none; margin: 32px 0 0; padding: 0; }
+  .rules li { position: relative; padding: 12px 0 12px 22px; border-top: 1px solid var(--rule); }
+  .rules li::before { content: ""; position: absolute; left: 0; top: 17px; bottom: 17px; width: 5px; border-radius: 3px; background: var(--c, var(--rule)); }
+  .rules .r3 { --c: var(--z3); }
+  .rules .r5 { --c: var(--z5); }
+  .said { background: var(--mist); border-radius: 18px; padding: 8px 28px 20px; }
+  .said table { width: 100%; border-collapse: collapse; }
+  .said caption { text-align: left; font-size: 16px; color: var(--slate); padding: 18px 0 6px; caption-side: bottom; }
+  .said td { padding: 14px 0; vertical-align: top; border-bottom: 1px solid var(--rule); }
+  .said tr:last-child td { border-bottom: 0; }
+  .said td:first-child { width: 64px; font: 600 20px/1.2 var(--display); color: var(--slate); font-variant-numeric: tabular-nums; }
+  .said td:nth-child(2) { width: 104px; font-weight: 600; font-size: 16px; padding-top: 16px; }
+  .said .check td:nth-child(2) { color: var(--ink); }
+  .said .check td:nth-child(2)::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--z3); margin-right: 7px; vertical-align: 1px; }
 
-  /* Gallery */
-  .gallery { display: flex; gap: 22px; overflow-x: auto; padding: 8px 24px 28px; margin-top: 40px; scroll-snap-type: x mandatory; scrollbar-width: thin; }
-  .gallery figure { margin: 0; flex: 0 0 220px; scroll-snap-align: start; }
-  .gallery .phone { position: static; width: 100%; box-shadow: 0 18px 36px rgba(16,20,24,.18), 0 0 0 1px rgba(16,20,24,.06); background: #1E242B; }
-  .gallery figcaption { margin-top: 14px; font-size: 16px; color: var(--muted); }
-  .gallery figcaption b { display: block; color: var(--text); font-family: "Barlow Condensed", sans-serif; font-size: 22px; font-weight: 700; }
-  .gallery-wrap { max-width: calc(var(--max) + 48px); margin: 0 auto; }
+  /* How it's built */
+  .diagram { background: var(--mist); border-radius: 18px; padding: 28px; overflow-x: auto; }
+  .diagram svg { display: block; min-width: 880px; width: 100%; height: auto; }
+  .diagram .box { fill: var(--paper); stroke: var(--rule); stroke-width: 1.5; }
+  .diagram .key { stroke: var(--signal); stroke-width: 2; }
+  .diagram .rule { stroke: var(--z3); stroke-width: 2; }
+  .diagram text { fill: var(--ink); font: 400 15px var(--text); }
+  .diagram .t { font: 700 19px var(--display); }
+  .diagram .s, .diagram .lbl { fill: var(--slate); font-size: 13px; }
+  .diagram .arrow { stroke: var(--slate); stroke-width: 1.6; fill: none; }
+  .diagram marker path { fill: var(--slate); }
+  .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 40px; margin: 48px 0 0; }
+  .facts div { border-top: 1px solid var(--rule); padding: 18px 0 28px; }
+  .facts dt { font: 700 28px/1.1 var(--display); margin-bottom: 8px; }
+  .facts dd { margin: 0; color: var(--slate); font-size: 17px; }
+  code { font: 500 .92em var(--text); color: var(--ink); background: var(--mist); padding: 1px 5px; border-radius: 5px; }
 
-  /* Architecture */
-  .arch { margin-top: 44px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; overflow-x: auto; }
-  .arch svg { min-width: 900px; width: 100%; height: auto; }
-  .arch .box { fill: var(--bg); stroke: var(--line); stroke-width: 1.5; }
-  .arch .box.key { fill: var(--primary-soft); stroke: var(--primary); }
-  .arch .box.rule { fill: rgba(242,183,0,.16); stroke: var(--z3); }
-  .arch text { fill: var(--text); font-family: "Barlow", sans-serif; font-size: 15px; }
-  .arch text.t { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 19px; }
-  .arch text.s { fill: var(--muted); font-size: 13px; }
-  .arch .arrow { stroke: var(--muted); stroke-width: 1.6; fill: none; }
-  .arch .lbl { fill: var(--muted); font-size: 13px; }
-  .points { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 28px; }
-  .points div { border-left: 3px solid var(--primary); padding: 2px 0 2px 18px; }
-  .points p { margin: 0; color: var(--muted); font-size: 17px; }
-  .points b { color: var(--text); }
+  /* What stays on your phone */
+  .kept { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0 40px; }
+  .kept li { border-top: 1px solid var(--rule); padding: 16px 0; max-width: var(--measure); }
 
-  /* Privacy */
-  .privacy { background: var(--dark); color: #fff; border-top: 1px solid rgba(255,255,255,.06); border-bottom: 1px solid rgba(255,255,255,.06); }
-  .privacy .lede { color: #B9C2CA; }
-  .privacy .eyebrow { color: #9FB3FF; }
-  .pgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 44px; }
-  .pgrid div { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: var(--radius); padding: 24px; }
-  .pgrid h3 { font-size: 22px; }
-  .pgrid p { margin: 0; color: #B9C2CA; font-size: 16px; }
+  footer { margin-top: 128px; border-top: 1px solid var(--rule); padding: 36px 0 56px; color: var(--slate); font-size: 16px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: space-between; }
+  footer nav { display: flex; flex-wrap: wrap; gap: 8px 24px; }
 
-  /* Stack */
-  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 32px; }
-  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; font-weight: 500; font-size: 16px; }
-  .eng { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 40px; }
-
-  /* Footer */
-  footer { background: var(--dark); color: #9AA6B1; padding: 56px 0; font-size: 16px; }
-  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 24px; align-items: center; }
-  footer a { color: #fff; }
-  footer .brand { font-size: 24px; }
-
-  @media (max-width: 980px) {
-    .hero .wrap, .split { grid-template-columns: 1fr; }
-    .phones { height: 520px; max-width: 560px; width: 100%; margin: 0 auto; }
-    .phone { width: 200px; }
-    .grid, .eng { grid-template-columns: repeat(2, 1fr); }
-    .pgrid { grid-template-columns: repeat(2, 1fr); }
-    .stats .wrap { grid-template-columns: repeat(2, 1fr); }
-    .stat:nth-child(3) { border-left: 0; }
-    .stat { border-top: 1px solid rgba(255,255,255,.08); }
+  @media (max-width: 900px) {
+    .hero-text, .coach { grid-template-columns: 1fr; gap: 32px; }
+    .facts { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 640px) {
+    :root { --gutter: 16px; }
     body { font-size: 17px; }
-    .wrap { padding: 0 16px; }
-    section { padding: 72px 0; }
-    .nav-links a:not(.gh) { display: none; }
-    .hero { padding-top: 48px; }
-    .phones { height: 400px; }
-    .phone { width: 150px; padding: 5px; border-radius: 22px; }
-    .phone img { border-radius: 18px; }
-    .phones .p1 { top: 56px; }
-    .phones .p3 { top: 56px; }
-    .grid, .eng, .pgrid, .points { grid-template-columns: 1fr; }
-    .zrow { grid-template-columns: 76px 1fr; }
-    .zrow span { grid-column: 1 / -1; text-align: left; }
-    .gallery { padding: 8px 16px 24px; }
-    .gallery figure { flex-basis: 180px; }
-    .stat { padding: 22px 16px; }
-    .stat b { font-size: 38px; }
+    .hero-text { padding-top: 32px; padding-bottom: 32px; }
+    .hero-text .intro { font-size: 19px; }
+    .chart { height: 300px; grid-template-columns: 52px 1fr; }
+    .axis b { font-size: 13px; }
+    .axis span { display: none; }
+    .plan, .caption { margin-left: 52px; }
+    .caption { margin-left: 0; }
+    .head .num { font-size: 30px; right: 14px; }
+    .plan div { font-size: 13px; }
+    .plan .long { display: none; }
+    .section { padding-top: 88px; }
+    .screens { gap: 28px; }
+    .screens figure { width: 172px; }
+    .said { padding: 4px 18px 16px; }
+    .said td:first-child { width: 52px; font-size: 18px; }
+    .said td:nth-child(2) { width: 84px; font-size: 15px; }
+    .facts, .kept { grid-template-columns: 1fr; }
+    footer { margin-top: 88px; }
   }
 </style>
 </head>
 <body>
 
-<nav class="nav">
-  <div class="wrap">
-    <a class="brand" href="#top" aria-label="Haanf, back to top">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#1F5BFF"/><path fill="#fff" transform="translate(4.2 4.6) scale(.65)" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-      Haanf
-    </a>
-    <div class="nav-links">
-      <a href="#features">Features</a>
-      <a href="#coach">Coach</a>
-      <a href="#screens">Screens</a>
-      <a href="#how">How it works</a>
-      <a class="gh" href="https://github.com/cgrkz/haanf">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-        GitHub
-      </a>
-    </div>
-  </div>
-</nav>
-
-<header class="hero" id="top">
-  <div class="wrap">
-    <div>
-      <p class="eyebrow">Android · Kotlin · Jetpack Compose</p>
-      <h1>Build endurance you can feel.</h1>
-      <p class="sub">Haanf reads live heart rate from your watch, runs a research-backed program, and pairs it with an AI coach that talks you through every session. Everything stays on your phone.</p>
-      <div class="zones" aria-hidden="true"><span style="background:var(--z1)"></span><span style="background:var(--z2)"></span><span style="background:var(--z3)"></span><span style="background:var(--z4)"></span><span style="background:var(--z5)"></span></div>
-      <div class="cta">
-        <a class="btn btn-primary" href="https://github.com/cgrkz/haanf">
-          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-          View the code
-        </a>
-        <a class="btn btn-ghost" href="#screens">See the screens</a>
-      </div>
-    </div>
-    <div class="phones" aria-label="Three Haanf screens: a coach-planned workout, a live steady effort and a live interval">
-      <div class="phone p1"><img src="design/build-screenshots/08-coach-plan.png" width="1080" height="2400" alt="The coach's plan for an easy 30-minute run, checked against safety rules"></div>
-      <div class="phone p2"><img src="design/build-screenshots/10-live-steady.png" width="1080" height="2400" alt="Live warm-up at 118 bpm in Zone 2"></div>
-      <div class="phone p3"><img src="design/build-screenshots/11-live-interval.png" width="1080" height="2400" alt="Live interval 2 of 4, with 1:12 left in the effort"></div>
-    </div>
-  </div>
+<header class="wrap top">
+  <a class="mark" href="https://github.com/cgrkz/haanf" aria-label="Haanf on GitHub">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#1F5BFF"/><path fill="#fff" transform="translate(4.2 4.6) scale(.65)" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+    Haanf
+  </a>
+  <a class="code" href="https://github.com/cgrkz/haanf">Code on GitHub</a>
 </header>
 
-<div class="stats">
-  <div class="wrap">
-    <div class="stat"><b>0</b><span>servers or accounts</span></div>
-    <div class="stat"><b>5</b><span>heart rate zones, from your resting rate</span></div>
-    <div class="stat"><b>8</b><span>week research-backed program</span></div>
-    <div class="stat"><b>372</b><span>automated tests</span></div>
-  </div>
-</div>
-
-<section id="features">
-  <div class="wrap">
-    <p class="eyebrow">What it does</p>
-    <h2>A training partner that runs on your phone</h2>
-    <p class="lede">Built for people getting into running and cycling: clear targets during a workout, honest feedback after it, and a coach that knows when to hold back.</p>
-    <div class="grid">
-      <div class="card">
-        <div class="icon" style="background:rgba(201,52,0,.12);color:var(--z5)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg></div>
-        <h3>Live heart rate</h3>
-        <p>Any watch or strap that broadcasts the standard Bluetooth Heart Rate Profile, including a Pixel Watch 2. Dropouts are caught and the connection comes back on its own.</p>
-      </div>
-      <div class="card">
-        <div class="icon" style="background:var(--primary-soft);color:var(--primary)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></svg></div>
-        <h3>An AI coach</h3>
-        <p>Plans today's workout from how you feel and what you've done, speaks short cues while you train, and reviews the session afterwards.</p>
-      </div>
-      <div class="card">
-        <div class="icon" style="background:rgba(242,183,0,.18);color:#9A7400"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></div>
-        <h3>Safety rules in code</h3>
-        <p>Every workout and change the AI proposes passes a rule check with no AI in it. The coach can only make things harder after you ask.</p>
-      </div>
-      <div class="card">
-        <div class="icon" style="background:rgba(0,159,176,.14);color:var(--z1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
-        <h3>A fixed program</h3>
-        <p>Foundation 8: eight weeks, three sessions a week, building to the 4 x 4 interval format from Helgerud 2007. The AI coaches it but never changes it.</p>
-      </div>
-      <div class="card">
-        <div class="icon" style="background:rgba(232,133,12,.15);color:var(--z4)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg></div>
-        <h3>Talk test</h3>
-        <p>Could you talk comfortably just now? Answer by voice, transcribed on the phone, or with a tap. Each answer is saved with your heart rate.</p>
-      </div>
-      <div class="card">
-        <div class="icon" style="background:rgba(31,91,255,.12);color:var(--z2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l6-11 4 6 3-4 5 9z"/></svg></div>
-        <h3>Terrain-aware</h3>
-        <p>GPS distance and speed, barometer climb, estimated watts on the bike, and a split for every kilometre. No coordinates are ever stored.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section id="coach" style="padding-top:0">
-  <div class="wrap split">
+<main>
+  <section class="wrap hero-text">
+    <h1>Build endurance you can feel.</h1>
     <div>
-      <p class="eyebrow">The coach</p>
-      <h2>It acts through tools, and the rules have the last word</h2>
-      <p class="lede">During a workout the coach runs in the background, wakes on its own schedule, reads heart rate, pace and climb, and replies through tools. Anything that changes the workout goes through <code>AiWorkoutRules</code> first.</p>
-      <ul class="rules">
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg><span>At most two hard sessions in any seven days</span></li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg><span>A warm-up and cool-down around every hard effort</span></li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg><span>No hard work on a day you feel rough, or next to a hard program day</span></li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg><span>No Zone 5 until 12 workouts are logged, and never more than 4 minutes at a time</span></li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg><span>Harder only when you ask for it</span></li>
-      </ul>
+      <p class="intro">Haanf is an Android app that reads your heart rate live from your watch, runs a research-backed training program, and coaches you through each session by voice. Everything stays on your phone.</p>
+      <div class="actions">
+        <a class="button" href="https://github.com/cgrkz/haanf">Read the code on GitHub</a>
+        <a href="#session">See a session, start to finish</a>
+      </div>
     </div>
-    <div class="log" role="img" aria-label="An example of the coach's timeline during a ride">
-      <div class="log-head"><b>Ride with the coach</b><span>Example</span></div>
-      <div class="ev"><time>0:00</time><div><span class="tool">speak</span><br><q>Nice start. Keep it easy for the first few minutes.</q></div></div>
-      <div class="ev"><time>4:10</time><div><span class="tool" style="color:#C9D1D9;background:rgba(255,255,255,.08)">you said</span><br><q>Big hill coming up.</q></div></div>
-      <div class="ev"><time>4:22</time><div><span class="tool">speak</span><br><q>Shift down early and let your speed drop on the climb.</q></div></div>
-      <div class="ev"><time>12:00</time><div><span class="tool">speak</span><br><q>You're in Zone 4 now. Ease off if you want this steady.</q></div></div>
-      <div class="ev"><time>17:05</time><div><span class="tool" style="color:#C9D1D9;background:rgba(255,255,255,.08)">you said</span><br><q>Can we go a bit longer?</q></div></div>
-      <div class="ev"><time>17:06</time><div><span class="tool">adjust_workout</span> <span class="tool ok">rule check: approved</span><br>Five more easy minutes added at the end</div></div>
-      <div class="ev"><time>21:00</time><div><span class="tool">record_talk_test</span><br>Could talk comfortably</div></div>
-    </div>
-  </div>
-</section>
+  </section>
 
-<section id="zones" style="padding-top:0">
-  <div class="wrap">
-    <p class="eyebrow">Heart rate zones</p>
-    <h2>Five zones, from your own heart</h2>
-    <p class="lede">Each zone starts a share of the way from your resting heart rate, read from Health Connect, to your maximum. Every boundary can be changed in Settings, and each workout keeps the zones it was measured with.</p>
-    <div class="zone-table">
-      <div class="zrow"><b>Zone 1</b><div class="zbar" style="background:var(--z1);width:38%"></div><span>Under 60% of reserve</span></div>
-      <div class="zrow"><b>Zone 2</b><div class="zbar" style="background:var(--z2);width:52%"></div><span>60 to 70%</span></div>
-      <div class="zrow"><b>Zone 3</b><div class="zbar" style="background:var(--z3);width:66%"></div><span>70 to 80%, counts as hard</span></div>
-      <div class="zrow"><b>Zone 4</b><div class="zbar" style="background:var(--z4);width:82%"></div><span>80 to 90%</span></div>
-      <div class="zrow"><b>Zone 5</b><div class="zbar" style="background:var(--z5);width:100%"></div><span>90% and above</span></div>
+  <figure class="session" style="margin-top:0;margin-bottom:0">
+    <div class="chart">
+      <div class="axis" aria-hidden="true">
+        <div class="z5"><b>Zone 5</b><span>182 and over</span></div>
+        <div class="z4"><b>Zone 4</b><span>168 to 181</span></div>
+        <div class="z3"><b>Zone 3</b><span>155 to 167</span></div>
+        <div class="z2"><b>Zone 2</b><span>141 to 154</span></div>
+        <div class="z1"><b>Zone 1</b><span>under 141</span></div>
+      </div>
+      <div class="plot">
+        <div class="bands" aria-hidden="true"><div class="band z5"></div><div class="band z4"></div><div class="band z3"></div><div class="band z2"></div><div class="band z1"></div></div>
+        <svg class="trace" viewBox="0 0 1200 420" preserveAspectRatio="none" role="img" aria-label="Heart rate through a 40-minute interval session: it climbs into Zone 2 for the warm-up, rises into Zone 4 for each of four 4-minute efforts, drops back to Zone 2 between them, and falls into Zone 1 for the cool-down.">
+        <path id="trace" d="M0.0 403.2 L5.0 366.4 L10.0 339.3 L15.0 310.5 L20.0 296.4 L25.0 278.1 L30.0 266.6 L35.0 261.6 L40.0 250.8 L45.0 249.2 L50.0 241.9 L55.0 241.5 L60.0 240.3 L65.0 234.5 L70.0 225.3 L75.0 228.8 L80.0 229.3 L85.0 224.0 L90.0 216.4 L95.0 216.6 L100.0 219.1 L105.0 212.7 L110.0 221.3 L115.0 215.5 L120.0 219.6 L125.0 224.0 L130.0 227.0 L135.0 226.2 L140.0 218.9 L145.0 223.0 L150.0 220.1 L155.0 217.6 L160.0 219.7 L165.0 218.5 L170.0 224.4 L175.0 227.9 L180.0 228.1 L185.0 221.8 L190.0 221.4 L195.0 222.7 L200.0 219.8 L205.0 219.9 L210.0 222.0 L215.0 216.6 L220.0 214.6 L225.0 219.6 L230.0 218.1 L235.0 217.9 L240.0 213.1 L245.0 212.1 L250.0 217.5 L255.0 211.4 L260.0 219.3 L265.0 220.1 L270.0 215.9 L275.0 221.6 L280.0 220.5 L285.0 225.8 L290.0 220.6 L295.0 216.2 L300.0 216.1 L305.0 188.8 L310.0 175.7 L315.0 159.2 L320.0 148.0 L325.0 139.3 L330.0 134.1 L335.0 124.5 L340.0 116.3 L345.0 116.9 L350.0 114.0 L355.0 119.9 L360.0 114.4 L365.0 111.5 L370.0 104.9 L375.0 103.0 L380.0 109.0 L385.0 111.1 L390.0 108.4 L395.0 115.4 L400.0 113.7 L405.0 116.5 L410.0 118.9 L415.0 121.0 L420.0 112.8 L425.0 132.6 L430.0 147.0 L435.0 157.3 L440.0 160.1 L445.0 175.0 L450.0 181.3 L455.0 185.6 L460.0 185.3 L465.0 187.4 L470.0 189.3 L475.0 199.4 L480.0 204.4 L485.0 209.0 L490.0 205.3 L495.0 202.7 L500.0 212.5 L505.0 218.4 L510.0 221.5 L515.0 198.4 L520.0 176.6 L525.0 158.5 L530.0 149.2 L535.0 144.8 L540.0 134.9 L545.0 128.2 L550.0 120.4 L555.0 109.7 L560.0 106.1 L565.0 105.8 L570.0 103.8 L575.0 101.5 L580.0 108.2 L585.0 100.6 L590.0 97.5 L595.0 94.3 L600.0 93.3 L605.0 98.0 L610.0 100.7 L615.0 106.3 L620.0 102.4 L625.0 107.8 L630.0 110.9 L635.0 127.6 L640.0 142.6 L645.0 152.9 L650.0 166.1 L655.0 177.4 L660.0 184.5 L665.0 191.4 L670.0 193.8 L675.0 201.2 L680.0 195.5 L685.0 196.6 L690.0 204.5 L695.0 208.6 L700.0 210.5 L705.0 212.0 L710.0 216.6 L715.0 210.1 L720.0 204.6 L725.0 183.4 L730.0 165.8 L735.0 157.1 L740.0 148.8 L745.0 138.3 L750.0 131.3 L755.0 118.2 L760.0 118.2 L765.0 119.2 L770.0 106.6 L775.0 104.2 L780.0 107.5 L785.0 103.8 L790.0 108.2 L795.0 104.0 L800.0 95.2 L805.0 91.4 L810.0 91.2 L815.0 96.9 L820.0 98.8 L825.0 102.6 L830.0 96.7 L835.0 96.3 L840.0 92.8 L845.0 113.5 L850.0 131.6 L855.0 138.3 L860.0 143.1 L865.0 150.5 L870.0 157.9 L875.0 164.1 L880.0 170.7 L885.0 182.9 L890.0 187.7 L895.0 193.7 L900.0 202.7 L905.0 208.9 L910.0 209.9 L915.0 211.3 L920.0 206.9 L925.0 201.1 L930.0 204.8 L935.0 174.6 L940.0 151.1 L945.0 133.7 L950.0 128.2 L955.0 124.6 L960.0 120.5 L965.0 117.0 L970.0 113.7 L975.0 105.1 L980.0 95.6 L985.0 90.1 L990.0 91.3 L995.0 89.3 L1000.0 85.8 L1005.0 93.1 L1010.0 89.6 L1015.0 84.1 L1020.0 82.3 L1025.0 81.6 L1030.0 84.8 L1035.0 90.7 L1040.0 85.9 L1045.0 89.2 L1050.0 84.9 L1055.0 117.7 L1060.0 154.8 L1065.0 185.3 L1070.0 203.5 L1075.0 223.4 L1080.0 248.1 L1085.0 268.0 L1090.0 283.4 L1095.0 285.9 L1100.0 291.5 L1105.0 306.2 L1110.0 307.9 L1115.0 308.7 L1120.0 315.0 L1125.0 324.2 L1130.0 328.2 L1135.0 337.2 L1140.0 345.0 L1145.0 337.5 L1150.0 338.0 L1155.0 340.4 L1160.0 336.9 L1165.0 341.8 L1170.0 339.2 L1175.0 338.6 L1180.0 346.7 L1185.0 351.2 L1190.0 353.6 L1195.0 355.8 L1200.0 352.7"/>
+      </svg>
+        <div class="head" id="head" aria-hidden="true"><i></i><span class="num"><span id="bpm">116</span><small>bpm</small></span></div>
+      </div>
     </div>
-  </div>
-</section>
-
-<section id="screens" style="padding-top:0">
-  <div class="wrap">
-    <p class="eyebrow">Screens</p>
-    <h2>Designed first, then built</h2>
-    <p class="lede">The built app on the emulator with sample data. Screenshot tests capture every designed screen, so the build can be compared with the designs.</p>
-  </div>
-  <div class="gallery-wrap">
-    <div class="gallery" tabindex="0" aria-label="Screens, scroll sideways for more">
-      <figure><div class="phone"><img loading="lazy" src="design/build-screenshots/01-welcome.png" width="1080" height="2400" alt="Welcome screen"></div><figcaption><b>Welcome</b>A program, or the coach's pick</figcaption></figure>
-      <figure><div class="phone"><img loading="lazy" src="design/build-screenshots/05-program-home.png" width="1080" height="2400" alt="Program home"></div><figcaption><b>Program</b>Today's session in Foundation 8</figcaption></figure>
-      <figure><div class="phone"><img loading="lazy" src="design/build-screenshots/07-coach-check-in.png" width="1080" height="2400" alt="Coach check-in"></div><figcaption><b>Check-in</b>Time, feel and activity</figcaption></figure>
-      <figure><div class="phone"><img loading="lazy" src="design/build-screenshots/08-coach-plan.png" width="1080" height="2400" alt="Coach plan"></div><figcaption><b>Coach plan</b>Checked against your safety rules</figcaption></figure>
-      <figure><div class="phone"><img loading="lazy" src="design/build-screenshots/09-get-ready.png" width="1080" height="2400" alt="Get ready"></div><figcaption><b>Get ready</b>Watch, coaching and talk tests</figcaption></figure>
-      <figure><div class="phone"><img loading="lazy" src="design/build-screenshots/10-live-steady.png" width="1080" height="2400" alt="Live steady effort"></div><figcaption><b>Live</b>Heart rate, zone and what's next</figcaption></figure>
-      <figure><div class="phone"><img loading="lazy" src="design/build-screenshots/11-live-interval.png" width="1080" height="2400" alt="Live interval"></div><figcaption><b>Intervals</b>Time left in the effort</figcaption></figure>
-      <figure><div class="phone"><img loading="lazy" src="design/build-screenshots/12-talk-test.png" width="1080" height="2400" alt="Talk test"></div><figcaption><b>Talk test</b>Answer by voice or tap</figcaption></figure>
-      <figure><div class="phone"><img loading="lazy" src="design/build-screenshots/22-live-ride-climb.png" width="1080" height="2400" alt="Live ride, climbing"></div><figcaption><b>Rides</b>Gradient and climb</figcaption></figure>
-      <figure><div class="phone"><img loading="lazy" src="design/build-screenshots/13-summary.png" width="1080" height="2400" alt="Workout summary"></div><figcaption><b>Summary</b>Time in zones and the coach's note</figcaption></figure>
-      <figure><div class="phone"><img loading="lazy" src="design/build-screenshots/23-ride-summary.png" width="1080" height="2400" alt="Ride summary"></div><figcaption><b>Ride summary</b>Watts, climb and splits</figcaption></figure>
-      <figure><div class="phone"><img loading="lazy" src="design/build-screenshots/14-progress.png" width="1080" height="2400" alt="Progress"></div><figcaption><b>Progress</b>Vitals and the week in zones</figcaption></figure>
-      <figure><div class="phone"><img loading="lazy" src="design/build-screenshots/21-chat.png" width="1080" height="2400" alt="Coach chat"></div><figcaption><b>Chat</b>Remembers what matters</figcaption></figure>
-      <figure><div class="phone"><img loading="lazy" src="design/build-screenshots/15-settings.png" width="1080" height="2400" alt="Settings"></div><figcaption><b>Settings</b>Zones from resting heart rate</figcaption></figure>
+    <div class="plan" aria-label="The session's steps">
+      <div class="p2">Warm up</div>
+      <div class="p4"><span class="long">Interval </span>1</div>
+      <div class="p2"><span class="long">Recover</span></div>
+      <div class="p4"><span class="long">Interval </span>2</div>
+      <div class="p2"><span class="long">Recover</span></div>
+      <div class="p4"><span class="long">Interval </span>3</div>
+      <div class="p2"><span class="long">Recover</span></div>
+      <div class="p4"><span class="long">Interval </span>4</div>
+      <div class="p1">Cool down</div>
     </div>
-  </div>
-</section>
+    <figcaption class="caption">An illustration of a 40-minute session from week 7 of Foundation 8, the app's eight-week program: four efforts of 4 minutes in Zone 4. The zones are for a runner who rests at 60 bpm and peaks at 195. Each zone starts 60, 70, 80 or 90% of the way from resting to maximum.</figcaption>
+  </figure>
 
-<section id="how" style="padding-top:0">
-  <div class="wrap">
-    <p class="eyebrow">How it works</p>
-    <h2>Clear boundaries, tested on the JVM</h2>
-    <p class="lede">One process, no server. Each boundary keeps a concern in one place, so a new watch or a new AI provider is a new class, not a rewrite.</p>
-    <div class="arch">
-      <svg viewBox="0 0 1100 340" role="img" aria-label="Architecture: a watch streams heart rate over Bluetooth to the live session, which feeds the workout controller, along with GPS and the barometer. The workout controller saves to Room and works with the coach harness. The coach reads vitals from Health Connect and sends a snapshot to Claude or OpenRouter. The AI's tool calls pass AiWorkoutRules before any change reaches the workout.">
+  <section class="section" id="session">
+    <div class="wrap">
+      <h2>A session, start to finish</h2>
+      <p class="intro">Tell the coach how much time you have and how you feel. It plans the workout, checks it against your safety rules, and talks you through it with the phone in your pocket.</p>
+    </div>
+    <div class="screens" tabindex="0" aria-label="App screens in the order you meet them. Scroll sideways for more.">
+      <div class="stage">
+        <h3>Before you start</h3>
+        <div class="row">
+          <figure><img loading="lazy" src="design/build-screenshots/07-coach-check-in.png" width="1080" height="2400" alt="Check-in: time available, how you feel, and run, cycle or treadmill"><figcaption><b>Check in.</b> Time, how you feel, and what you're doing.</figcaption></figure>
+          <figure><img loading="lazy" src="design/build-screenshots/08-coach-plan.png" width="1080" height="2400" alt="The coach's plan: an easy 30-minute run, checked against your safety rules"><figcaption><b>The plan.</b> Each step with its zone, checked against your rules.</figcaption></figure>
+          <figure><img loading="lazy" src="design/build-screenshots/09-get-ready.png" width="1080" height="2400" alt="Get ready: watch connected at 78 bpm, with switches for voice coaching and talk tests"><figcaption><b>Get ready.</b> Your watch, voice coaching and talk tests.</figcaption></figure>
+        </div>
+      </div>
+      <div class="stage">
+        <h3>During</h3>
+        <div class="row">
+          <figure><img loading="lazy" src="design/build-screenshots/10-live-steady.png" width="1080" height="2400" alt="Warm up at 118 bpm, in Zone 2, with 10 minutes left in the step"><figcaption><b>Steady.</b> Your heart rate, your zone and what's next.</figcaption></figure>
+          <figure><img loading="lazy" src="design/build-screenshots/11-live-interval.png" width="1080" height="2400" alt="Interval 2 of 4 with 1:12 left, at 151 bpm"><figcaption><b>Intervals.</b> Time left in the effort, big enough to read mid-stride.</figcaption></figure>
+          <figure><img loading="lazy" src="design/build-screenshots/12-talk-test.png" width="1080" height="2400" alt="Talk test: could you talk comfortably just now?"><figcaption><b>Talk test.</b> Answer by voice or with a tap.</figcaption></figure>
+        </div>
+      </div>
+      <div class="stage">
+        <h3>After</h3>
+        <div class="row">
+          <figure><img loading="lazy" src="design/build-screenshots/13-summary.png" width="1080" height="2400" alt="Workout done: 32 minutes, time in each zone and the coach's note"><figcaption><b>Summary.</b> Time in each zone and the coach's note.</figcaption></figure>
+          <figure><img loading="lazy" src="design/build-screenshots/23-ride-summary.png" width="1080" height="2400" alt="Ride summary with distance, speed, climb and estimated watts"><figcaption><b>Rides.</b> Watts, climb and a split for every kilometre.</figcaption></figure>
+          <figure><img loading="lazy" src="design/build-screenshots/14-progress.png" width="1080" height="2400" alt="Progress: resting heart rate, HRV and sleep trends, and the week's time in zones"><figcaption><b>Progress.</b> The week in zones, with sleep and resting heart rate.</figcaption></figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="coach">
+    <div class="wrap coach">
+      <div>
+        <h2>A coach with rules it can't break</h2>
+        <p class="intro">The coach runs in the background during a workout. It wakes when it chooses, reads your heart rate, pace and climb, and speaks a short cue. Any change it wants goes through a separate rule check with no AI in it.</p>
+        <ul class="rules">
+          <li>At most two hard sessions in any seven days.</li>
+          <li class="r3">Hard means Zone 3 and above, with a warm-up and a cool-down around it.</li>
+          <li>No hard work on a day you feel rough, or next to a hard program session.</li>
+          <li class="r5">No Zone 5 until 12 workouts are logged, and never more than 4 minutes at a time.</li>
+          <li>Harder only after you ask. The program itself never changes.</li>
+        </ul>
+      </div>
+      <div class="said">
+        <table>
+          <caption>What you and the coach said on a ride, as the summary shows it. The rule check entry is an example.</caption>
+          <tbody>
+            <tr><td>0:00</td><td>Coach</td><td>Nice start. Keep it easy for the first few minutes.</td></tr>
+            <tr><td>4:10</td><td>You</td><td>Big hill coming up.</td></tr>
+            <tr><td>4:22</td><td>Coach</td><td>Shift down early and let your speed drop on the climb.</td></tr>
+            <tr><td>12:00</td><td>Coach</td><td>You're in Zone 4 now. Ease off if you want this steady.</td></tr>
+            <tr><td>17:05</td><td>You</td><td>Can we go a bit longer?</td></tr>
+            <tr class="check"><td>17:06</td><td>Rule check</td><td>Approved five more easy minutes at the end.</td></tr>
+            <tr><td>21:00</td><td>Talk test</td><td>Could talk comfortably.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="built">
+    <div class="wrap">
+      <h2>How it's built</h2>
+      <p class="intro">Kotlin and Jetpack Compose, one process and no server. Each boundary keeps one concern in one place, so a new watch or a new AI provider is a new class rather than a rewrite.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 1100 340" role="img" aria-label="Architecture: a watch streams heart rate over Bluetooth to the live session, which feeds the workout controller, along with GPS and the barometer. The workout controller saves to Room and works with the coach harness. The coach reads vitals from Health Connect and sends a snapshot to Claude or OpenRouter. The AI's tool calls pass AiWorkoutRules before any change reaches the workout.">
         <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8792A0"/></marker></defs>
         <rect class="box" x="10" y="30" width="150" height="74" rx="12"/><text class="t" x="28" y="62">Watch or strap</text><text class="s" x="28" y="86">Heart Rate Profile</text>
         <rect class="box" x="200" y="30" width="180" height="74" rx="12"/><text class="t" x="218" y="62">HeartRateSource</text><text class="s" x="218" y="86">heartrate.ble</text>
@@ -420,51 +359,90 @@
         <path class="arrow" d="M290 250V162Q290 150 302 150H728Q740 150 740 138V108" marker-end="url(#a)"/>
         <text class="lbl" x="452" y="141">approved changes</text>
       </svg>
+      </div>
+      <dl class="facts">
+        <div><dt>372 tests</dt><dd>313 run on the JVM and 59 on a device, from zone edges to whole workouts against a simulated strap.</dd></div>
+        <div><dt>8 database versions</dt><dd>Every Room migration has a test. One recounts each saved workout's zones from its raw heart rate.</dd></div>
+        <div><dt>Simulated watches</dt><dd>Python peripherals built on Bumble drive the real Bluetooth code on the emulator, failures included.</dd></div>
+        <div><dt>One boundary per device</dt><dd><code>HeartRateSource</code> is all the workout logic knows about a wearable.</dd></div>
+        <div><dt>Rules in plain Kotlin</dt><dd>Zones, plans, safety and terrain have no Android types, so they run and test on the JVM.</dd></div>
+        <div><dt>Built on real hardware</dt><dd>Live heart rate and Health Connect were proven on a Pixel 6 with a Pixel Watch 2.</dd></div>
+      </dl>
     </div>
-    <div class="points">
-      <div><p><b>One boundary per device.</b> <code>HeartRateSource</code> is all the workout logic knows about a wearable.</p></div>
-      <div><p><b>Workouts run outside the screens.</b> Steps and speech keep going with the screen off, inside a foreground service.</p></div>
-      <div><p><b>The AI sees only the snapshot.</b> <code>CoachSnapshot</code> has no field for audio, location or device details.</p></div>
-      <div><p><b>Training logic is plain Kotlin.</b> Zones, plans, safety and terrain have no Android types and run on the JVM.</p></div>
-    </div>
-  </div>
-</section>
+  </section>
 
-<section class="privacy" id="privacy">
-  <div class="wrap">
-    <p class="eyebrow">Privacy</p>
-    <h2>Your data stays on your phone</h2>
-    <p class="lede">No backend and no account. The AI runs on a key you bring, and the build enforces the limits.</p>
-    <div class="pgrid">
-      <div><h3>Nothing uploaded</h3><p>Data leaves the phone only when you tap export, or goes to the AI provider you chose.</p></div>
-      <div><h3>Keys locked away</h3><p>Encrypted with the Android Keystore. Never in the APK, in git or in backups, and backups are off.</p></div>
-      <div><h3>Read, never write</h3><p>Health Connect is read only. A manifest test fails the build if a write permission appears.</p></div>
-      <div><h3>No routes kept</h3><p>GPS gives distance and speed only. Climb is measured from the start, never as altitude.</p></div>
+  <section class="section" id="privacy">
+    <div class="wrap">
+      <h2>What stays on your phone</h2>
+      <p class="intro">Everything, unless you send it.</p>
+      <ul class="kept">
+        <li>There's no account and no server. Your workouts live in a database on the phone.</li>
+        <li>Data leaves only when you tap export, or goes to the AI provider you chose, on your own key.</li>
+        <li>Your key is encrypted with the Android Keystore, and backups are off.</li>
+        <li>Health Connect is read only. A test fails the build if a write permission appears.</li>
+        <li>GPS measures distance and speed. No route or position is ever saved.</li>
+        <li>The coach never receives audio, location or device details.</li>
+      </ul>
     </div>
-  </div>
-</section>
-
-<section id="engineering">
-  <div class="wrap">
-    <p class="eyebrow">Engineering</p>
-    <h2>Built to be checked</h2>
-    <div class="eng">
-      <div class="card"><h3>372 tests</h3><p>313 on the JVM and 59 on a device, from zone edges to full workouts against a simulated strap.</p></div>
-      <div class="card"><h3>8 database versions</h3><p>Every Room migration is tested. One recounts each saved workout's zones from its raw heart rate samples.</p></div>
-      <div class="card"><h3>Simulated watches</h3><p>Python peripherals built on Bumble exercise the real Bluetooth code on the emulator, failures included.</p></div>
-    </div>
-    <div class="chips">
-      <span class="chip">Kotlin</span><span class="chip">Jetpack Compose</span><span class="chip">Material 3</span><span class="chip">Room</span><span class="chip">Coroutines and Flow</span><span class="chip">Bluetooth LE GATT</span><span class="chip">Health Connect</span><span class="chip">Foreground services</span><span class="chip">Anthropic Java SDK</span><span class="chip">Tool use</span><span class="chip">Prompt caching</span><span class="chip">On-device speech</span><span class="chip">Text to speech</span><span class="chip">Wear OS Health Services</span>
-    </div>
-  </div>
-</section>
+  </section>
+</main>
 
 <footer>
   <div class="wrap">
-    <a class="brand" href="#top">Haanf</a>
-    <div>Built by <a href="https://github.com/cgrkz">Chaitanya Gupta</a> · <a href="https://github.com/cgrkz/haanf">Source on GitHub</a></div>
+    <p>Haanf is a personal project by <a href="https://github.com/cgrkz">Chaitanya Gupta</a>.</p>
+    <nav aria-label="More about Haanf">
+      <a href="https://github.com/cgrkz/haanf">Code</a>
+      <a href="https://github.com/cgrkz/haanf/blob/main/docs/product-brief.md">Product brief</a>
+      <a href="https://github.com/cgrkz/haanf/blob/main/docs/ai-mode-spec.md">Coach spec</a>
+      <a href="https://github.com/cgrkz/haanf/blob/main/docs/decisions.md">Decisions</a>
+    </nav>
   </div>
 </footer>
 
+<script>
+  // The page's one moment of motion: the session draws itself once, left to
+  // right, and the readout follows the line, coloured by the zone it is in.
+  (function () {
+    var svg = document.querySelector('.trace');
+    var path = document.getElementById('trace');
+    var head = document.getElementById('head');
+    var bpm = document.getElementById('bpm');
+    var dot = head.querySelector('i');
+    var pts = path.getAttribute('d').slice(1).split(' L').map(function (s) {
+      var a = s.trim().split(' '); return [+a[0], +a[1]];
+    });
+    var zones = [[182, '--z5'], [168, '--z4'], [155, '--z3'], [141, '--z2'], [0, '--z1']];
+    function yAt(x) {
+      var i = Math.min(Math.floor(x / 5), pts.length - 2);
+      var f = Math.max(0, Math.min(1, (x - pts[i][0]) / (pts[i + 1][0] - pts[i][0])));
+      return pts[i][1] + (pts[i + 1][1] - pts[i][1]) * f;
+    }
+    function place(x) {
+      var y = yAt(x);
+      var value = Math.round(200 - y / 420 * 100);
+      head.style.left = (x / 12) + '%';
+      head.style.top = (y / 4.2) + '%';
+      head.classList.toggle('below', x > 40 && yAt(x - 40) < y - 6);
+      bpm.textContent = value;
+      for (var i = 0; i < zones.length; i++) {
+        if (value >= zones[i][0]) { dot.style.background = 'var(' + zones[i][1] + ')'; break; }
+      }
+    }
+    place(1200);
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var duration = 3200, start = null;
+    function frame(now) {
+      if (start === null) start = now;
+      var t = Math.min((now - start) / duration, 1);
+      var eased = 1 - Math.pow(1 - t, 2.2);
+      svg.style.clipPath = 'inset(-10px ' + (100 - eased * 100) + '% -10px 0)';
+      place(eased * 1200);
+      if (t < 1) requestAnimationFrame(frame);
+      else svg.style.clipPath = 'none';
+    }
+    svg.style.clipPath = 'inset(-10px 100% -10px 0)';
+    requestAnimationFrame(frame);
+  })();
+</script>
 </body>
 </html>
